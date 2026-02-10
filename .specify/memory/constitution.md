@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report:
-- Version Change: 0.0.0 -> 1.0.0
+- Version Change: 1.0.0 -> 1.0.1
 - Added Principle: Uncompromising Quality (100% Test Coverage)
 - Added Principle: Technology Standardization (Mandatory Tech Stack)
 - Added Principle: API-First & Documentation
@@ -18,10 +18,10 @@ Test coverage must be **100%** for all codebases (Backend, Web, Mini-program). T
 
 ### II. Technology Standardization
 Adherence to the specified technology stack is mandatory.
-*   **Backend**: Go 1.26+, Gin, GORM, PostgreSQL 17, Redis 7.4.
+*   **Backend**: Go 1.25+, Gin, GORM, PostgreSQL 18+, Redis 8.4+.
 *   **Web Frontends**: Nuxt 4.3.0+, Vue 3.5+, Vite, Tailwind CSS v4.
 *   **Mini-program**: uni-app (Vue 3 mode).
-*   **Infrastructure**: Kubernetes, Docker, MinIO.
+*   **Infrastructure**: Kubernetes, MinIO.
 Any deviation must be formally approved via constitution amendment.
 
 ### III. API-First & Documentation
@@ -54,4 +54,4 @@ This constitution governs the CruiseBooking project.
 *   **Amendments**: Changes to the tech stack or principles require a constitution amendment and version bump.
 *   **Compliance**: All PRs must be reviewed against these principles. Use the `check-prerequisites.ps1` script where applicable to ensure environment readiness.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
+**Version**: 1.0.1 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
