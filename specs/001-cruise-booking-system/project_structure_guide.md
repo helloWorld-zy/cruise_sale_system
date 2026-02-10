@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1 & 2 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -18,11 +18,18 @@ Path: `/backend`
 *   `internal/`: Private application code.
     *   `api/`: HTTP Handlers and Router configuration (Gin).
     *   `core/`: Business logic and Service layer.
-    *   `data/`: Data Access Layer (Repositories, GORM models).
-    *   `middleware/`: HTTP Middleware (Auth, Logger, CORS).
+    *   `data/`: Data Access Layer.
+        *   `db.go`: GORM connection and migration logic.
+    *   `middleware/`: HTTP Middleware.
+        *   `auth.go`: JWT Authentication middleware.
+        *   `casbin.go`: RBAC Authorization middleware.
     *   `model/`: Domain entities and DTOs.
-*   `pkg/`: Public/Shared libraries (Logger, Response helpers).
+        *   `user.go`: User and Staff models.
+*   `pkg/`: Public/Shared libraries.
+        *   `logger/`: Centralized Zap logger.
+        *   `response/`: Standard API response structure.
 *   `tests/`: Integration and E2E tests.
+    *   `unit/`: Unit tests (Middleware, etc.).
 *   `go.mod`: Go module definition.
 
 ## Frontend - Admin (Nuxt 4)

@@ -20,13 +20,13 @@
 
 **Purpose**: Core infrastructure, database schema, and authentication.
 
-- [ ] T008 Setup GORM connection and migration framework in `backend/internal/data/db.go`
-- [ ] T009 Implement User & Staff models in `backend/internal/model/user.go`
-- [ ] T010 Implement JWT Authentication middleware in `backend/internal/middleware/auth.go`
-- [ ] T011 Implement Casbin RBAC middleware in `backend/internal/middleware/casbin.go`
-- [ ] T012 Implement centralized Error Handling & Logger in `backend/pkg/logger/`
-- [ ] T013 Create Base Response structure in `backend/pkg/response/response.go`
-- [ ] T014 [P] Test Auth & Middleware (Unit Tests) in `backend/tests/unit/middleware_test.go`
+- [x] T008 Setup GORM connection and migration framework in `backend/internal/data/db.go`
+- [x] T009 Implement User & Staff models in `backend/internal/model/user.go`
+- [x] T010 Implement JWT Authentication middleware in `backend/internal/middleware/auth.go`
+- [x] T011 Implement Casbin RBAC middleware in `backend/internal/middleware/casbin.go`
+- [x] T012 Implement centralized Error Handling & Logger in `backend/pkg/logger/`
+- [x] T013 Create Base Response structure in `backend/pkg/response/response.go`
+- [x] T014 [P] Test Auth & Middleware (Unit Tests) in `backend/tests/unit/middleware_test.go`
 
 ## Phase 3: User Story 1 - Guest Cruise Browsing (Priority: P1)
 
