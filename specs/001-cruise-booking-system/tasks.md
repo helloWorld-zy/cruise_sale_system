@@ -90,9 +90,9 @@
 
 **Goal**: Ops can view orders and finance reports.
 
-- [ ] T045 [US5] Implement Admin Order List/Detail API in `backend/internal/api/v1/admin/order.go`
-- [ ] T046 [US5] Implement Financial Report Aggregation in `backend/internal/core/report_service.go`
-- [ ] T047 [P] [US5] Implement Admin Order UI in `admin/pages/orders/index.vue`
+- [x] T045 [US5] Implement Admin Order List/Detail API in `backend/internal/api/v1/admin/order.go`
+- [x] T046 [US5] Implement Financial Report Aggregation in `backend/internal/core/report_service.go`
+- [x] T047 [P] [US5] Implement Admin Order UI in `admin/pages/orders/index.vue`
 
 ## Phase 8: User Story 6 - Intelligent Discovery (Priority: P2)
 

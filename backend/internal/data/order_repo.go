@@ -40,3 +40,24 @@ func (r *OrderRepository) UpdateStatus(ctx context.Context, tx *gorm.DB, id stri
 	}
 	return db.WithContext(ctx).Model(&model.Order{}).Where("id = ?", id).Update("status", status).Error
 }
+
+func (r *OrderRepository) List(ctx context.Context, status model.OrderStatus) ([]model.Order, error) {
+	var orders []model.Order
+	query := DB.WithContext(ctx).Preload("Items").Preload("Passengers")
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if err := query.Find(&orders).Error; err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
+func (r *OrderRepository) GetTotalRevenue(ctx context.Context) (float64, error) {
+	var total float64
+	// Sum total_amount where status = paid/confirmed/completed
+	err := DB.WithContext(ctx).Model(&model.Order{}).
+		Where("status IN ?", []model.OrderStatus{model.OrderStatusPaid, model.OrderStatusConfirmed, model.OrderStatusCompleted}).
+		Select("COALESCE(SUM(total_amount), 0)").Scan(&total).Error
+	return total, err
+}

@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1-6 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-7 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -21,6 +21,7 @@ Path: `/backend`
             *   `admin/`: Admin Handlers.
                 *   `cruise.go`: Admin Cruise CRUD.
                 *   `voyage.go`: Admin Voyage/Inventory.
+                *   `order.go`: Admin Order List/Detail.
             *   `cruise.go`: Cruise Listing/Detail handlers.
             *   `order.go`: Booking & User Order handlers.
     *   `core/`: Business logic and Service layer.
@@ -29,6 +30,7 @@ Path: `/backend`
         *   `order_service.go`: Logic for creating and cancelling orders.
         *   `payment_service.go`: Logic for payments.
         *   `voyage_service.go`: Logic for voyages.
+        *   `report_service.go`: Financial reporting logic.
     *   `data/`: Data Access Layer.
         *   `db.go`: GORM connection.
         *   `redis.go`: Redis connection.
@@ -68,6 +70,8 @@ Path: `/admin`
         *   `index.vue`: List/Add.
     *   `inventory/`: Inventory Management.
         *   `index.vue`: Dashboard.
+    *   `orders/`: Order Management.
+        *   `index.vue`: List/Detail.
 *   `stores/`: Pinia state management stores.
 *   `nuxt.config.ts`: Nuxt configuration.
 

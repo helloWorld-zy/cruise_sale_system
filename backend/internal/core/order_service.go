@@ -16,6 +16,7 @@ type OrderRepo interface {
 	ListByUserID(ctx context.Context, userID string) ([]model.Order, error)
 	GetByID(ctx context.Context, id string) (*model.Order, error)
 	UpdateStatus(ctx context.Context, tx *gorm.DB, id string, status model.OrderStatus) error
+	List(ctx context.Context, status model.OrderStatus) ([]model.Order, error)
 }
 
 type InventoryRepo interface {
@@ -42,6 +43,10 @@ func NewOrderService(
 		paymentSvc:    paymentSvc,
 		inventorySvc:  invSvc,
 	}
+}
+
+func (s *OrderService) ListAllOrders(ctx context.Context, status model.OrderStatus) ([]model.Order, error) {
+	return s.orderRepo.List(ctx, status)
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, userID uuid.UUID, req *model.Order) (*model.Order, error) {
