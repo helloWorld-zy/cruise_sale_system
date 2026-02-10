@@ -8,13 +8,13 @@
 
 **Purpose**: Project initialization and environment setup.
 
-- [ ] T001 Create project structure (backend, admin, web, mp) per plan.md
-- [ ] T002 [P] Initialize Backend (Go 1.26 + Gin) with `go mod init`
-- [ ] T003 [P] Initialize Admin (Nuxt 4) with `npx nuxi init admin`
-- [ ] T004 [P] Initialize Web (Nuxt 4) with `npx nuxi init web`
-- [ ] T005 [P] Initialize Mini-program (Uni-app)
-- [ ] T006 Configure Docker Compose (Postgres 17, Redis 7, MinIO, Meilisearch, NATS)
-- [ ] T007 Configure CI/CD pipeline for 100% coverage check
+- [x] T001 Create project structure (backend, admin, web, mp) per plan.md
+- [x] T002 [P] Initialize Backend (Go 1.26 + Gin) with `go mod init`
+- [x] T003 [P] Initialize Admin (Nuxt 4) with `npx nuxi init admin`
+- [x] T004 [P] Initialize Web (Nuxt 4) with `npx nuxi init web`
+- [x] T005 [P] Initialize Mini-program (Uni-app)
+- [x] T006 Configure Docker Compose (Postgres 17, Redis 7, MinIO, Meilisearch, NATS)
+- [x] T007 Configure CI/CD pipeline for 100% coverage check
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 

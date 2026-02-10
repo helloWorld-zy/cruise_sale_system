@@ -1,0 +1,20 @@
+{
+  "name": "admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "nuxt": "latest",
+    "vue": "latest",
+    "vue-router": "latest",
+    "@nuxt/ui": "latest",
+    "@pinia/nuxt": "latest",
+    "pinia": "latest"
+  }
+}

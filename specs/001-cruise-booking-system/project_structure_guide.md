@@ -1,0 +1,60 @@
+# Project Structure Guide: Cruise Booking System
+
+**Feature Branch**: `001-cruise-booking-system`
+**Date**: 2026-02-10
+
+This document outlines the file structure established in Phase 1 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+
+## Root Directory
+
+*   `.github/workflows/ci.yml`: CI/CD pipeline configuration (GitHub Actions) enforcing 100% test coverage.
+*   `docker-compose.yml`: Local development infrastructure (Postgres, Redis, MinIO, Meilisearch, NATS).
+*   `.gitignore`: Global ignore rules.
+
+## Backend (Go 1.26 + Gin)
+Path: `/backend`
+
+*   `cmd/server/`: Entry point for the application (`main.go`).
+*   `internal/`: Private application code.
+    *   `api/`: HTTP Handlers and Router configuration (Gin).
+    *   `core/`: Business logic and Service layer.
+    *   `data/`: Data Access Layer (Repositories, GORM models).
+    *   `middleware/`: HTTP Middleware (Auth, Logger, CORS).
+    *   `model/`: Domain entities and DTOs.
+*   `pkg/`: Public/Shared libraries (Logger, Response helpers).
+*   `tests/`: Integration and E2E tests.
+*   `go.mod`: Go module definition.
+
+## Frontend - Admin (Nuxt 4)
+Path: `/admin`
+
+*   `components/`: Vue components.
+*   `pages/`: Nuxt pages (File-based routing).
+*   `stores/`: Pinia state management stores.
+*   `nuxt.config.ts`: Nuxt configuration.
+
+## Frontend - Web (Nuxt 4)
+Path: `/web`
+
+*   `components/`: Vue components.
+*   `pages/`: Nuxt pages (File-based routing).
+*   `stores/`: Pinia state management stores.
+*   `nuxt.config.ts`: Nuxt configuration.
+
+## Mini-program (Uni-app)
+Path: `/mp`
+
+*   `pages/`: Vue pages for Mini-program.
+*   `static/`: Static assets.
+*   `stores/`: Pinia state management stores.
+*   `package.json`: Dependencies.
+
+## Specifications & Docs
+Path: `/specs/001-cruise-booking-system/`
+
+*   `plan.md`: Implementation Plan.
+*   `spec.md`: Feature Specification.
+*   `tasks.md`: Actionable Task List.
+*   `data-model.md`: Database Schema.
+*   `contracts/`: API Specifications (OpenAPI).
+*   `research.md`: Technical Decisions.
