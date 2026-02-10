@@ -34,18 +34,18 @@
 **Independent Test**: Public user visits home, filters by date, views cruise details.
 
 ### Implementation
-- [ ] T015 [P] [US1] Create Cruise & CabinType models in `backend/internal/model/cruise.go`
-- [ ] T016 [P] [US1] Create Facility model in `backend/internal/model/facility.go`
-- [ ] T017 [US1] Implement CruiseRepository (List/Get) in `backend/internal/data/cruise_repo.go`
-- [ ] T018 [US1] Implement CruiseService (Filter logic) in `backend/internal/core/cruise_service.go`
-- [ ] T019 [US1] Implement API Handlers (GET /cruises, /cruises/:id) in `backend/internal/api/v1/cruise.go`
-- [ ] T020 [P] [US1] Implement Cruise List page in Web `web/pages/cruises/index.vue`
-- [ ] T021 [P] [US1] Implement Cruise Detail page in Web `web/pages/cruises/[id].vue`
-- [ ] T022 [P] [US1] Implement Cruise List/Detail in MP `mp/pages/cruises/`
+- [x] T015 [P] [US1] Create Cruise & CabinType models in `backend/internal/model/cruise.go`
+- [x] T016 [P] [US1] Create Facility model in `backend/internal/model/facility.go`
+- [x] T017 [US1] Implement CruiseRepository (List/Get) in `backend/internal/data/cruise_repo.go`
+- [x] T018 [US1] Implement CruiseService (Filter logic) in `backend/internal/core/cruise_service.go`
+- [x] T019 [US1] Implement API Handlers (GET /cruises, /cruises/:id) in `backend/internal/api/v1/cruise.go`
+- [x] T020 [P] [US1] Implement Cruise List page in Web `web/pages/cruises/index.vue`
+- [x] T021 [P] [US1] Implement Cruise Detail page in Web `web/pages/cruises/[id].vue`
+- [x] T022 [P] [US1] Implement Cruise List/Detail in MP `mp/pages/cruises/`
 
 ### Tests
-- [ ] T023 [P] [US1] Unit Test CruiseService in `backend/tests/unit/cruise_service_test.go`
-- [ ] T024 [P] [US1] E2E Test Browser Flow in `web/tests/e2e/browse.spec.ts`
+- [x] T023 [P] [US1] Unit Test CruiseService in `backend/tests/unit/cruise_service_test.go`
+- [x] T024 [P] [US1] E2E Test Browser Flow in `web/tests/e2e/browse.spec.ts`
 
 ## Phase 4: User Story 2 - Booking & Checkout (Priority: P1)
 
