@@ -12,6 +12,9 @@ type CruiseRepo interface {
 	List(ctx context.Context, filter data.CruiseFilter) ([]model.Cruise, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Cruise, error)
 	GetCabinTypes(ctx context.Context, cruiseID uuid.UUID) ([]model.CabinType, error)
+	Create(ctx context.Context, cruise *model.Cruise) error
+	Update(ctx context.Context, cruise *model.Cruise) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type CruiseService struct {
@@ -28,6 +31,23 @@ func (s *CruiseService) ListCruises(ctx context.Context, destination, date strin
 		Date:        date,
 	}
 	return s.repo.List(ctx, filter)
+}
+
+func (s *CruiseService) CreateCruise(ctx context.Context, cruise *model.Cruise) error {
+	cruise.ID = uuid.New() // Ensure ID is generated
+	return s.repo.Create(ctx, cruise)
+}
+
+func (s *CruiseService) UpdateCruise(ctx context.Context, cruise *model.Cruise) error {
+	return s.repo.Update(ctx, cruise)
+}
+
+func (s *CruiseService) DeleteCruise(ctx context.Context, idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
+	return s.repo.Delete(ctx, id)
 }
 
 type CruiseDetail struct {

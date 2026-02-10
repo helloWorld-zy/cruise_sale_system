@@ -82,3 +82,31 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		"payment_url": payURL,
 	})
 }
+
+func (h *OrderHandler) ListMine(c *gin.Context) {
+	userIDStr := c.GetString("userID")
+	if userIDStr == "" {
+		// For dev/test without auth
+		userIDStr = uuid.New().String() 
+	}
+	userID, _ := uuid.Parse(userIDStr)
+
+	orders, err := h.orderSvc.ListUserOrders(c.Request.Context(), userID)
+	if err != nil {
+		response.ServerError(c, err)
+		return
+	}
+	response.Success(c, orders)
+}
+
+func (h *OrderHandler) Cancel(c *gin.Context) {
+	id := c.Param("id")
+	userIDStr := c.GetString("userID")
+	userID, _ := uuid.Parse(userIDStr)
+
+	if err := h.orderSvc.CancelOrder(c.Request.Context(), userID, id); err != nil {
+		response.ServerError(c, err)
+		return
+	}
+	response.Success(c, nil)
+}

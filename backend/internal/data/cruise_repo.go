@@ -48,3 +48,15 @@ func (r *CruiseRepository) GetCabinTypes(ctx context.Context, cruiseID uuid.UUID
 	}
 	return cabinTypes, nil
 }
+
+func (r *CruiseRepository) Create(ctx context.Context, cruise *model.Cruise) error {
+	return DB.WithContext(ctx).Create(cruise).Error
+}
+
+func (r *CruiseRepository) Update(ctx context.Context, cruise *model.Cruise) error {
+	return DB.WithContext(ctx).Save(cruise).Error
+}
+
+func (r *CruiseRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return DB.WithContext(ctx).Delete(&model.Cruise{}, "id = ?", id).Error
+}

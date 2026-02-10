@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1-4 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-6 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -18,19 +18,24 @@ Path: `/backend`
 *   `internal/`: Private application code.
     *   `api/`: HTTP Handlers and Router configuration (Gin).
         *   `v1/`: API Version 1.
+            *   `admin/`: Admin Handlers.
+                *   `cruise.go`: Admin Cruise CRUD.
+                *   `voyage.go`: Admin Voyage/Inventory.
             *   `cruise.go`: Cruise Listing/Detail handlers.
-            *   `order.go`: Booking handlers.
+            *   `order.go`: Booking & User Order handlers.
     *   `core/`: Business logic and Service layer.
         *   `cruise_service.go`: Logic for searching cruises.
         *   `inventory_service.go`: Logic for inventory and locking.
-        *   `order_service.go`: Logic for creating orders.
+        *   `order_service.go`: Logic for creating and cancelling orders.
         *   `payment_service.go`: Logic for payments.
+        *   `voyage_service.go`: Logic for voyages.
     *   `data/`: Data Access Layer.
         *   `db.go`: GORM connection.
         *   `redis.go`: Redis connection.
         *   `cruise_repo.go`: DB operations for Cruises.
         *   `inventory_repo.go`: DB operations for Inventory.
         *   `order_repo.go`: DB operations for Orders.
+        *   `voyage_repo.go`: DB operations for Voyages.
     *   `middleware/`: HTTP Middleware.
         *   `auth.go`: JWT Authentication middleware.
         *   `casbin.go`: RBAC Authorization middleware.
@@ -48,8 +53,10 @@ Path: `/backend`
         *   `middleware_test.go`: Auth/Middleware tests.
         *   `cruise_service_test.go`: Logic tests for CruiseService.
         *   `order_state_test.go`: Logic tests for Order state.
+        *   `cancellation_test.go`: Logic tests for Order cancellation.
     *   `integration/`: Integration tests.
         *   `inventory_test.go`: Locking tests.
+        *   `rbac_test.go`: Permission tests.
 *   `go.mod`: Go module definition.
 
 ## Frontend - Admin (Nuxt 4)
@@ -57,6 +64,10 @@ Path: `/admin`
 
 *   `components/`: Vue components.
 *   `pages/`: Nuxt pages (File-based routing).
+    *   `cruises/`: Cruise Management.
+        *   `index.vue`: List/Add.
+    *   `inventory/`: Inventory Management.
+        *   `index.vue`: Dashboard.
 *   `stores/`: Pinia state management stores.
 *   `nuxt.config.ts`: Nuxt configuration.
 
@@ -71,6 +82,8 @@ Path: `/web`
     *   `booking/`: Booking feature pages.
         *   `create.vue`: Booking form.
         *   `pay.vue`: Payment page.
+    *   `user/`: User feature pages.
+        *   `orders.vue`: My Orders page.
 *   `stores/`: Pinia state management stores.
 *   `nuxt.config.ts`: Nuxt configuration.
 
@@ -81,6 +94,8 @@ Path: `/mp`
     *   `cruises/`: Cruise feature pages.
         *   `index.vue`: List page.
         *   `detail.vue`: Detail page.
+    *   `user/`: User feature pages.
+        *   `orders.vue`: My Orders page.
 *   `static/`: Static assets.
 *   `stores/`: Pinia state management stores.
 *   `package.json`: Dependencies.

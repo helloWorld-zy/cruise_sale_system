@@ -39,3 +39,19 @@ func (r *InventoryRepository) Reserve(ctx context.Context, tx *gorm.DB, voyageID
 	}
 	return nil
 }
+
+func (r *InventoryRepository) Release(ctx context.Context, tx *gorm.DB, voyageID, cabinTypeID uuid.UUID, qty int) error {
+	result := tx.WithContext(ctx).Model(&model.Inventory{}).
+		Where("voyage_id = ? AND cabin_type_id = ?", voyageID, cabinTypeID).
+		Updates(map[string]interface{}{
+			"available_qty": gorm.Expr("available_qty + ?", qty),
+			"reserved_qty":  gorm.Expr("reserved_qty - ?", qty),
+		})
+	
+	return result.Error
+}
+
+func (r *InventoryRepository) Update(ctx context.Context, inv *model.Inventory) error {
+	// Upsert or Update
+	return DB.WithContext(ctx).Save(inv).Error
+}

@@ -70,21 +70,21 @@
 
 **Goal**: Users can view and manage their orders.
 
-- [ ] T035 [US3] Implement My Orders API (GET /orders/mine) in `backend/internal/api/v1/user_order.go`
-- [ ] T036 [US3] Implement Cancel Order logic in `backend/internal/core/order_service.go`
-- [ ] T037 [P] [US3] Implement My Orders Page in Web `web/pages/user/orders.vue`
-- [ ] T038 [P] [US3] Implement My Orders Page in MP `mp/pages/user/orders.vue`
-- [ ] T039 [P] [US3] Test Cancellation Policy Logic in `backend/tests/unit/cancellation_test.go`
+- [x] T035 [US3] Implement My Orders API (GET /orders/mine) in `backend/internal/api/v1/order.go`
+- [x] T036 [US3] Implement Cancel Order logic in `backend/internal/core/order_service.go`
+- [x] T037 [P] [US3] Implement My Orders Page in Web `web/pages/user/orders.vue`
+- [x] T038 [P] [US3] Implement My Orders Page in MP `mp/pages/user/orders.vue`
+- [x] T039 [P] [US3] Test Cancellation Policy Logic in `backend/tests/unit/cancellation_test.go`
 
 ## Phase 6: User Story 4 - Admin Content & Inventory (Priority: P1)
 
 **Goal**: Admins can manage cruises and inventory.
 
-- [ ] T040 [US4] Implement Admin Cruise CRUD API in `backend/internal/api/v1/admin/cruise.go`
-- [ ] T041 [US4] Implement Admin Inventory/Voyage API in `backend/internal/api/v1/admin/voyage.go`
-- [ ] T042 [P] [US4] Implement Admin Cruise Management UI in `admin/pages/cruises/index.vue`
-- [ ] T043 [P] [US4] Implement Admin Inventory Dashboard in `admin/pages/inventory/index.vue`
-- [ ] T044 [P] [US4] Test Admin Permissions in `backend/tests/integration/rbac_test.go`
+- [x] T040 [US4] Implement Admin Cruise CRUD API in `backend/internal/api/v1/admin/cruise.go`
+- [x] T041 [US4] Implement Admin Inventory/Voyage API in `backend/internal/api/v1/admin/voyage.go`
+- [x] T042 [P] [US4] Implement Admin Cruise Management UI in `admin/pages/cruises/index.vue`
+- [x] T043 [P] [US4] Implement Admin Inventory Dashboard in `admin/pages/inventory/index.vue`
+- [x] T044 [P] [US4] Test Admin Permissions in `backend/tests/integration/rbac_test.go`
 
 ## Phase 7: User Story 5 - Admin Order & Finance (Priority: P2)
 
