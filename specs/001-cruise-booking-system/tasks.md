@@ -122,9 +122,9 @@
 
 **Goal**: Reviews and Sharing.
 
-- [ ] T057 [US8] Implement Review Model & API in `backend/internal/api/v1/review.go`
-- [ ] T058 [US8] Implement Poster Generation Service in `backend/pkg/image/poster.go`
-- [ ] T059 [P] [US8] Add Review Section to Cruise Detail `web/components/Reviews.vue`
+- [x] T057 [US8] Implement Review Model & API in `backend/internal/api/v1/review.go`
+- [x] T058 [US8] Implement Poster Generation Service in `backend/pkg/image/poster.go`
+- [x] T059 [P] [US8] Add Review Section to Cruise Detail `web/components/Reviews.vue`
 
 ## Phase 12: Polish & Cross-Cutting
 

@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1-10 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-11 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -58,10 +58,12 @@ Path: `/backend`
         *   `inventory.go`: Voyage, Cabin, Inventory models.
         *   `order.go`: Order, OrderItem, Passenger models.
         *   `excursion.go`: Shore Excursion models.
+        *   `review.go`: User Reviews.
 *   `pkg/`: Public/Shared libraries.
         *   `logger/`: Centralized Zap logger.
         *   `response/`: Standard API response structure.
         *   `storage/`: File upload utilities.
+        *   `image/`: Image generation (Poster).
 *   `tests/`: Integration and E2E tests.
     *   `unit/`: Unit tests.
         *   `middleware_test.go`: Auth/Middleware tests.
@@ -94,6 +96,7 @@ Path: `/web`
 
 *   `components/`: Vue components.
     *   `Recommendations.vue`: AI Recommendation list.
+    *   `Reviews.vue`: User Reviews list.
 *   `pages/`: Nuxt pages (File-based routing).
     *   `cruises/`: Cruise feature pages.
         *   `index.vue`: List/Search page.
