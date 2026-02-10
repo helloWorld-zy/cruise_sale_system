@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: Cruise Booking System API
+  version: 1.0.0
+  description: API for managing cruises, bookings, and orders.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development
+
+paths:
+  /auth/login:
+    post:
+      summary: User Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /cruises:
+    get:
+      summary: List Cruises
+      parameters:
+        - name: destination
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of cruises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cruise'
+
+  /cruises/{id}:
+    get:
+      summary: Get Cruise Detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detailed info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CruiseDetail'
+
+  /orders:
+    post:
+      summary: Create Booking Order
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order_id:
+                    type: string
+                  payment_url:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Cruise:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        min_price:
+          type: number
+    
+    CruiseDetail:
+      allOf:
+        - $ref: '#/components/schemas/Cruise'
+        - type: object
+          properties:
+            cabins:
+              type: array
+              items:
+                $ref: '#/components/schemas/CabinType'
+
+    CabinType:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        capacity:
+          type: integer
+        price:
+          type: number
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        voyage_id:
+          type: string
+        cabin_type_id:
+          type: string
+        cabin_id:
+          type: string
+        passengers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passenger'
+
+    Passenger:
+      type: object
+      properties:
+        name:
+          type: string
+        doc_number:
+          type: string
