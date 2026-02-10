@@ -114,9 +114,9 @@
 
 **Goal**: Dynamic Pricing and Marketing.
 
-- [ ] T054 [US9] Implement Dynamic Pricing Rules Engine in `backend/internal/core/pricing_engine.go`
-- [ ] T055 [US9] Implement Marketing Trigger Service in `backend/internal/core/marketing.go`
-- [ ] T056 [P] [US9] Implement Pricing Rules UI in `admin/pages/marketing/pricing.vue`
+- [x] T054 [US9] Implement Dynamic Pricing Rules Engine in `backend/internal/core/pricing_engine.go`
+- [x] T055 [US9] Implement Marketing Trigger Service in `backend/internal/core/marketing.go`
+- [x] T056 [P] [US9] Implement Pricing Rules UI in `admin/pages/marketing/pricing.vue`
 
 ## Phase 11: User Story 8 - Social & Community (Priority: P3)
 
