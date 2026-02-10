@@ -104,15 +104,15 @@ As a user, I want smart recommendations, price trend analysis, and flexible paym
 
 ### User Story 7 - Post-Booking & Onboard Experience (Priority: P2)
 
-As a traveler, I want to book shore excursions, view my e-ticket, and receive real-time notifications about my trip to ensure a smooth journey.
+As a traveler, I want to book shore excursions, receive my Group Departure Notification, and receive real-time notifications about my trip to ensure a smooth journey.
 
 **Why this priority**: Extends value beyond the initial sale.
 
-**Independent Test**: Book an excursion add-on; Generate an E-ticket PDF; Simulate a WebSocket notification.
+**Independent Test**: Book an excursion add-on; Upload a departure notice as admin and verify user receipt; Simulate a WebSocket notification.
 
 **Acceptance Scenarios**:
 
-1. **Given** a confirmed booking, **When** the user clicks "Download Ticket", **Then** a PDF E-ticket with QR code is generated.
+1. **Given** a confirmed booking, **When** the admin uploads a "Departure Notification" PDF, **Then** the user receives a pop-up alert and can download the file from their order details.
 2. **Given** an upcoming port stop, **When** the user browses "Shore Excursions", **Then** available tours for that specific port/time are shown.
 3. **Given** a change in boarding time, **When** the system updates the schedule, **Then** a real-time notification is pushed to the user's device.
 
@@ -185,7 +185,7 @@ As an operations manager, I want dynamic pricing, CRM insights, and automated ma
 - **FR-024**: System MUST support Bulk/Group booking workflows.
 
 **Post-Booking & Interaction (Phase 2+)**
-- **FR-025**: System MUST generate PDF/QR E-tickets and support Shore Excursion bookings.
+- **FR-025**: System MUST allow administrators to upload "Departure Notification" files (PDF) for orders and notify users.
 - **FR-026**: System MUST provide specific "Countdown" and "Pre-trip Checklist" features.
 - **FR-027**: System MUST support Real-time WebSocket updates for inventory/status and Price Alerts.
 - **FR-028**: System MUST integrate AI Customer Service (FAQ) + Human handover.

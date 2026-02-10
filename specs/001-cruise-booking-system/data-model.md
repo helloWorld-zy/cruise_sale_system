@@ -82,6 +82,7 @@
 *   `status`: ENUM ('pending', 'paid', 'confirmed', 'cancelled', 'refunded', 'completed')
 *   `total_amount`: DECIMAL
 *   `currency`: VARCHAR
+*   `departure_notice_url`: VARCHAR (URL to uploaded PDF)
 *   `created_at`: TIMESTAMPTZ
 *   `expires_at`: TIMESTAMPTZ (Auto-cancel time)
 
