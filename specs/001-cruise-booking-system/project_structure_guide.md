@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1, 2 & 3 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-4 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -19,11 +19,18 @@ Path: `/backend`
     *   `api/`: HTTP Handlers and Router configuration (Gin).
         *   `v1/`: API Version 1.
             *   `cruise.go`: Cruise Listing/Detail handlers.
+            *   `order.go`: Booking handlers.
     *   `core/`: Business logic and Service layer.
-        *   `cruise_service.go`: Logic for searching cruises and details.
+        *   `cruise_service.go`: Logic for searching cruises.
+        *   `inventory_service.go`: Logic for inventory and locking.
+        *   `order_service.go`: Logic for creating orders.
+        *   `payment_service.go`: Logic for payments.
     *   `data/`: Data Access Layer.
-        *   `db.go`: GORM connection and migration logic.
+        *   `db.go`: GORM connection.
+        *   `redis.go`: Redis connection.
         *   `cruise_repo.go`: DB operations for Cruises.
+        *   `inventory_repo.go`: DB operations for Inventory.
+        *   `order_repo.go`: DB operations for Orders.
     *   `middleware/`: HTTP Middleware.
         *   `auth.go`: JWT Authentication middleware.
         *   `casbin.go`: RBAC Authorization middleware.
@@ -31,6 +38,8 @@ Path: `/backend`
         *   `user.go`: User and Staff models.
         *   `cruise.go`: Cruise and CabinType models.
         *   `facility.go`: Facility model.
+        *   `inventory.go`: Voyage, Cabin, Inventory models.
+        *   `order.go`: Order, OrderItem, Passenger models.
 *   `pkg/`: Public/Shared libraries.
         *   `logger/`: Centralized Zap logger.
         *   `response/`: Standard API response structure.
@@ -38,6 +47,9 @@ Path: `/backend`
     *   `unit/`: Unit tests.
         *   `middleware_test.go`: Auth/Middleware tests.
         *   `cruise_service_test.go`: Logic tests for CruiseService.
+        *   `order_state_test.go`: Logic tests for Order state.
+    *   `integration/`: Integration tests.
+        *   `inventory_test.go`: Locking tests.
 *   `go.mod`: Go module definition.
 
 ## Frontend - Admin (Nuxt 4)
@@ -56,6 +68,9 @@ Path: `/web`
     *   `cruises/`: Cruise feature pages.
         *   `index.vue`: List/Search page.
         *   `[id].vue`: Detail page.
+    *   `booking/`: Booking feature pages.
+        *   `create.vue`: Booking form.
+        *   `pay.vue`: Payment page.
 *   `stores/`: Pinia state management stores.
 *   `nuxt.config.ts`: Nuxt configuration.
 

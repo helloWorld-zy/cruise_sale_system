@@ -53,18 +53,18 @@
 **Independent Test**: User selects cabin -> Locks inventory -> Pays -> Order Confirmed.
 
 ### Implementation
-- [ ] T025 [P] [US2] Create Voyage, Cabin, Inventory models in `backend/internal/model/inventory.go`
-- [ ] T026 [P] [US2] Create Order, OrderItem, Passenger models in `backend/internal/model/order.go`
-- [ ] T027 [US2] Implement InventoryService (Lock/Unlock/Check) in `backend/internal/core/inventory_service.go`
-- [ ] T028 [US2] Implement OrderService (Create/Update Status) in `backend/internal/core/order_service.go`
-- [ ] T029 [US2] Implement PaymentService (Mock/WeChat) in `backend/internal/core/payment_service.go`
-- [ ] T030 [US2] Implement Booking API (POST /orders) in `backend/internal/api/v1/order.go`
-- [ ] T031 [P] [US2] Implement Booking Form (Passenger Input) in Web `web/pages/booking/create.vue`
-- [ ] T032 [P] [US2] Implement Payment Page in Web `web/pages/booking/pay.vue`
+- [x] T025 [P] [US2] Create Voyage, Cabin, Inventory models in `backend/internal/model/inventory.go`
+- [x] T026 [P] [US2] Create Order, OrderItem, Passenger models in `backend/internal/model/order.go`
+- [x] T027 [US2] Implement InventoryService (Lock/Unlock/Check) in `backend/internal/core/inventory_service.go`
+- [x] T028 [US2] Implement OrderService (Create/Update Status) in `backend/internal/core/order_service.go`
+- [x] T029 [US2] Implement PaymentService (Mock/WeChat) in `backend/internal/core/payment_service.go`
+- [x] T030 [US2] Implement Booking API (POST /orders) in `backend/internal/api/v1/order.go`
+- [x] T031 [P] [US2] Implement Booking Form (Passenger Input) in Web `web/pages/booking/create.vue`
+- [x] T032 [P] [US2] Implement Payment Page in Web `web/pages/booking/pay.vue`
 
 ### Tests
-- [ ] T033 [P] [US2] Integration Test Locking Mechanism in `backend/tests/integration/inventory_test.go`
-- [ ] T034 [P] [US2] Unit Test Order State Machine in `backend/tests/unit/order_state_test.go`
+- [x] T033 [P] [US2] Integration Test Locking Mechanism in `backend/tests/integration/inventory_test.go`
+- [x] T034 [P] [US2] Unit Test Order State Machine in `backend/tests/unit/order_state_test.go`
 
 ## Phase 5: User Story 3 - User Order Management (Priority: P1)
 
