@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1-8 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-9 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -21,27 +21,31 @@ Path: `/backend`
             *   `admin/`: Admin Handlers.
                 *   `cruise.go`: Admin Cruise CRUD.
                 *   `voyage.go`: Admin Voyage/Inventory.
-                *   `order.go`: Admin Order List/Detail.
+                *   `order.go`: Admin Order List/Detail/Upload.
             *   `cruise.go`: Cruise Listing/Detail handlers.
             *   `order.go`: Booking & User Order handlers.
             *   `price_trend.go`: Price Trend Analysis.
             *   `recommendation.go`: AI Recommendations.
+            *   `excursion.go`: Shore Excursions.
     *   `core/`: Business logic and Service layer.
         *   `cruise_service.go`: Logic for searching cruises.
         *   `inventory_service.go`: Logic for inventory and locking.
-        *   `order_service.go`: Logic for creating and cancelling orders.
+        *   `order_service.go`: Logic for creating/cancelling orders and notices.
         *   `payment_service.go`: Logic for payments.
         *   `voyage_service.go`: Logic for voyages.
         *   `report_service.go`: Financial reporting logic.
         *   `recommendation.go`: Recommendation logic.
         *   `trend_service.go`: Price trend logic.
+        *   `excursion_service.go`: Shore excursion logic.
     *   `data/`: Data Access Layer.
         *   `db.go`: GORM connection.
         *   `redis.go`: Redis connection.
+        *   `minio.go`: MinIO connection.
         *   `cruise_repo.go`: DB operations for Cruises.
         *   `inventory_repo.go`: DB operations for Inventory.
         *   `order_repo.go`: DB operations for Orders.
         *   `voyage_repo.go`: DB operations for Voyages.
+        *   `excursion_repo.go`: DB operations for Excursions.
     *   `middleware/`: HTTP Middleware.
         *   `auth.go`: JWT Authentication middleware.
         *   `casbin.go`: RBAC Authorization middleware.
@@ -51,9 +55,11 @@ Path: `/backend`
         *   `facility.go`: Facility model.
         *   `inventory.go`: Voyage, Cabin, Inventory models.
         *   `order.go`: Order, OrderItem, Passenger models.
+        *   `excursion.go`: Shore Excursion models.
 *   `pkg/`: Public/Shared libraries.
         *   `logger/`: Centralized Zap logger.
         *   `response/`: Standard API response structure.
+        *   `storage/`: File upload utilities.
 *   `tests/`: Integration and E2E tests.
     *   `unit/`: Unit tests.
         *   `middleware_test.go`: Auth/Middleware tests.
@@ -93,6 +99,7 @@ Path: `/web`
         *   `pay.vue`: Payment page.
     *   `user/`: User feature pages.
         *   `orders.vue`: My Orders page.
+        *   `order_detail.vue`: Order Detail & Notice Download.
 *   `stores/`: Pinia state management stores.
 *   `nuxt.config.ts`: Nuxt configuration.
 

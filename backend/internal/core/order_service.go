@@ -17,6 +17,7 @@ type OrderRepo interface {
 	GetByID(ctx context.Context, id string) (*model.Order, error)
 	UpdateStatus(ctx context.Context, tx *gorm.DB, id string, status model.OrderStatus) error
 	List(ctx context.Context, status model.OrderStatus) ([]model.Order, error)
+	Update(ctx context.Context, order *model.Order) error
 }
 
 type InventoryRepo interface {
@@ -146,4 +147,13 @@ func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderI
 
 		return nil
 	})
+}
+
+func (s *OrderService) SetDepartureNotice(ctx context.Context, orderID string, url string) error {
+	order, err := s.orderRepo.GetByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	order.DepartureNoticeURL = url
+	return s.orderRepo.Update(ctx, order)
 }

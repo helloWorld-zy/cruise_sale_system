@@ -53,6 +53,10 @@ func (r *OrderRepository) List(ctx context.Context, status model.OrderStatus) ([
 	return orders, nil
 }
 
+func (r *OrderRepository) Update(ctx context.Context, order *model.Order) error {
+	return DB.WithContext(ctx).Save(order).Error
+}
+
 func (r *OrderRepository) GetTotalRevenue(ctx context.Context) (float64, error) {
 	var total float64
 	// Sum total_amount where status = paid/confirmed/completed

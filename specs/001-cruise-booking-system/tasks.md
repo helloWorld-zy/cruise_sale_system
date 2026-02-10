@@ -106,9 +106,9 @@
 
 **Goal**: E-tickets and Shore Excursions.
 
-- [ ] T051 [US7] Implement Admin Upload API for Departure Notice in `backend/internal/api/v1/admin/order.go`
-- [ ] T052 [US7] Implement Shore Excursion Models & API in `backend/internal/api/v1/excursion.go`
-- [ ] T053 [P] [US7] Implement Departure Notice Pop-up & Download in Web `web/pages/user/order_detail.vue`
+- [x] T051 [US7] Implement Admin Upload API for Departure Notice in `backend/internal/api/v1/admin/order.go`
+- [x] T052 [US7] Implement Shore Excursion Models & API in `backend/internal/api/v1/excursion.go`
+- [x] T053 [P] [US7] Implement Departure Notice Pop-up & Download in Web `web/pages/user/order_detail.vue`
 
 ## Phase 10: User Story 9 - Intelligent Ops (Priority: P2)
 
