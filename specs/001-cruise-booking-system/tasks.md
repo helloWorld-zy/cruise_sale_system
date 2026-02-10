@@ -98,9 +98,9 @@
 
 **Goal**: Recommendations and Price Trends.
 
-- [ ] T048 [US6] Implement Recommendation Engine Stub in `backend/internal/core/recommendation.go`
-- [ ] T049 [US6] Implement Price Trend API in `backend/internal/api/v1/price_trend.go`
-- [ ] T050 [P] [US6] Add Recommendation Component to Web Home `web/components/Recommendations.vue`
+- [x] T048 [US6] Implement Recommendation Engine Stub in `backend/internal/core/recommendation.go`
+- [x] T049 [US6] Implement Price Trend API in `backend/internal/api/v1/price_trend.go`
+- [x] T050 [P] [US6] Add Recommendation Component to Web Home `web/components/Recommendations.vue`
 
 ## Phase 9: User Story 7 - Post-Booking Experience (Priority: P2)
 

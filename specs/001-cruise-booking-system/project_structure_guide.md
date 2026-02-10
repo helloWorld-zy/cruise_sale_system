@@ -3,7 +3,7 @@
 **Feature Branch**: `001-cruise-booking-system`
 **Date**: 2026-02-10
 
-This document outlines the file structure established in Phase 1-7 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
+This document outlines the file structure established in Phase 1-8 for the Cruise Booking System. Use this as a reference for locating modules and understanding the architectural layout.
 
 ## Root Directory
 
@@ -24,6 +24,8 @@ Path: `/backend`
                 *   `order.go`: Admin Order List/Detail.
             *   `cruise.go`: Cruise Listing/Detail handlers.
             *   `order.go`: Booking & User Order handlers.
+            *   `price_trend.go`: Price Trend Analysis.
+            *   `recommendation.go`: AI Recommendations.
     *   `core/`: Business logic and Service layer.
         *   `cruise_service.go`: Logic for searching cruises.
         *   `inventory_service.go`: Logic for inventory and locking.
@@ -31,6 +33,8 @@ Path: `/backend`
         *   `payment_service.go`: Logic for payments.
         *   `voyage_service.go`: Logic for voyages.
         *   `report_service.go`: Financial reporting logic.
+        *   `recommendation.go`: Recommendation logic.
+        *   `trend_service.go`: Price trend logic.
     *   `data/`: Data Access Layer.
         *   `db.go`: GORM connection.
         *   `redis.go`: Redis connection.
@@ -79,6 +83,7 @@ Path: `/admin`
 Path: `/web`
 
 *   `components/`: Vue components.
+    *   `Recommendations.vue`: AI Recommendation list.
 *   `pages/`: Nuxt pages (File-based routing).
     *   `cruises/`: Cruise feature pages.
         *   `index.vue`: List/Search page.
