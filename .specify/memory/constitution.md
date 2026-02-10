@@ -1,50 +1,57 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version Change: 0.0.0 -> 1.0.0
+- Added Principle: Uncompromising Quality (100% Test Coverage)
+- Added Principle: Technology Standardization (Mandatory Tech Stack)
+- Added Principle: API-First & Documentation
+- Added Principle: Phased Delivery
+- Governance: Initial ratification.
+- Templates: No immediate template changes required.
+-->
+
+# CruiseBooking Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Uncompromising Quality
+Test coverage must be **100%** for all codebases (Backend, Web, Mini-program). This is non-negotiable. CI pipelines will reject any merge request that falls below this threshold. Testing includes Unit, Integration, and E2E layers as defined in the Test Strategy.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Technology Standardization
+Adherence to the specified technology stack is mandatory.
+*   **Backend**: Go 1.26+, Gin, GORM, PostgreSQL 17, Redis 7.4.
+*   **Web Frontends**: Nuxt 4.3.0+, Vue 3.5+, Vite, Tailwind CSS v4.
+*   **Mini-program**: uni-app (Vue 3 mode).
+*   **Infrastructure**: Kubernetes, Docker, MinIO.
+Any deviation must be formally approved via constitution amendment.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. API-First & Documentation
+All backend interfaces must follow RESTful standards and provide up-to-date Swagger/OpenAPI 3.1 documentation. API documentation is the source of truth for frontend-backend integration and must be auto-generated where possible.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Phased Delivery
+Development follows a strict phased approach:
+1.  **MVP**: Core Sales (Cruises, Cabins, Booking, Payment, Orders).
+2.  **V1.0**: Complete Experience (Shore excursions, e-tickets).
+3.  **V1.5**: Intelligent Features (AI, VR).
+4.  **V2.0**: Ecosystem (Community, Distribution).
+Features must not be implemented before their scheduled phase without explicit approval.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## Technical Standards
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Backend (Go)**:
+*   Framework: Gin v1.11.0
+*   ORM: GORM v2.x
+*   Search: Meilisearch
+*   Messaging: NATS JetStream
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Frontend (Nuxt/Vue)**:
+*   State Management: Pinia v3
+*   Language: TypeScript 5.9.x (Strict Mode)
+*   UI Libs: Nuxt UI v3 (Web), uni-ui (Mini-program)
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution governs the CruiseBooking project.
+*   **Amendments**: Changes to the tech stack or principles require a constitution amendment and version bump.
+*   **Compliance**: All PRs must be reviewed against these principles. Use the `check-prerequisites.ps1` script where applicable to ensure environment readiness.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-10 | **Last Amended**: 2026-02-10
