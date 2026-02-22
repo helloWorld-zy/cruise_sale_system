@@ -1,0 +1,37 @@
+# Casbin policy for CruiseBooking Admin API
+# Format: p, role, path_pattern, http_method
+#
+# Admin has full access to /api/v1/admin/*
+p, admin, /api/v1/admin/*, GET
+p, admin, /api/v1/admin/*, POST
+p, admin, /api/v1/admin/*, PUT
+p, admin, /api/v1/admin/*, PATCH
+p, admin, /api/v1/admin/*, DELETE
+
+# Editor can read and write resources but cannot manage staff
+p, editor, /api/v1/admin/cruises*, GET
+p, editor, /api/v1/admin/cruises*, POST
+p, editor, /api/v1/admin/cruises*, PUT
+p, editor, /api/v1/admin/cruises*, PATCH
+p, editor, /api/v1/admin/companies*, GET
+p, editor, /api/v1/admin/companies*, POST
+p, editor, /api/v1/admin/companies*, PUT
+p, editor, /api/v1/admin/companies*, PATCH
+p, editor, /api/v1/admin/cabin-types*, GET
+p, editor, /api/v1/admin/cabin-types*, POST
+p, editor, /api/v1/admin/cabin-types*, PUT
+p, editor, /api/v1/admin/cabin-types*, PATCH
+p, editor, /api/v1/admin/facilities*, GET
+p, editor, /api/v1/admin/facilities*, POST
+p, editor, /api/v1/admin/facilities*, PUT
+p, editor, /api/v1/admin/facilities*, PATCH
+
+# Viewer has read-only access
+p, viewer, /api/v1/admin/cruises*, GET
+p, viewer, /api/v1/admin/companies*, GET
+p, viewer, /api/v1/admin/cabin-types*, GET
+p, viewer, /api/v1/admin/facilities*, GET
+
+# Role inheritance: admin inherits editor, editor inherits viewer
+g, admin, editor
+g, editor, viewer

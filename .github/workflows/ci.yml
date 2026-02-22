@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+          cache: true
+      - name: Test backend
+        run: |
+          cd backend
+          go test ./... -coverprofile=coverage.out -covermode=atomic
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.out
+          flags: backend
+
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/admin/pnpm-lock.yaml
+      - name: Install deps
+        run: cd frontend/admin && pnpm install --frozen-lockfile
+      - name: Lint
+        run: cd frontend/admin && pnpm exec tsc --noEmit || true
+      - name: Test admin
+        run: cd frontend/admin && pnpm vitest run --coverage
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/web/pnpm-lock.yaml
+      - name: Install deps
+        run: cd frontend/web && pnpm install --frozen-lockfile
+      - name: Test web
+        run: cd frontend/web && pnpm vitest run --coverage
+
+  miniapp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/miniapp/pnpm-lock.yaml
+      - name: Install deps
+        run: cd frontend/miniapp && pnpm install --frozen-lockfile
+      - name: Test miniapp
+        run: cd frontend/miniapp && pnpm test

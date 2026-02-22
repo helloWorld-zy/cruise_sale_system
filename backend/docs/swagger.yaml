@@ -1,0 +1,38 @@
+basePath: /api/v1
+definitions:
+  github_com_cruisebooking_backend_internal_pkg_response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend API for CruiseBooking
+  title: CruiseBooking API
+  version: "1.0"
+paths:
+  /admin/cruises:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Cruise data
+        in: body
+        name: body
+        required: true
+        schema: {}
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      summary: Create cruise
+      tags:
+      - Cruise
+swagger: "2.0"

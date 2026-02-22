@@ -1,1 +1,42 @@
-docs/
+# Dependencies
+node_modules/
+dist/
+dist-ssr/
+.nuxt/
+.output/
+
+# Go
+bin/
+obj/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+cover.out
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# Temporary
+.air/
+tmp/
+coverage.out
