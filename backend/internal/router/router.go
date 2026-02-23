@@ -17,6 +17,9 @@ type Dependencies struct {
 	CabinType        *handler.CabinTypeHandler
 	FacilityCategory *handler.FacilityCategoryHandler
 	Facility         *handler.FacilityHandler
+	Route            *handler.RouteHandler
+	Voyage           *handler.VoyageHandler
+	Cabin            *handler.CabinHandler
 	Upload           *handler.UploadHandler
 	JWTSecret        string
 	Enforcer         *casbin.Enforcer
@@ -100,6 +103,11 @@ func Setup(deps Dependencies) *gin.Engine {
 	{
 		upload.POST("/image", deps.Upload.UploadImage)
 	}
+
+	// Route, Voyage, Cabin (Sprint 2)
+	admin.GET("/routes", deps.Route.List)
+	admin.GET("/voyages", deps.Voyage.List)
+	admin.GET("/cabins", deps.Cabin.List)
 
 	return r
 }
