@@ -1,0 +1,64 @@
+CREATE TABLE IF NOT EXISTS routes (
+  id BIGSERIAL PRIMARY KEY,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  status SMALLINT DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS voyages (
+  id BIGSERIAL PRIMARY KEY,
+  route_id BIGINT NOT NULL REFERENCES routes(id),
+  cruise_id BIGINT NOT NULL,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  depart_date TIMESTAMP NOT NULL,
+  return_date TIMESTAMP NOT NULL,
+  status SMALLINT DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cabin_skus (
+  id BIGSERIAL PRIMARY KEY,
+  voyage_id BIGINT NOT NULL REFERENCES voyages(id),
+  cabin_type_id BIGINT NOT NULL,
+  code VARCHAR(80) UNIQUE NOT NULL,
+  deck VARCHAR(20),
+  area DOUBLE PRECISION,
+  max_guests INT NOT NULL,
+  status SMALLINT DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cabin_prices (
+  id BIGSERIAL PRIMARY KEY,
+  cabin_sku_id BIGINT NOT NULL REFERENCES cabin_skus(id),
+  date TIMESTAMP NOT NULL,
+  occupancy INT NOT NULL,
+  price_cents BIGINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cabin_inventories (
+  id BIGSERIAL PRIMARY KEY,
+  cabin_sku_id BIGINT UNIQUE NOT NULL REFERENCES cabin_skus(id),
+  total INT NOT NULL,
+  locked INT NOT NULL DEFAULT 0,
+  sold INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inventory_logs (
+  id BIGSERIAL PRIMARY KEY,
+  cabin_sku_id BIGINT NOT NULL REFERENCES cabin_skus(id),
+  change INT NOT NULL,
+  reason VARCHAR(200) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_voyages_route_id ON voyages(route_id);
+CREATE INDEX IF NOT EXISTS idx_cabin_prices_sku_date ON cabin_prices(cabin_sku_id, date);
