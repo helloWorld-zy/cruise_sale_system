@@ -72,6 +72,11 @@ func main() {
 	facilityHandler := handler.NewFacilityHandler(facilitySvc)
 	uploadHandler := handler.NewUploadHandler()
 
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingSvc := service.NewBookingService(bookingRepo, nil, nil)
+	bookingHandler := handler.NewBookingHandler(bookingSvc)
+	userHandler := handler.NewUserHandler()
+
 	// 7. 初始化 Casbin RBAC 权限执行器
 	enforcer, err := casbinv2.NewEnforcer("rbac/model.conf", "rbac/policy.csv")
 	if err != nil {
@@ -87,6 +92,8 @@ func main() {
 		FacilityCategory: facilityCategoryHandler,
 		Facility:         facilityHandler,
 		Upload:           uploadHandler,
+		Booking:          bookingHandler,
+		User:             userHandler,
 		JWTSecret:        cfg.JWT.Secret,
 		Enforcer:         enforcer,
 	})

@@ -20,6 +20,8 @@ type Dependencies struct {
 	Route            *handler.RouteHandler            // 航线处理器
 	Voyage           *handler.VoyageHandler           // 航次处理器
 	Cabin            *handler.CabinHandler            // 舱房处理器
+	Booking          *handler.BookingHandler          // 订单处理器
+	User             *handler.UserHandler             // C端用户处理器
 	Upload           *handler.UploadHandler           // 文件上传处理器
 	JWTSecret        string                           // JWT 签名密钥
 	Enforcer         *casbin.Enforcer                 // Casbin RBAC 执行器
@@ -131,6 +133,20 @@ func Setup(deps Dependencies) *gin.Engine {
 		cabins.POST("/:id/inventory/adjust", deps.Cabin.AdjustInventory) // 调整库存
 		cabins.GET("/:id/prices", deps.Cabin.ListPrices)                 // 查询价格日历
 		cabins.POST("/:id/prices", deps.Cabin.UpsertPrice)               // 设置价格
+	}
+
+	// ------------------------------------------
+	// 小程序/Web C端 API（无需 admin 权限，部分需要 user auth）
+	// ------------------------------------------
+	users := api.Group("/users")
+	{
+		users.POST("/login", deps.User.Login)
+		users.GET("/profile", deps.User.Profile)
+	}
+
+	bookings := api.Group("/bookings")
+	{
+		bookings.POST("", deps.Booking.Create)
 	}
 
 	return r
