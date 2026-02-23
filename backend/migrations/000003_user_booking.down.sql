@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS cabin_holds;
+DROP TABLE IF EXISTS booking_passengers;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS passengers;
+DROP TABLE IF EXISTS users;
