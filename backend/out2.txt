@@ -1,0 +1,29 @@
+# runtime/cgo
+gcc_libinit_windows.c:6:2: 閿欒锛?error "don't use the cygwin compiler to build native Windows programs; use MinGW instead"
+    6 | #error "don't use the cygwin compiler to build native Windows programs; use MinGW instead"
+      |  ^~~~~
+gcc_libinit_windows.c: 鍦ㄥ嚱鏁扳€榑cgo_beginthread鈥欎腑:
+gcc_libinit_windows.c:198:49: 閿欒锛氫紶閫掆€楥reateThread鈥欑殑绗?3 涓弬鏁版椂鍦ㄤ笉鍏煎鐨勬寚閽堢被鍨嬮棿杞崲 [-Wincompatible-pointer-types]
+  198 |                 thandle = CreateThread(NULL, 0, func, arg, 0, NULL);
+      |                                                 ^~~~
+      |                                                 |
+      |                                                 long unsigned int (*)(void *)
+鍖呭惈浜庢枃浠?/usr/include/w32api/winbase.h:29,
+        浜?/usr/include/w32api/windows.h:70,
+        浜?gcc_libinit_windows.c:10:
+/usr/include/w32api/processthreadsapi.h:310:127: 闄勬敞锛歟xpected 鈥楲PTHREAD_START_ROUTINE鈥?{鎴栫О 鈥榰nsigned int (*)(void *)鈥檥 but argument is of type 鈥榣ong unsigned int (*)(void *)鈥?  310 |   WINBASEAPI HANDLE WINAPI CreateThread (LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
+      |                                                                                                        ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
+鍖呭惈浜庢枃浠?/usr/include/w32api/winbase.h:13:
+/usr/include/w32api/minwinbase.h:251:33: 闄勬敞锛氣€楲PTHREAD_START_ROUTINE鈥?declared here
+  251 |   typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~
+gcc_libinit_windows.c:212:69: 閿欒锛氭牸寮?鈥?lu鈥?expects argument of type 鈥榣ong unsigned int鈥? but argument 3 has type 鈥楧WORD鈥?{鎴栫О 鈥榰nsigned int鈥檥 [-Werror=format=]
+  212 |         fprintf(stderr, "runtime: failed to create new OS thread (%lu)\n", GetLastError());
+      |                                                                   ~~^      ~~~~~~~~~~~~~~
+      |                                                                     |      |
+      |                                                                     |      DWORD {鎴栫О unsigned int}
+      |                                                                     long unsigned int
+      |                                                                   %u
+FAIL	github.com/cruisebooking/backend/internal/repository [build failed]
+FAIL
+cc1锛氭墍鏈夌殑璀﹀憡閮借褰撲綔鏄敊璇?

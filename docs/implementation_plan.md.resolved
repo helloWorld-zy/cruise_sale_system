@@ -1,0 +1,257 @@
+# Sprint 2 全文件审计报告 & 整改方案
+
+> **审计结论：🔴 不通过 (REJECTED)**
+> 发现 **13 项违规**，包含 3 项 CRITICAL、4 项 HIGH、6 项 MEDIUM。必须全部修复后重新 Review。
+
+---
+
+## 审计清单逐项结果
+
+| # | 检查项 | 结果 | 严重级别 |
+|---|--------|------|----------|
+| 1 | 库存一致性：[CabinInventory](file:///d:/cruise_sale_system/backend/internal/domain/cabin.go#28-36) 并发更新 | 🔴 FAIL | CRITICAL |
+| 2 | Pricing Matrix [sameDay](file:///d:/cruise_sale_system/backend/internal/service/pricing_service.go#17-22) 时区风险 | 🔴 FAIL | HIGH |
+| 3 | Meilisearch 集成失败补偿 | 🔴 FAIL | CRITICAL |
+| 4 | SQL Migration `idx_cabin_prices_sku_date` 索引 | ✅ PASS | — |
+| 5 | Sprint 2 全部功能完成度 | 🔴 FAIL | CRITICAL |
+
+---
+
+## 发现的全部违规项
+
+### 🔴 CRITICAL-01：库存并发更新无任何保护
+
+> [!CAUTION]
+> `InventoryService.Adjust()` 使用 Read-Modify-Write 模式，两个并发请求可能同时读取 `Total=10`，各自减 2，最终结果为 8（应为 6）。在电商库存场景下这是致命缺陷。
+
+**文件**: [inventory_service.go](file:///d:/cruise_sale_system/backend/internal/service/inventory_service.go#L14-L23)
+
+```go
+// 当前实现 — 完全无并发保护
+func (s *InventoryService) Adjust(skuID int64, delta int) error {
+    inv, err := s.repo.GetBySKU(skuID)  // READ
+    // ...
+    inv.Total += delta                    // MODIFY
+    return s.repo.Update(&inv)            // WRITE — 覆盖式写入
+}
+```
+
+**整改方案**: 
+1. 在 [InventoryRepo](file:///d:/cruise_sale_system/backend/internal/service/inventory_service.go#5-9) 接口中新增 `AdjustAtomic(skuID int64, delta int) error`
+2. 用 SQL 原子操作 `UPDATE cabin_inventories SET total = total + ? WHERE cabin_sku_id = ? AND total + ? >= 0`
+3. 或使用 GORM 的乐观锁 (`gorm:"column:version"`) + `WHERE version = ?`
+4. 补充并发测试（goroutine 模拟竞争）
+
+---
+
+### 🔴 CRITICAL-02：Meilisearch 索引推送无失败补偿
+
+> [!CAUTION]
+> `MeiliIndexer.IndexCabin()` 是同步调用，且 `_ = task` 直接丢弃了任务 ID。如果 Meilisearch 宕机或网络故障，DB 事务已提交但搜索索引丢失，造成数据不一致。无重试、无补偿、无告警。
+
+**文件**: [meili.go](file:///d:/cruise_sale_system/backend/internal/pkg/search/meili.go#L11-L15)
+
+```go
+func (m *MeiliIndexer) IndexCabin(doc interface{}) error {
+    task, err := m.client.Index("cabins").AddDocuments([]interface{}{doc}, nil)
+    _ = task // ignore task for simple adapter  ← 丢弃了任务ID
+    return err
+}
+```
+
+**整改方案**:
+1. 将 Meilisearch 推送改为 **异步+重试** 模式（使用 channel 或 goroutine pool）
+2. 推送失败时记录到 `index_sync_failures` 表
+3. 添加定时补偿任务（cron job）扫描失败记录重新推送
+4. 在 [SearchService](file:///d:/cruise_sale_system/backend/internal/service/search_service.go#7-8) 中包装错误日志，不能用 `_ = task` 吞掉
+
+---
+
+### 🔴 CRITICAL-03：Sprint 2 功能完成度严重不足
+
+> [!CAUTION]
+> 对照 Sprint 2 计划，以下功能缺失或仅为空壳占位符：
+
+| 计划要求 | 实际状态 | 问题 |
+|----------|----------|------|
+| Route/Voyage/Cabin Admin **CRUD** (Create/Update/Delete) | 仅 List (GET)，无 POST/PUT/DELETE | 只做了 1/4 |
+| [VoyageHandler](file:///d:/cruise_sale_system/backend/internal/handler/voyage_handler.go#5-6) 依赖注入 | 空 struct，[List()](file:///d:/cruise_sale_system/backend/internal/repository/route_repo.go#15-19) 返回硬编码空数组 | 未连接 Service |
+| [CabinHandler](file:///d:/cruise_sale_system/backend/internal/handler/cabin_handler.go#5-6) 依赖注入 | 空 struct，[List()](file:///d:/cruise_sale_system/backend/internal/repository/route_repo.go#15-19) 返回硬编码空数组 | 未连接 Service |
+| Admin Cabin SKU 页面 | [cabins/index.vue](file:///d:/cruise_sale_system/frontend/admin/app/pages/cabins/index.vue) 仅 `<h1>Cabins</h1>` | 空壳 |
+| Admin Inventory 页面 | [cabins/inventory.vue](file:///d:/cruise_sale_system/frontend/admin/app/pages/cabins/inventory.vue) 仅 `<h1>Inventory</h1>` | 空壳 |
+| Web Cabin Detail 价格日历 | `[id].vue` 仅占位文字 | 空壳 |
+| Miniapp Cabin Detail | [detail.vue](file:///d:/cruise_sale_system/frontend/miniapp/pages/cabin/detail.vue) 仅 `<text>Cabin Detail</text>` | 空壳 |
+| 前端所有页面调用 API | 所有数据都是 **硬编码 mock** | 未接入后端 |
+| [InventoryLog](file:///d:/cruise_sale_system/backend/internal/domain/cabin.go#37-44) 记录 | 域模型定义了但 Service 从未写入日志 | 功能缺失 |
+| Admin 页面使用 Pinia store | 无任何 Pinia store | 架构不符 |
+
+---
+
+### 🟠 HIGH-01：[sameDay()](file:///d:/cruise_sale_system/backend/internal/service/pricing_service.go#17-22) 时区对比不安全
+
+**文件**: [pricing_service.go](file:///d:/cruise_sale_system/backend/internal/service/pricing_service.go#L17-L21)
+
+```go
+func sameDay(a, b time.Time) bool {
+    y1, m1, d1 := a.Date()  // 使用各自 time.Time 的 Location
+    y2, m2, d2 := b.Date()
+    return y1 == y2 && m1 == m2 && d1 == d2
+}
+```
+
+`a.Date()` 使用 `a` 自身的时区，`b.Date()` 使用 `b` 自身的时区。如果数据库返回 UTC 而前端传入 `Asia/Shanghai (+8)`，则 `2026-05-01 01:00 CST` vs `2026-04-30 17:00 UTC` 会被判定为不同日期。
+
+**整改方案**: 统一使用 UTC 对比：
+```go
+func sameDay(a, b time.Time) bool {
+    a, b = a.UTC(), b.UTC()
+    y1, m1, d1 := a.Date()
+    y2, m2, d2 := b.Date()
+    return y1 == y2 && m1 == m2 && d1 == d2
+}
+```
+
+---
+
+### 🟠 HIGH-02：`PricingService.FindPrice` 吞掉错误
+
+**文件**: [pricing_service.go](file:///d:/cruise_sale_system/backend/internal/service/pricing_service.go#L23-L24)
+
+```go
+func (s *PricingService) FindPrice(...) (int64, bool) {
+    list, _ := s.repo.ListBySKU(skuID)  // ← 错误被静默吞掉
+```
+
+数据库查询失败时返回 [(0, false)](file:///d:/cruise_sale_system/backend/internal/repository/route_repo.go#15-19)，调用方无法区分"无价格"和"数据库故障"。
+
+**整改方案**: 返回 [(int64, bool, error)](file:///d:/cruise_sale_system/backend/internal/repository/route_repo.go#15-19) 三元组，将错误向上传播。
+
+---
+
+### 🟠 HIGH-03：`RouteHandler.List` 和 `InventoryService.Adjust` 吞掉错误
+
+**文件**: [route_handler.go](file:///d:/cruise_sale_system/backend/internal/handler/route_handler.go#L17)
+
+```go
+list, _ = h.svc.List()  // ← 错误未处理
+```
+
+[inventory_service.go](file:///d:/cruise_sale_system/backend/internal/service/inventory_service.go#L19-L20):
+```go
+if inv.Total+delta < 0 { return nil }  // ← 库存不足应返回业务错误，而非 nil
+```
+
+**整改方案**: 所有 `_` 必须改为错误处理。库存不足应返回 `ErrInsufficientInventory`。
+
+---
+
+### 🟠 HIGH-04：Route/Voyage/Cabin Repository 不符合已有 DDD 规范
+
+**文件**: [repository.go](file:///d:/cruise_sale_system/backend/internal/domain/repository.go) vs [route_repo.go](file:///d:/cruise_sale_system/backend/internal/repository/route_repo.go)
+
+已有的 [CompanyRepository](file:///d:/cruise_sale_system/backend/internal/domain/repository.go#5-12)、[CruiseRepository](file:///d:/cruise_sale_system/backend/internal/domain/repository.go#13-20) 接口统一使用 `context.Context` 参数和完整 CRUD 签名。Sprint 2 的 Repository：
+- 无 `context.Context` 参数
+- 无 [GetByID](file:///d:/cruise_sale_system/backend/internal/domain/repository.go#24-25) / [Update](file:///d:/cruise_sale_system/backend/internal/domain/repository.go#7-8) / [Delete](file:///d:/cruise_sale_system/backend/internal/domain/repository.go#26-27) 方法
+- 接口未在 [domain/repository.go](file:///d:/cruise_sale_system/backend/internal/domain/repository.go) 中声明（违反 DDD 端口定义）
+
+**整改方案**: 按已有模式补全完整 CRUD 接口及 `ctx context.Context` 参数。
+
+---
+
+### 🟡 MEDIUM-01：测试覆盖率远未达到 100%
+
+| 层级 | 要求 100% 覆盖 | 实际 |
+|------|---------------|------|
+| `domain/` | Voyage, CabinSKU, CabinPrice, CabinInventory, InventoryLog 模型测试 | ❌ 仅 Route 一个测试 |
+| `repository/` | VoyageRepo, CabinRepo 测试 | ❌ 仅 RouteRepo 测试 |
+| `service/` | SearchService 错误路径、InventoryService 边界 | ❌ 仅 happy path |
+| `handler/` | VoyageHandler, CabinHandler 测试 | ❌ 仅 RouteHandler |
+| Admin 前端 | voyages, cabins/index, cabins/inventory 页面测试 | ❌ 仅 routes + pricing |
+| Web 前端 | `cabins/[id].vue` 测试 | ❌ 无 |
+| Miniapp | CabinCard, detail 测试 | ❌ 仅 list |
+
+---
+
+### 🟡 MEDIUM-02：迁移编号冲突
+
+**文件**: `backend/migrations/` 目录中存在两个 `000002_*` 前缀文件：
+- `000002_add_staff_roles.up.sql`
+- `000002_route_voyage_cabin.up.sql`
+
+这会导致 `golang-migrate` 运行时冲突报错。
+
+**整改方案**: Sprint 2 迁移应改为 `000003_route_voyage_cabin`.
+
+---
+
+### 🟡 MEDIUM-03：前端硬编码数据，未使用 `useApi` composable
+
+所有 Sprint 2 前端页面数据都是内联硬编码 (`const items = [...]`)，而项目已有 `useApi` composable（有对应测试）。应使用 `useFetch` / `useApi` 调用后端 API。
+
+---
+
+### 🟡 MEDIUM-04：`VoyageHandler` / `CabinHandler` 无依赖注入
+
+```go
+type VoyageHandler struct{}          // 空，无 Service 注入
+func NewVoyageHandler() *VoyageHandler  // 无参数
+```
+
+违反 DDD + 依赖注入要求。
+
+---
+
+### 🟡 MEDIUM-05：`RouteHandler.RouteService` 接口使用 `[]interface{}`
+
+```go
+type RouteService interface{ List() ([]interface{}, error) }
+```
+
+应返回 `[]domain.Route` 而非空接口切片。类型安全缺失。
+
+---
+
+### 🟡 MEDIUM-06：CI 中 Go 版本与 `go.mod` 不匹配
+
+CI 使用 `go-version: "1.23.x"`，但项目声明使用 **Go 1.26**。
+
+---
+
+## 整改优先级
+
+| 优先级 | 编号 | 预估工时 |
+|--------|------|----------|
+| P0-立即 | CRITICAL-01 (并发) | 2h |
+| P0-立即 | CRITICAL-02 (Meilisearch) | 2h |
+| P0-立即 | CRITICAL-03 (功能缺失) | 8h |
+| P1-高 | HIGH-01 (时区) | 0.5h |
+| P1-高 | HIGH-02 (吞错误) | 0.5h |
+| P1-高 | HIGH-03 (吞错误) | 0.5h |
+| P1-高 | HIGH-04 (DDD不符) | 2h |
+| P2-中 | MEDIUM-01~06 | 4h |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+修复完成后需运行以下全部通过：
+
+```bash
+# Backend - 全量测试 + 覆盖率
+cd d:\cruise_sale_system\backend && go test ./... -coverprofile=coverage.out -covermode=atomic -v
+
+# Admin 前端
+cd d:\cruise_sale_system\frontend\admin && pnpm vitest run --coverage
+
+# Web 前端
+cd d:\cruise_sale_system\frontend\web && pnpm vitest run --coverage
+
+# Miniapp 前端
+cd d:\cruise_sale_system\frontend\miniapp && pnpm test
+```
+
+### Manual Verification
+- 确认 `go tool cover -func=coverage.out` 显示所有 Sprint 2 文件达到 100% 覆盖率
+- 确认 `000003_route_voyage_cabin.up.sql` 能在 PostgreSQL 上正常 migrate up/down

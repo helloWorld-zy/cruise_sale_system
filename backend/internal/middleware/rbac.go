@@ -7,11 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RBAC checks that at least one of the caller's roles is permitted by Casbin policy.
-// It reads roles from gin context set by the JWT middleware (key: "roles").
+// RBAC 返回一个基于 Casbin 的角色访问控制中间件。
+// 该中间件检查调用者的角色是否被 Casbin 策略允许访问当前请求的路径和方法。
+// 角色信息从 gin 上下文中读取（由 JWT 中间件设置，键名为 "roles"）。
 func RBAC(enforcer *casbin.Enforcer) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// CR-02 FIX: read roles from context set by JWT middleware.
+		// CR-02 修复：从 JWT 中间件设置的上下文中读取角色列表
 		rolesVal, exists := c.Get(ContextKeyRoles)
 		if !exists {
 			c.AbortWithStatus(http.StatusForbidden)
@@ -24,9 +25,11 @@ func RBAC(enforcer *casbin.Enforcer) gin.HandlerFunc {
 			return
 		}
 
+		// 获取当前请求的资源路径和操作方法
 		obj := c.Request.URL.Path
 		act := c.Request.Method
 
+		// 检查是否有任一角色具有访问权限
 		for _, role := range roles {
 			allowed, err := enforcer.Enforce(role, obj, act)
 			if err == nil && allowed {
@@ -35,6 +38,7 @@ func RBAC(enforcer *casbin.Enforcer) gin.HandlerFunc {
 			}
 		}
 
+		// 所有角色均无权限，拒绝访问
 		c.AbortWithStatus(http.StatusForbidden)
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/cruisebooking/backend/internal/router"
 	"github.com/cruisebooking/backend/internal/service"
 
-	_ "github.com/cruisebooking/backend/docs" // Swagger generated docs
+	_ "github.com/cruisebooking/backend/docs" // 导入 Swagger 自动生成的文档
 )
 
 // @title CruiseBooking API
@@ -24,14 +24,14 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// 1. Load configuration (env vars override config.yaml)
+	// 1. 加载配置（环境变量可覆盖 config.yaml 中的配置项）
 	cfg := config.Load(".")
 
-	// 2. Initialize logger
+	// 2. 初始化日志记录器
 	appLogger := logger.New(cfg.Log.Level, cfg.Log.Filename)
 	defer func() { _ = appLogger.Sync() }()
 
-	// 3. Connect database
+	// 3. 连接数据库
 	db, err := database.Connect(database.Config{
 		Host:            cfg.Database.Host,
 		Port:            cfg.Database.Port,
@@ -44,10 +44,10 @@ func main() {
 		ConnMaxLifetime: cfg.Database.ConnMaxLifetime,
 	})
 	if err != nil {
-		log.Fatalf("database connection failed: %v", err)
+		log.Fatalf("数据库连接失败: %v", err)
 	}
 
-	// 4. Initialize repositories
+	// 4. 初始化数据仓储层
 	staffRepo := repository.NewStaffRepository(db)
 	companyRepo := repository.NewCompanyRepository(db)
 	cruiseRepo := repository.NewCruiseRepository(db)
@@ -55,7 +55,7 @@ func main() {
 	facilityCategoryRepo := repository.NewFacilityCategoryRepository(db)
 	facilityRepo := repository.NewFacilityRepository(db)
 
-	// 5. Initialize services
+	// 5. 初始化业务服务层
 	authSvc := service.NewAuthService(staffRepo, cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	companySvc := service.NewCompanyService(companyRepo, cruiseRepo)
 	cruiseSvc := service.NewCruiseService(cruiseRepo, cabinTypeRepo, companyRepo)
@@ -63,7 +63,7 @@ func main() {
 	facilityCategorySvc := service.NewFacilityCategoryService(facilityCategoryRepo)
 	facilitySvc := service.NewFacilityService(facilityRepo)
 
-	// 6. Initialize handlers
+	// 6. 初始化 HTTP 处理器层
 	authHandler := handler.NewAuthHandler(authSvc)
 	companyHandler := handler.NewCompanyHandler(companySvc)
 	cruiseHandler := handler.NewCruiseHandler(cruiseSvc)
@@ -72,13 +72,13 @@ func main() {
 	facilityHandler := handler.NewFacilityHandler(facilitySvc)
 	uploadHandler := handler.NewUploadHandler()
 
-	// 7. Initialize Casbin enforcer
+	// 7. 初始化 Casbin RBAC 权限执行器
 	enforcer, err := casbinv2.NewEnforcer("rbac/model.conf", "rbac/policy.csv")
 	if err != nil {
-		log.Fatalf("casbin enforcer init failed: %v", err)
+		log.Fatalf("Casbin 执行器初始化失败: %v", err)
 	}
 
-	// 8. Setup router and start server
+	// 8. 配置路由并启动 HTTP 服务器
 	r := router.Setup(router.Dependencies{
 		Auth:             authHandler,
 		Company:          companyHandler,
@@ -91,8 +91,8 @@ func main() {
 		Enforcer:         enforcer,
 	})
 
-	log.Printf("server starting on %s (mode: %s)", cfg.Server.Port, cfg.Server.Mode)
+	log.Printf("服务启动于 %s（模式: %s）", cfg.Server.Port, cfg.Server.Mode)
 	if err := r.Run(cfg.Server.Port); err != nil {
-		log.Fatalf("server failed: %v", err)
+		log.Fatalf("服务启动失败: %v", err)
 	}
 }

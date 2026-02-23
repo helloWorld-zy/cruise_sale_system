@@ -11,24 +11,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CompanyHandler handles CRUD for cruise companies.
-// CR-05: Handler now has proper DI via CompanyService.
+// CompanyHandler 处理邮轮公司的 CRUD 端点。
+// CR-05：通过 CompanyService 实现依赖注入。
 type CompanyHandler struct {
-	svc *service.CompanyService
+	svc *service.CompanyService // 邮轮公司服务
 }
 
-// NewCompanyHandler creates a CompanyHandler with injected service.
+// NewCompanyHandler 创建公司处理器，通过依赖注入传入服务。
 func NewCompanyHandler(svc *service.CompanyService) *CompanyHandler {
 	return &CompanyHandler{svc: svc}
 }
 
-// CompanyRequest is the create/update payload.
+// CompanyRequest 是创建/更新公司的请求体结构。
 type CompanyRequest struct {
-	Name        string `json:"name" binding:"required"`
-	EnglishName string `json:"english_name"`
-	Description string `json:"description"`
-	LogoURL     string `json:"logo_url"`
-	SortOrder   int    `json:"sort_order"`
+	Name        string `json:"name" binding:"required"` // 公司名称（必填）
+	EnglishName string `json:"english_name"`            // 英文名称
+	Description string `json:"description"`             // 公司描述
+	LogoURL     string `json:"logo_url"`                // Logo 图片地址
+	SortOrder   int    `json:"sort_order"`              // 排序权重
 }
 
 // List godoc
@@ -41,6 +41,7 @@ type CompanyRequest struct {
 // @Param page_size query int false "Page size" default(10)
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/companies [get]
+// List 分页查询邮轮公司列表，支持关键词搜索。
 func (h *CompanyHandler) List(c *gin.Context) {
 	keyword := c.Query("keyword")
 	page := queryInt(c, "page", 1)
@@ -63,6 +64,7 @@ func (h *CompanyHandler) List(c *gin.Context) {
 // @Param body body CompanyRequest true "Company data"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/companies [post]
+// Create 创建新的邮轮公司。
 func (h *CompanyHandler) Create(c *gin.Context) {
 	var req CompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -93,12 +95,14 @@ func (h *CompanyHandler) Create(c *gin.Context) {
 // @Param body body CompanyRequest true "Company data"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/companies/{id} [put]
+// Update 更新指定的邮轮公司信息。
 func (h *CompanyHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
+	// 查询现有公司数据
 	existing, err := h.svc.GetByID(c.Request.Context(), id)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, errcode.ErrNotFound, "company not found")
@@ -109,6 +113,7 @@ func (h *CompanyHandler) Update(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
+	// 更新字段
 	existing.Name = req.Name
 	existing.EnglishName = req.EnglishName
 	existing.Description = req.Description
@@ -128,6 +133,7 @@ func (h *CompanyHandler) Update(c *gin.Context) {
 // @Param id path int true "Company ID"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/companies/{id} [delete]
+// Delete 删除指定的邮轮公司。若公司下仍有邮轮则返回冲突错误。
 func (h *CompanyHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

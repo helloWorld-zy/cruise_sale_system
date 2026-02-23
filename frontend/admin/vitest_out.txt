@@ -1,0 +1,43 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/cruise_sale_system/frontend/admin[39m
+
+ [32m鉁?[39m tests/unit/composables/useApi.spec.ts[2m > [22museApi[2m > [22mexposes baseUrl[32m 3[2mms[22m[39m
+ [32m鉁?[39m tests/unit/pages/cruises-index.spec.ts[2m > [22mCruise list[2m > [22mrenders a table[32m 23[2mms[22m[39m
+ [31m脳[39m tests/unit/pages/login.spec.ts[2m > [22mLogin page[2m > [22mrenders login form[32m 19[2mms[22m[39m
+[31m   鈫?ref is not defined[39m
+ [31m脳[39m tests/unit/pages/login.spec.ts[2m > [22mLogin page[2m > [22mrenders username and password inputs[32m 3[2mms[22m[39m
+[31m   鈫?ref is not defined[39m
+ [32m鉁?[39m tests/unit/layouts/default.spec.ts[2m > [22mDefault layout[2m > [22mrenders a main content slot[32m 28[2mms[22m[39m
+ [32m鉁?[39m tests/unit/cabins.pricing.spec.ts[2m > [22mCabin Pricing Page[2m > [22mshows pricing title[32m 14[2mms[22m[39m
+ [32m鉁?[39m tests/unit/routes.list.spec.ts[2m > [22mAdmin Routes List[2m > [22mrenders title[32m 15[2mms[22m[39m
+
+鈳幆鈳幆鈳幆鈳?[39m Failed Tests 2 鈳幆鈳幆鈳幆鈳?[39m
+
+ FAIL  tests/unit/pages/login.spec.ts > Login page > renders login form
+ FAIL  tests/unit/pages/login.spec.ts > Login page > renders username and password inputs
+ReferenceError: ref is not defined
+ 鉂?[22m setup app/pages/login.vue:17:18
+     15| 
+     16| <script setup lang="ts">
+     17| const username = ref('')
+       |                  ^
+     18| const password = ref('')
+     19| const error = ref('')
+ 鉂?[22m callWithErrorHandling node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ 鉂?[22m setupStatefulComponent node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7999:25
+ 鉂?[22m setupComponent node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7961:36
+ 鉂?[22m mountComponent node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5903:7
+ 鉂?[22m processComponent node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5869:9
+ 鉂?[22m patch node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5386:11
+ 鉂?[22m ReactiveEffect.componentUpdateFn [as fn] node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6014:11
+ 鉂?[22m ReactiveEffect.run node_modules/.pnpm/@vue+reactivity@3.5.28/node_modules/@vue/reactivity/dist/reactivity.cjs.js:243:19
+ 鉂?[22m setupRenderEffect node_modules/.pnpm/@vue+runtime-core@3.5.28/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6142:5
+
+鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆鈳幆[1/2]鈳?[22m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 14:31:09
+[2m   Duration [22m 1.28s[2m (transform 594ms, setup 0ms, import 1.25s, tests 112ms, environment 4.64s)[22m
+

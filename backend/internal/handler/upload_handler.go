@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// queryInt reads a query param as int with a default fallback.
+// queryInt 从查询参数中读取整数值，若参数缺失或无效则返回默认值。
 func queryInt(c *gin.Context, key string, defaultVal int) int {
 	s := c.Query(key)
 	if s == "" {
@@ -20,7 +20,7 @@ func queryInt(c *gin.Context, key string, defaultVal int) int {
 	return v
 }
 
-// queryInt64 reads a query param as int64 with a default fallback.
+// queryInt64 从查询参数中读取 int64 值，若参数缺失或无效则返回默认值。
 func queryInt64(c *gin.Context, key string, defaultVal int64) int64 {
 	s := c.Query(key)
 	if s == "" {
@@ -33,15 +33,15 @@ func queryInt64(c *gin.Context, key string, defaultVal int64) int64 {
 	return v
 }
 
-// paramInt64 reads a path param as int64.
+// paramInt64 从路径参数中读取 int64 值。
 func paramInt64(c *gin.Context, key string) (int64, error) {
 	return strconv.ParseInt(c.Param(key), 10, 64)
 }
 
-// UploadHandler handles file uploads to MinIO (stub — full impl in Sprint 2).
+// UploadHandler 处理文件上传端点（当前为桩实现，完整的 MinIO 集成将在 Sprint 2 完成）。
 type UploadHandler struct{}
 
-// NewUploadHandler creates an UploadHandler.
+// NewUploadHandler 创建文件上传处理器实例。
 func NewUploadHandler() *UploadHandler {
 	return &UploadHandler{}
 }
@@ -55,7 +55,8 @@ func NewUploadHandler() *UploadHandler {
 // @Param file formData file true "Image file"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/upload/image [post]
+// UploadImage 上传图片到对象存储（当前为桩实现）。
 func (h *UploadHandler) UploadImage(c *gin.Context) {
-	// Stub: full MinIO integration will be implemented in Sprint 2.
+	// 桩实现：完整的 MinIO 集成将在 Sprint 2 中完成
 	c.JSON(http.StatusNotImplemented, gin.H{"code": 501, "message": "upload not yet implemented"})
 }

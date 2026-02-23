@@ -11,25 +11,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// FacilityHandler handles CRUD for facilities.
+// FacilityHandler 处理设施的 CRUD 端点。
 type FacilityHandler struct {
-	svc *service.FacilityService
+	svc *service.FacilityService // 设施服务
 }
 
-// NewFacilityHandler creates a handler with injected service.
+// NewFacilityHandler 创建设施处理器，通过依赖注入传入服务。
 func NewFacilityHandler(svc *service.FacilityService) *FacilityHandler {
 	return &FacilityHandler{svc: svc}
 }
 
-// FacilityRequest is the create/update payload.
+// FacilityRequest 是创建/更新设施的请求体结构。
 type FacilityRequest struct {
-	CategoryID  int64  `json:"category_id" binding:"required"`
-	CruiseID    int64  `json:"cruise_id" binding:"required"`
-	Name        string `json:"name" binding:"required"`
-	EnglishName string `json:"english_name"`
-	Location    string `json:"location"`
-	Description string `json:"description"`
-	SortOrder   int    `json:"sort_order"`
+	CategoryID  int64  `json:"category_id" binding:"required"` // 设施分类 ID（必填）
+	CruiseID    int64  `json:"cruise_id" binding:"required"`   // 所属邮轮 ID（必填）
+	Name        string `json:"name" binding:"required"`        // 设施名称（必填）
+	EnglishName string `json:"english_name"`                   // 英文名称
+	Location    string `json:"location"`                       // 设施位置
+	Description string `json:"description"`                    // 设施描述
+	SortOrder   int    `json:"sort_order"`                     // 排序权重
 }
 
 // ListByCruise godoc
@@ -39,6 +39,7 @@ type FacilityRequest struct {
 // @Param cruise_id query int true "Cruise ID"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facilities [get]
+// ListByCruise 查询指定邮轮下的所有设施。
 func (h *FacilityHandler) ListByCruise(c *gin.Context) {
 	cruiseID, err := strconv.ParseInt(c.Query("cruise_id"), 10, 64)
 	if err != nil || cruiseID <= 0 {
@@ -62,6 +63,7 @@ func (h *FacilityHandler) ListByCruise(c *gin.Context) {
 // @Param body body FacilityRequest true "Facility data"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facilities [post]
+// Create 创建新的设施。
 func (h *FacilityHandler) Create(c *gin.Context) {
 	var req FacilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -91,6 +93,7 @@ func (h *FacilityHandler) Create(c *gin.Context) {
 // @Param id path int true "Facility ID"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facilities/{id} [delete]
+// Delete 删除指定的设施。
 func (h *FacilityHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

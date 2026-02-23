@@ -11,21 +11,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// FacilityCategoryHandler handles CRUD for facility categories.
+// FacilityCategoryHandler 处理设施分类的 CRUD 端点。
 type FacilityCategoryHandler struct {
-	svc *service.FacilityCategoryService
+	svc *service.FacilityCategoryService // 设施分类服务
 }
 
-// NewFacilityCategoryHandler creates a handler with injected service.
+// NewFacilityCategoryHandler 创建设施分类处理器，通过依赖注入传入服务。
 func NewFacilityCategoryHandler(svc *service.FacilityCategoryService) *FacilityCategoryHandler {
 	return &FacilityCategoryHandler{svc: svc}
 }
 
-// FacilityCategoryRequest is the create payload.
+// FacilityCategoryRequest 是创建设施分类的请求体结构。
 type FacilityCategoryRequest struct {
-	Name      string `json:"name" binding:"required"`
-	Icon      string `json:"icon"`
-	SortOrder int    `json:"sort_order"`
+	Name      string `json:"name" binding:"required"` // 分类名称（必填）
+	Icon      string `json:"icon"`                    // 分类图标
+	SortOrder int    `json:"sort_order"`              // 排序权重
 }
 
 // List godoc
@@ -35,6 +35,7 @@ type FacilityCategoryRequest struct {
 // @Produce json
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facility-categories [get]
+// List 查询所有设施分类。
 func (h *FacilityCategoryHandler) List(c *gin.Context) {
 	items, err := h.svc.List(c.Request.Context())
 	if err != nil {
@@ -53,6 +54,7 @@ func (h *FacilityCategoryHandler) List(c *gin.Context) {
 // @Param body body FacilityCategoryRequest true "Category data"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facility-categories [post]
+// Create 创建新的设施分类。
 func (h *FacilityCategoryHandler) Create(c *gin.Context) {
 	var req FacilityCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -78,6 +80,7 @@ func (h *FacilityCategoryHandler) Create(c *gin.Context) {
 // @Param id path int true "Category ID"
 // @Success 200 {object} response.Response
 // @Router /api/v1/admin/facility-categories/{id} [delete]
+// Delete 删除指定的设施分类。
 func (h *FacilityCategoryHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

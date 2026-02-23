@@ -6,37 +6,38 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
-// CabinTypeService implements business logic for cabin types.
+// CabinTypeService 实现舱房类型相关的业务逻辑。
+// 提供舱房类型的 CRUD 操作。
 type CabinTypeService struct {
-	repo domain.CabinTypeRepository
+	repo domain.CabinTypeRepository // 舱房类型数据仓储
 }
 
-// NewCabinTypeService creates a CabinTypeService with injected repository.
+// NewCabinTypeService 创建舱房类型服务实例，通过依赖注入传入仓储。
 func NewCabinTypeService(repo domain.CabinTypeRepository) *CabinTypeService {
 	return &CabinTypeService{repo: repo}
 }
 
-// Create inserts a new CabinType. Validates that CruiseID is set.
+// Create 创建新的舱房类型。
 func (s *CabinTypeService) Create(ctx context.Context, ct *domain.CabinType) error {
 	return s.repo.Create(ctx, ct)
 }
 
-// Update saves changes to an existing CabinType.
+// Update 保存对已有舱房类型的修改。
 func (s *CabinTypeService) Update(ctx context.Context, ct *domain.CabinType) error {
 	return s.repo.Update(ctx, ct)
 }
 
-// GetByID retrieves a CabinType by its primary key.
+// GetByID 根据主键查询舱房类型详情。
 func (s *CabinTypeService) GetByID(ctx context.Context, id int64) (*domain.CabinType, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// List returns a paginated list of cabin types for the given cruise.
+// List 返回指定邮轮下的分页舱房类型列表。
 func (s *CabinTypeService) List(ctx context.Context, cruiseID int64, page, pageSize int) ([]domain.CabinType, int64, error) {
 	return s.repo.ListByCruise(ctx, cruiseID, page, pageSize)
 }
 
-// Delete removes a CabinType by ID.
+// Delete 删除指定的舱房类型。
 func (s *CabinTypeService) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }

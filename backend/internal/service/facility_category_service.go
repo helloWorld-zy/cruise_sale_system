@@ -6,27 +6,27 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
-// FacilityCategoryService implements business logic for facility categories.
+// FacilityCategoryService 实现设施分类相关的业务逻辑。
 type FacilityCategoryService struct {
-	repo domain.FacilityCategoryRepository
+	repo domain.FacilityCategoryRepository // 设施分类数据仓储
 }
 
-// NewFacilityCategoryService creates a FacilityCategoryService.
+// NewFacilityCategoryService 创建设施分类服务实例。
 func NewFacilityCategoryService(repo domain.FacilityCategoryRepository) *FacilityCategoryService {
 	return &FacilityCategoryService{repo: repo}
 }
 
-// Create inserts a new FacilityCategory.
+// Create 创建新的设施分类。
 func (s *FacilityCategoryService) Create(ctx context.Context, cat *domain.FacilityCategory) error {
 	return s.repo.Create(ctx, cat)
 }
 
-// List returns all facility categories ordered by sort_order.
+// List 查询所有设施分类，按排序权重排列。
 func (s *FacilityCategoryService) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	return s.repo.List(ctx)
 }
 
-// Delete removes a FacilityCategory. Note: caller should verify no facilities reference this category.
+// Delete 删除设施分类。注意：调用方应先确认无设施引用此分类。
 func (s *FacilityCategoryService) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }

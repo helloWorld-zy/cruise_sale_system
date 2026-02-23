@@ -1,0 +1,214 @@
+package meilisearch // import "github.com/meilisearch/meilisearch-go"
+
+Package meilisearch is the official Meilisearch SDK for the Go programming
+language.
+
+The meilisearch-go SDK for Go provides APIs and utilities that developers can
+use to build Go applications that use meilisearch service.
+
+See the meilisearch package documentation for more information.
+https://www.meilisearch.com/docs/reference
+
+    Example:
+
+    meili := New("http://localhost:7700", WithAPIKey("foobar"))
+
+    idx := meili.Index("movies")
+
+    documents := []map[string]interface{}{
+    	{"id": 1, "title": "Carol", "genres": []string{"Romance", "Drama"}},
+    	{"id": 2, "title": "Wonder Woman", "genres": []string{"Action", "Adventure"}},
+    	{"id": 3, "title": "Life of Pi", "genres": []string{"Adventure", "Drama"}},
+    	{"id": 4, "title": "Mad Max: Fury Road", "genres": []string{"Adventure", "Science Fiction"}},
+    	{"id": 5, "title": "Moana", "genres": []string{"Fantasy", "Action"}},
+    	{"id": 6, "title": "Philadelphia", "genres": []string{"Drama"}},
+    }
+    task, err := idx.AddDocuments(documents, nil)
+    if err != nil {
+    	fmt.Println(err)
+    	os.Exit(1)
+    }
+
+    fmt.Println(task.TaskUID)
+
+const GzipEncoding ContentEncoding = "gzip" ...
+const VERSION = "0.36.1"
+var ErrInvalidRequestMethod = errors.New("request body is not expected for GET and HEAD requests") ...
+func BoolPtr(v bool) *bool
+func FloatPtr(v float64) *float64
+func GetQualifiedVersion() (qualifiedVersion string)
+func Int64Ptr(v int64) *int64
+func IntPtr(v int) *int
+func IsValidUUID(uuid string) bool
+func RegisterDecoder(contentType string, decoder func(io.ReadCloser) Decoder)
+func StringPtr(v string) *string
+func TimePtr(v time.Time) *time.Time
+func VersionErrorHintMessage(err error, req *internalRequest) error
+type AddWebhookRequest struct{ ... }
+type AttributeFeatures struct{ ... }
+type AttributeRule struct{ ... }
+type Batch struct{ ... }
+type BatchProgress struct{ ... }
+type BatchProgressStep struct{ ... }
+type BatchStats struct{ ... }
+type BatchStatsInternalDatabaseSize struct{ ... }
+type BatchStatsWriteChannelCongestion struct{ ... }
+type BatchesQuery struct{ ... }
+type BatchesResults struct{ ... }
+type CancelTasksQuery struct{ ... }
+type Chat struct{ ... }
+type ChatCompletionChoice struct{ ... }
+type ChatCompletionChoiceDelta struct{ ... }
+type ChatCompletionMessage struct{ ... }
+type ChatCompletionQuery struct{ ... }
+type ChatCompletionStreamChunk struct{ ... }
+type ChatManager interface{ ... }
+type ChatReader interface{ ... }
+type ChatRole string
+    const ChatRoleUser ChatRole = "user" ...
+type ChatSource string
+    const OpenaiChatSource ChatSource = "openAi" ...
+type ChatWorkspace struct{ ... }
+type ChatWorkspaceSettings struct{ ... }
+type ChatWorkspaceSettingsPrompts struct{ ... }
+type ContentEncoding string
+type CreateIndexRequest struct{ ... }
+type CsvDocumentsQuery struct{ ... }
+type Decoder interface{ ... }
+    func NewDecoder(res *http.Response) Decoder
+type DeleteTasksQuery struct{ ... }
+type Details struct{ ... }
+type Distribution struct{ ... }
+type DocumentManager interface{ ... }
+type DocumentOptions struct{ ... }
+type DocumentQuery struct{ ... }
+type DocumentReader interface{ ... }
+type DocumentsQuery struct{ ... }
+type DocumentsResult struct{ ... }
+type Embedder struct{ ... }
+type EmbedderPooling string
+    const UseModelEmbedderPooling EmbedderPooling = "useModel" ...
+type EmbedderSource string
+    const OpenaiEmbedderSource EmbedderSource = "openAi" ...
+type EncodingCompressionLevel int
+type ErrCode int
+    const ErrCodeUnknown ErrCode = 0 ...
+type Error struct{ ... }
+type Event struct{ ... }
+type ExperimentalFeatures struct{ ... }
+type ExperimentalFeaturesBase struct{ ... }
+type ExperimentalFeaturesResult struct{ ... }
+type ExportParams struct{ ... }
+type FacetSearchRequest struct{ ... }
+type FacetSearchResponse struct{ ... }
+type Faceting struct{ ... }
+type FilterFeatures struct{ ... }
+type Fragment struct{ ... }
+type Health struct{ ... }
+type Hit map[string]json.RawMessage
+type Hits []Hit
+type IndexConfig struct{ ... }
+type IndexExportOptions struct{ ... }
+type IndexManager interface{ ... }
+type IndexReader interface{ ... }
+type IndexResult struct{ ... }
+type IndexesQuery struct{ ... }
+type IndexesResults struct{ ... }
+type JSONMarshal func(v interface{}) ([]byte, error)
+type JSONUnmarshal func(data []byte, v interface{}) error
+type Key struct{ ... }
+type KeyManager interface{ ... }
+type KeyParsed struct{ ... }
+type KeyReader interface{ ... }
+type KeyUpdate struct{ ... }
+type KeysQuery struct{ ... }
+type KeysResults struct{ ... }
+type ListChatWorkSpaceQuery struct{ ... }
+type ListChatWorkspace struct{ ... }
+type LocalizedAttributes struct{ ... }
+type MatchingStrategy string
+    const Last MatchingStrategy = "last" ...
+type MinWordSizeForTypos struct{ ... }
+type MultiSearchFederation struct{ ... }
+type MultiSearchFederationMergeFacets struct{ ... }
+type MultiSearchRequest struct{ ... }
+type MultiSearchResponse struct{ ... }
+type Network struct{ ... }
+type Opt[T any] struct{ ... }
+    func Bool(v bool) Opt[bool]
+    func Float(v float64) Opt[float64]
+    func Int(v int) Opt[int]
+    func Int64(v int64) Opt[int64]
+    func NewOpt[T any](v T) Opt[T]
+    func Null[T any]() Opt[T]
+    func String(v string) Opt[string]
+type Option func(*meiliOpt)
+    func DisableRetries() Option
+    func WithAPIKey(key string) Option
+    func WithContentEncoding(encodingType ContentEncoding, level EncodingCompressionLevel) Option
+    func WithCustomClient(client *http.Client) Option
+    func WithCustomClientWithTLS(tlsConfig *tls.Config) Option
+    func WithCustomDialContext(dial func(ctx context.Context, network, addr string) (net.Conn, error)) Option
+    func WithCustomExpectContinueTimeout(timeout time.Duration) Option
+    func WithCustomIdleConnTimeout(timeout time.Duration) Option
+    func WithCustomJsonMarshaler(marshal JSONMarshal) Option
+    func WithCustomJsonUnmarshaler(unmarshal JSONUnmarshal) Option
+    func WithCustomMaxIdleConns(maxIdleConns int) Option
+    func WithCustomMaxIdleConnsPerHost(maxIdleConnsPerHost int) Option
+    func WithCustomProxy(proxy func(*http.Request) (*url.URL, error)) Option
+    func WithCustomRetries(retryOnStatus []int, maxRetries uint8) Option
+    func WithCustomTLSHandshakeTimeout(timeout time.Duration) Option
+type Origin struct{ ... }
+type Pagination struct{ ... }
+type ProximityPrecisionType string
+    const ByWord ProximityPrecisionType = "byWord" ...
+type Remote struct{ ... }
+type RemoteError struct{ ... }
+type SearchFederationOptions struct{ ... }
+type SearchParameters struct{ ... }
+type SearchReader interface{ ... }
+type SearchRequest struct{ ... }
+type SearchRequestHybrid struct{ ... }
+type SearchResponse struct{ ... }
+type ServiceManager interface{ ... }
+    func Connect(host string, options ...Option) (ServiceManager, error)
+    func New(host string, options ...Option) ServiceManager
+type ServiceReader interface{ ... }
+type Settings struct{ ... }
+type SettingsManager interface{ ... }
+type SettingsReader interface{ ... }
+type SimilarDocumentQuery struct{ ... }
+type SimilarDocumentResult struct{ ... }
+type SortFacetType string
+    const SortFacetTypeAlpha SortFacetType = "alpha" ...
+type Stats struct{ ... }
+type StatsIndex struct{ ... }
+type Stream[T any] struct{ ... }
+    func NewStream[T any](decoder Decoder, unmarshal JSONUnmarshal) *Stream[T]
+type SwapIndexesParams struct{ ... }
+type Task struct{ ... }
+type TaskInfo struct{ ... }
+type TaskManager interface{ ... }
+type TaskNetwork struct{ ... }
+type TaskReader interface{ ... }
+type TaskRemote struct{ ... }
+type TaskResult struct{ ... }
+type TaskStatus string
+    const TaskStatusUnknown TaskStatus = "unknown" ...
+type TaskType string
+    const TaskTypeIndexCreation TaskType = "indexCreation" ...
+type TasksQuery struct{ ... }
+type TenantTokenClaims struct{ ... }
+type TenantTokenOptions struct{ ... }
+type Timestampz int64
+type TypoTolerance struct{ ... }
+type UpdateDocumentByFunctionRequest struct{ ... }
+type UpdateIndexRequestParams struct{ ... }
+type UpdateNetworkRequest struct{ ... }
+type UpdateRemote struct{ ... }
+type UpdateWebhookRequest struct{ ... }
+type Version struct{ ... }
+type Webhook struct{ ... }
+type WebhookManager interface{ ... }
+type WebhookReader interface{ ... }
+type WebhookResults struct{ ... }

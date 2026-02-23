@@ -1,0 +1,15 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/cruise_sale_system/frontend/admin[39m
+
+ [32m鉁?[39m tests/unit/composables/useApi.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m鉁?[39m tests/unit/pages/cruises-index.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m鉁?[39m tests/unit/layouts/default.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m鉁?[39m tests/unit/pages/login.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m鉁?[39m tests/unit/cabins.pricing.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m鉁?[39m tests/unit/routes.list.spec.ts [2m([22m[2m1 test[22m[2m)[22m[32m 12[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 14:41:30
+[2m   Duration [22m 1.29s[2m (transform 790ms, setup 0ms, import 1.44s, tests 97ms, environment 4.73s)[22m
+
