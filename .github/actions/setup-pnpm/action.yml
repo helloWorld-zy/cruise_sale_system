@@ -1,0 +1,17 @@
+name: "Setup PNPM"
+description: "Setup Node.js and PNPM with caching"
+inputs:
+  cache-dependency-path:
+    description: "Path to pnpm-lock.yaml"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 9
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: "pnpm"
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
