@@ -11,7 +11,7 @@ import (
 
 // BookingRepo 定义预订写入与事务边界能力。
 type BookingRepo interface {
-	Create(b *domain.Booking) error
+	Create(ctx context.Context, b *domain.Booking) error
 	InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error
 }
 
@@ -38,7 +38,7 @@ func NewBookingService(repo BookingRepo, price PriceService, hold HoldService) *
 }
 
 // Create 创建预订并在事务内完成库存占用与金额计算。
-func (s *BookingService) Create(userID, voyageID, skuID int64, guests int) error {
+func (s *BookingService) Create(ctx context.Context, userID, voyageID, skuID int64, guests int) error {
 	if s.repo == nil || s.price == nil || s.hold == nil {
 		return errors.New("booking dependencies not ready")
 	}
@@ -48,7 +48,7 @@ func (s *BookingService) Create(userID, voyageID, skuID int64, guests int) error
 			return errors.New("cannot hold inventory")
 		}
 
-		price, _, err := s.price.FindPrice(context.Background(), skuID, time.Now(), guests)
+		price, _, err := s.price.FindPrice(ctx, skuID, time.Now(), guests)
 		if err != nil {
 			return err
 		}

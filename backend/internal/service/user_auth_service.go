@@ -10,9 +10,9 @@ var (
 	// ErrCodeStoreUnavailable 表示验证码存储组件未就绪。
 	ErrCodeStoreUnavailable = errors.New("code store unavailable")
 	// ErrPhoneOrCodeRequired 表示手机号或验证码缺失。
-	ErrPhoneOrCodeRequired  = errors.New("phone and code are required")
+	ErrPhoneOrCodeRequired = errors.New("phone and code are required")
 	// ErrSMSTooFrequent 表示验证码发送过于频繁。
-	ErrSMSTooFrequent       = errors.New("sms send too frequent")
+	ErrSMSTooFrequent = errors.New("sms send too frequent")
 )
 
 // CodeStore 定义验证码的持久化与校验能力。
@@ -47,14 +47,16 @@ type UserAuthService struct {
 	lockedUntil    map[string]time.Time
 }
 
-//go:noinline
 // NewUserAuthService 使用默认策略创建用户认证服务。
+//
+//go:noinline
 func NewUserAuthService(store CodeStore) *UserAuthService {
 	return NewUserAuthServiceWithPolicy(store, UserAuthPolicy{})
 }
 
-//go:noinline
 // NewUserAuthServiceWithPolicy 使用指定策略创建用户认证服务。
+//
+//go:noinline
 func NewUserAuthServiceWithPolicy(store CodeStore, policy UserAuthPolicy) *UserAuthService {
 	if policy.CodeTTL <= 0 {
 		policy.CodeTTL = 5 * time.Minute
@@ -86,8 +88,9 @@ func NewUserAuthServiceWithPolicy(store CodeStore, policy UserAuthPolicy) *UserA
 	}
 }
 
-//go:noinline
 // SendSMS 发送验证码并记录发送频率与过期时间。
+//
+//go:noinline
 func (s *UserAuthService) SendSMS(phone, code string) error {
 	if s.store == nil {
 		return ErrCodeStoreUnavailable
@@ -119,8 +122,9 @@ func (s *UserAuthService) SendSMS(phone, code string) error {
 	return nil
 }
 
-//go:noinline
 // VerifySMS 校验验证码并根据失败次数执行锁定策略。
+//
+//go:noinline
 func (s *UserAuthService) VerifySMS(phone, code string) bool {
 	if s.store == nil || phone == "" || code == "" {
 		return false
@@ -157,8 +161,9 @@ func (s *UserAuthService) VerifySMS(phone, code string) bool {
 	return false
 }
 
-//go:noinline
 // WechatLogin 处理微信登录流程并返回用户标识。
+//
+//go:noinline
 func (s *UserAuthService) WechatLogin(openID string) string {
 	return openID
 }

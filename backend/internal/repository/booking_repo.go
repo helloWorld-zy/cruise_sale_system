@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
 )
@@ -14,13 +16,14 @@ func NewBookingRepository(db *gorm.DB) *BookingRepository {
 }
 
 // Create 写入一条预订记录。
-func (r *BookingRepository) Create(b *domain.Booking) error {
-	err := r.db.Create(b).Error
+func (r *BookingRepository) Create(ctx context.Context, b *domain.Booking) error {
+	err := r.db.WithContext(ctx).Create(b).Error
 	return err
 }
 
-//go:noinline
 // InTx 在事务上下文内执行预订创建流程。
+//
+//go:noinline
 func (r *BookingRepository) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		create := func(b *domain.Booking) error {
@@ -29,4 +32,3 @@ func (r *BookingRepository) InTx(fn func(tx *gorm.DB, create func(b *domain.Book
 		return fn(tx, create)
 	})
 }
-

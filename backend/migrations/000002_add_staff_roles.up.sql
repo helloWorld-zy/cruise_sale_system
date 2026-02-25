@@ -1,4 +1,6 @@
--- HI-04: Add staff_roles join table (many-to-many between staffs and roles)
+-- 000002_add_staff_roles.up.sql
+-- 添加员工角色关联表（多对多），用于 RBAC 权限控制。
+
 CREATE TABLE staff_roles (
     staff_id BIGINT NOT NULL REFERENCES staffs(id) ON DELETE CASCADE,
     role_id  BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,

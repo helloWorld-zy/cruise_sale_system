@@ -614,7 +614,7 @@ func (m *mockCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) er
 
 type mockBookingSvc struct{}
 
-func (m *mockBookingSvc) Create(userID, voyageID, skuID int64, guests int) error {
+func (m *mockBookingSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) error {
 	if voyageID == 99 {
 		return errors.New("error")
 	}

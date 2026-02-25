@@ -1,6 +1,10 @@
+# docker-compose.yml
+# 邮轮销售系统本地开发环境基础服务编排。
+
 version: '3.8'
 
 services:
+  # PostgreSQL —— 主数据库
   postgres:
     image: postgres:17-alpine
     container_name: cruise_postgres
@@ -19,6 +23,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis —— 缓存 / 会话存储
   redis:
     image: redis:7.4-alpine
     container_name: cruise_redis
@@ -33,6 +38,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # MinIO —— 对象存储（图片 / 文件上传）
   minio:
     image: minio/minio:latest
     container_name: cruise_minio
@@ -51,6 +57,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # MeiliSearch —— 全文搜索引擎
   meilisearch:
     image: getmeili/meilisearch:v1.12.0
     container_name: cruise_meilisearch
@@ -67,6 +74,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # NATS —— 消息队列
   nats:
     image: nats:2.10-alpine
     container_name: cruise_nats
@@ -79,6 +87,7 @@ services:
       timeout: 5s
       retries: 5
 
+# 持久化卷声明
 volumes:
   postgres_data:
   redis_data:

@@ -1,3 +1,6 @@
+-- 000001_init_schema.down.sql
+-- 回滚初始化 Schema：按依赖顺序删除所有核心表。
+
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS staffs CASCADE;
 DROP TABLE IF EXISTS images CASCADE;

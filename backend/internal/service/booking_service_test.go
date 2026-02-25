@@ -14,14 +14,17 @@ import (
 
 type fakeBookingRepo struct{ created bool }
 
-func (f *fakeBookingRepo) Create(_ *domain.Booking) error { f.created = true; return nil }
+func (f *fakeBookingRepo) Create(_ context.Context, _ *domain.Booking) error {
+	f.created = true
+	return nil
+}
 func (f *fakeBookingRepo) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error {
-	return fn(nil, f.Create)
+	return fn(nil, func(b *domain.Booking) error { return f.Create(context.Background(), b) })
 }
 
 type fakeBookingRepoTxErr struct{}
 
-func (f *fakeBookingRepoTxErr) Create(_ *domain.Booking) error { return nil }
+func (f *fakeBookingRepoTxErr) Create(_ context.Context, _ *domain.Booking) error { return nil }
 func (f *fakeBookingRepoTxErr) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error {
 	_ = fn
 	return errors.New("tx failed")
@@ -42,28 +45,28 @@ func (f *fakeHoldService) HoldWithTx(_ *gorm.DB, _ int64, _ int64, _ int) bool {
 
 func TestBookingServiceCreate(t *testing.T) {
 	svc := NewBookingService(&fakeBookingRepo{}, fakePriceService{}, &fakeHoldService{})
-	if err := svc.Create(1, 2, 3, 2); err != nil {
+	if err := svc.Create(context.Background(), 1, 2, 3, 2); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestBookingServiceCreate_TxFail(t *testing.T) {
 	svc := NewBookingService(&fakeBookingRepoTxErr{}, fakePriceService{}, &fakeHoldService{})
-	if err := svc.Create(1, 2, 3, 2); err == nil {
+	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected tx failure")
 	}
 }
 
 func TestBookingServiceCreate_DependencyNotReady(t *testing.T) {
 	svc := NewBookingService(nil, nil, nil)
-	if err := svc.Create(1, 2, 3, 2); err == nil {
+	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected dependency error")
 	}
 }
 
 type txFailBookingRepo struct{ db *gorm.DB }
 
-func (r *txFailBookingRepo) Create(_ *domain.Booking) error { return nil }
+func (r *txFailBookingRepo) Create(_ context.Context, _ *domain.Booking) error { return nil }
 func (r *txFailBookingRepo) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		create := func(b *domain.Booking) error {
@@ -90,7 +93,7 @@ func TestBookingServiceCreate_RollbackHoldAndInventoryOnCreateFail(t *testing.T)
 	holdSvc := NewCabinHoldService(repository.NewCabinHoldRepository(db), time.Minute)
 	svc := NewBookingService(&txFailBookingRepo{db: db}, fakePriceService{}, holdSvc)
 
-	if err := svc.Create(1, 2, 3, 2); err == nil {
+	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected create to fail")
 	}
 

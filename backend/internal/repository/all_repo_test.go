@@ -142,7 +142,7 @@ func TestAllRepos(t *testing.T) {
 	// 10. BookingRepo
 	bkRepo := NewBookingRepository(db)
 	bk := &domain.Booking{UserID: 1}
-	_ = bkRepo.Create(bk)
+	_ = bkRepo.Create(context.Background(), bk)
 	// Add missing error paths by creating an unmigrated DB
 	badDB, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{}) // unmigrated
 	ctx2 := context.Background()
@@ -202,5 +202,5 @@ func TestAllRepos(t *testing.T) {
 	NewRouteRepository(badDB).List(ctx2)
 	NewRouteRepository(badDB).Delete(ctx2, 1)
 
-	NewBookingRepository(badDB).Create(&domain.Booking{})
+	NewBookingRepository(badDB).Create(ctx2, &domain.Booking{})
 }

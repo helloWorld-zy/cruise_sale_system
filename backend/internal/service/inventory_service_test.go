@@ -32,7 +32,7 @@ func (f *fakeInventoryRepo) AppendLog(ctx context.Context, log *domain.Inventory
 func TestInventoryServiceAdjust(t *testing.T) {
 	repo := &fakeInventoryRepo{inv: domain.CabinInventory{CabinSKUID: 1, Total: 10}}
 	svc := NewInventoryService(repo)
-	if err := svc.Adjust(1, -2, "test sale"); err != nil {
+	if err := svc.Adjust(context.Background(), 1, -2, "test sale"); err != nil {
 		t.Fatal(err)
 	}
 	if repo.inv.Total != 8 {
@@ -46,7 +46,7 @@ func TestInventoryServiceAdjust(t *testing.T) {
 func TestInventoryServiceAdjust_InsufficientGuard(t *testing.T) {
 	repo := &fakeInventoryRepo{inv: domain.CabinInventory{CabinSKUID: 1, Total: 1}}
 	svc := NewInventoryService(repo)
-	err := svc.Adjust(1, -5, "oversell")
+	err := svc.Adjust(context.Background(), 1, -5, "oversell")
 	if err != domain.ErrInsufficientInventory {
 		t.Fatalf("expected ErrInsufficientInventory, got %v", err)
 	}

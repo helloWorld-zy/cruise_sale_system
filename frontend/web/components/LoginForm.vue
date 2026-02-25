@@ -1,7 +1,9 @@
+<!-- web/components/LoginForm.vue — 短信验证码登录表单组件 -->
+<!-- H-01 修复：完整 SMS 登录流程（手机号验证、倒计时、防重按、错误展示） -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// H-01 修复：完整 SMS 登录流程（手机号验证、倒计时、防重按、错误展示）
+// 短信验证码登录表单：手机号输入 → 获取验证码 → 登录
 
 const phone = ref('')
 const code = ref('')

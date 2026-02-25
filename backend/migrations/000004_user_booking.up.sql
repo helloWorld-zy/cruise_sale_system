@@ -1,3 +1,6 @@
+-- 000004_user_booking.up.sql
+-- Sprint 3 新增表：C 端用户、乘客、预订订单、预订乘客关联和舱位占座。
+
 CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
   phone VARCHAR(20) UNIQUE,

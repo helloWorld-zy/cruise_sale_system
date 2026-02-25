@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,7 @@ type bookingTestSvc struct {
 	err    error
 }
 
-func (s *bookingTestSvc) Create(userID, voyageID, skuID int64, guests int) error {
+func (s *bookingTestSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) error {
 	s.called = true
 	return s.err
 }

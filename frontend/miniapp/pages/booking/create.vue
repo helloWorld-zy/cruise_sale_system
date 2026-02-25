@@ -1,8 +1,10 @@
+<!-- miniapp/pages/booking/create.vue — 小程序端创建预订页面 -->
+<!-- 填写航次、舱房和出行人数，提交后创建预订 -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { request } from '../../src/utils/request'
 
-// 表单状态：航次、舱位与出行人数。
+// 表单状态：航次、舱位与出行人数
 const voyageId = ref('')
 const cabinSkuId = ref('')
 const guests = ref(1)

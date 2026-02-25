@@ -313,9 +313,9 @@ func (m *mockPriceSvc) FindPrice(ctx context.Context, skuID int64, date time.Tim
 
 type mockBkRepo struct{}
 
-func (m *mockBkRepo) Create(b *domain.Booking) error { return nil }
+func (m *mockBkRepo) Create(_ context.Context, b *domain.Booking) error { return nil }
 func (m *mockBkRepo) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error {
-	return fn(nil, m.Create)
+	return fn(nil, func(b *domain.Booking) error { return m.Create(context.Background(), b) })
 }
 
 func TestMiscServices(t *testing.T) {
@@ -328,7 +328,7 @@ func TestMiscServices(t *testing.T) {
 	price.FindPrice(context.Background(), 99, time.Now(), 2)
 
 	bk := NewBookingService(&mockBkRepo{}, &mockPriceSvc{}, &mockHoldSvc{})
-	bk.Create(1, 1, 1, 2)
-	bk.Create(1, 1, 99, 2) // hold fail
-	bk.Create(1, 1, 88, 2) // price fail
+	bk.Create(context.Background(), 1, 1, 1, 2)
+	bk.Create(context.Background(), 1, 1, 99, 2) // hold fail
+	bk.Create(context.Background(), 1, 1, 88, 2) // price fail
 }

@@ -1,9 +1,11 @@
+<!-- admin/app/pages/bookings/[id].vue — 订单详情页面 -->
+<!-- 根据路由参数加载并展示单个订单的详细信息 -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
 declare const useApi: any
 
-// 当前页面根据路由参数加载并展示单个订单详情。
+// 根据路由参数中的订单 ID 加载并展示订单详情
 const route = useRoute()
 const { request } = useApi()
 

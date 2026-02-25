@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 
 // BookingService 定义预订处理器依赖的业务能力。
 type BookingService interface {
-	Create(userID, voyageID, skuID int64, guests int) error
+	Create(ctx context.Context, userID, voyageID, skuID int64, guests int) error
 }
 
 // BookingHandler 处理 C 端预订下单请求。
@@ -54,7 +55,7 @@ func (h *BookingHandler) Create(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.Create(userID, req.VoyageID, req.CabinSKUID, req.Guests); err != nil {
+	if err := h.svc.Create(c.Request.Context(), userID, req.VoyageID, req.CabinSKUID, req.Guests); err != nil {
 		response.Error(c, http.StatusConflict, errcode.ErrConflict, err.Error())
 		return
 	}

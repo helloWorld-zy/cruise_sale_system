@@ -1,5 +1,6 @@
+<!-- web/pages/account/login.vue — 前台用户登录页面 -->
+<!-- 组合 LoginForm 组件承载短信验证码登录流程 -->
 <script setup lang="ts">
-// 账户登录页：组合 LoginForm 组件承载短信登录流程。
 import LoginForm from '../../components/LoginForm.vue'
 </script>
 

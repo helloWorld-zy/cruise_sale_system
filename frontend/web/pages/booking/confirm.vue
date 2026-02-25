@@ -1,7 +1,9 @@
+<!-- web/pages/booking/confirm.vue — 预订确认页面 -->
+<!-- H-01 修复：乘客信息表单 + 输入验证 + 防重复提交 + 调用预订 API -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// H-01 修复：乘客信息表单 + 输入验证 + 防重复提交 + POST /api/v1/bookings
+// 预订确认表单：校验参数、填写乘客人数、提交预订请求
 const voyageId = ref(0)
 const cabinSkuId = ref(0)
 const guests = ref(1)
@@ -63,7 +65,7 @@ async function handleSubmit() {
       </div>
 
       <p v-if="voyageId <= 0" class="hint">缺少航次信息</p>
-      <p v-if="cabinSkuId <= 0" class="hint">缺少舶房信息</p>
+      <p v-if="cabinSkuId <= 0" class="hint">缺少舱房信息</p>
 
       <p v-if="errorMsg" class="error" role="alert">{{ errorMsg }}</p>
       <p v-if="successMsg" class="success">{{ successMsg }}</p>

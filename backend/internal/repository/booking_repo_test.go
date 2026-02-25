@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -13,7 +14,7 @@ func TestBookingRepoCreate(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	_ = db.AutoMigrate(&domain.Booking{})
 	repo := NewBookingRepository(db)
-	err := repo.Create(&domain.Booking{UserID: 1, VoyageID: 2, CabinSKUID: 3, Status: "created", TotalCents: 100})
+	err := repo.Create(context.Background(), &domain.Booking{UserID: 1, VoyageID: 2, CabinSKUID: 3, Status: "created", TotalCents: 100})
 	if err != nil {
 		t.Fatal(err)
 	}

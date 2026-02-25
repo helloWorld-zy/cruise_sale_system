@@ -1,3 +1,6 @@
+-- 000003_route_voyage_cabin.up.sql
+-- Sprint 2 新增表：航线、航次、舱房 SKU、价格日历、库存和库存变更日志。
+
 CREATE TABLE IF NOT EXISTS routes (
   id BIGSERIAL PRIMARY KEY,
   code VARCHAR(50) UNIQUE NOT NULL,

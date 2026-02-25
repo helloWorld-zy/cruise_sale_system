@@ -1,14 +1,14 @@
-# Casbin policy for CruiseBooking Admin API
-# Format: p, role, path_pattern, http_method
+# 邮轮销售系统后台管理 API 的 Casbin 策略文件
+# 格式：p, 角色, 路径模式, HTTP 方法
 #
-# Admin has full access to /api/v1/admin/*
+# admin 角色拥有 /api/v1/admin/* 下的全部权限
 p, admin, /api/v1/admin/*, GET
 p, admin, /api/v1/admin/*, POST
 p, admin, /api/v1/admin/*, PUT
 p, admin, /api/v1/admin/*, PATCH
 p, admin, /api/v1/admin/*, DELETE
 
-# Editor can read and write resources but cannot manage staff
+# editor 角色可读写资源，但不可管理员工
 p, editor, /api/v1/admin/cruises*, GET
 p, editor, /api/v1/admin/cruises*, POST
 p, editor, /api/v1/admin/cruises*, PUT
@@ -26,12 +26,12 @@ p, editor, /api/v1/admin/facilities*, POST
 p, editor, /api/v1/admin/facilities*, PUT
 p, editor, /api/v1/admin/facilities*, PATCH
 
-# Viewer has read-only access
+# viewer 角色仅有只读权限
 p, viewer, /api/v1/admin/cruises*, GET
 p, viewer, /api/v1/admin/companies*, GET
 p, viewer, /api/v1/admin/cabin-types*, GET
 p, viewer, /api/v1/admin/facilities*, GET
 
-# Role inheritance: admin inherits editor, editor inherits viewer
+# 角色继承：admin 继承 editor，editor 继承 viewer
 g, admin, editor
 g, editor, viewer

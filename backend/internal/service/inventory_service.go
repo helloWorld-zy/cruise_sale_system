@@ -27,8 +27,7 @@ func NewInventoryService(repo InventoryRepo) *InventoryService { return &Invento
 // Adjust 对指定舱房 SKU 的库存进行原子化调整，并记录审计日志。
 // delta 为正数表示增加库存，负数表示减少库存。
 // 当库存不足时返回 domain.ErrInsufficientInventory。
-func (s *InventoryService) Adjust(skuID int64, delta int, reason string) error {
-	ctx := context.Background()
+func (s *InventoryService) Adjust(ctx context.Context, skuID int64, delta int, reason string) error {
 	if err := s.repo.AdjustAtomic(ctx, skuID, delta); err != nil {
 		return err
 	}

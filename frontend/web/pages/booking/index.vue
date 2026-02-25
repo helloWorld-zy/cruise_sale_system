@@ -1,7 +1,9 @@
+<!-- web/pages/booking/index.vue — 预订第一步页面 -->
+<!-- H-01 修复：航次和舱房选择，填写后跳转到确认页 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// H-01 修复：航次和舶房选择，提交后跳转到确认页
+// 航次和舱房选择表单，验证通过后跳转到预订确认页
 const voyageId = ref('')
 const cabinSkuId = ref('')
 const guests = ref(1)
@@ -54,13 +56,13 @@ async function handleNext() {
       </div>
 
       <div class="field">
-        <label for="cabin-sku-id">舶房 SKU ID</label>
+        <label for="cabin-sku-id">舱房 SKU ID</label>
         <input
           id="cabin-sku-id"
           v-model="cabinSkuId"
           type="number"
           min="1"
-          placeholder="请输入舶房 SKU ID"
+          placeholder="请输入舱房 SKU ID"
           :disabled="loading"
         />
       </div>

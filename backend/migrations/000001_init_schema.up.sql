@@ -1,3 +1,6 @@
+-- 000001_init_schema.up.sql
+-- 初始化数据库 Schema：创建邮轮公司、邮轮、舱房类型、设施分类、设施、图片、员工和角色等核心表。
+
 CREATE TABLE cruise_companies (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
