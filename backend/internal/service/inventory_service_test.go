@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/cruisebooking/backend/internal/domain"
@@ -15,7 +16,7 @@ type fakeInventoryRepo struct {
 func (f *fakeInventoryRepo) GetBySKU(id int64) (domain.CabinInventory, error) { return f.inv, nil }
 
 // AdjustAtomic simulates the atomic SQL update: only applies if total+delta >= 0.
-func (f *fakeInventoryRepo) AdjustAtomic(id int64, delta int) error {
+func (f *fakeInventoryRepo) AdjustAtomic(ctx context.Context, id int64, delta int) error {
 	if f.inv.Total+delta < 0 {
 		return domain.ErrInsufficientInventory
 	}
@@ -23,7 +24,7 @@ func (f *fakeInventoryRepo) AdjustAtomic(id int64, delta int) error {
 	return nil
 }
 
-func (f *fakeInventoryRepo) AppendLog(log *domain.InventoryLog) error {
+func (f *fakeInventoryRepo) AppendLog(ctx context.Context, log *domain.InventoryLog) error {
 	f.logs = append(f.logs, *log)
 	return nil
 }

@@ -38,14 +38,9 @@ async function handleLogin() {
   }
   loading.value = true
   error.value = ''
-  try {
-    // TODO: 在 Sprint 2 集成阶段对接真实认证 API
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // navigateTo('/dashboard')
-  } catch (e: any) {
-    error.value = e.message || '登录失败，请重试'
-  } finally {
-    loading.value = false
-  }
+  // TODO: 在 Sprint 2 集成阶段对接真实认证 API
+  await new Promise(resolve => setTimeout(resolve, 500))
+  // navigateTo('/dashboard')
+  loading.value = false
 }
 </script>

@@ -13,22 +13,51 @@ import (
 // CabinService 定义舱房处理器所需的服务接口。
 // 包含 SKU 的 CRUD、库存管理和价格管理功能。
 type CabinService interface {
-	ListByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)  // 查询航次下的舱房列表
-	Create(ctx context.Context, s *domain.CabinSKU) error                         // 创建舱房 SKU
-	Update(ctx context.Context, s *domain.CabinSKU) error                         // 更新舱房 SKU
-	Delete(ctx context.Context, id int64) error                                   // 删除舱房 SKU
-	GetInventory(ctx context.Context, skuID int64) (domain.CabinInventory, error) // 查询库存
-	AdjustInventory(skuID int64, delta int, reason string) error                  // 调整库存
-	ListPrices(skuID int64) ([]domain.CabinPrice, error)                          // 查询价格列表
-	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error                  // 新增或更新价格
+	ListByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)      // 查询航次下的舱房列表
+	Create(ctx context.Context, s *domain.CabinSKU) error                             // 创建舱房 SKU
+	Update(ctx context.Context, s *domain.CabinSKU) error                             // 更新舱房 SKU
+	Delete(ctx context.Context, id int64) error                                       // 删除舱房 SKU
+	GetInventory(ctx context.Context, skuID int64) (domain.CabinInventory, error)     // 查询库存
+	AdjustInventory(ctx context.Context, skuID int64, delta int, reason string) error // 调整库存
+	ListPrices(ctx context.Context, skuID int64) ([]domain.CabinPrice, error)         // 查询价格列表
+	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error                      // 新增或更新价格
+}
+
+// CabinIndexer 定义舱位文档索引能力。
+type CabinIndexer interface {
+	IndexCabin(doc interface{}) error
+}
+
+// CabinIndexRetryQueue 定义索引失败重试队列能力。
+type CabinIndexRetryQueue interface {
+	Enqueue(doc interface{})
 }
 
 // CabinHandler 处理 /admin/cabins 相关的 HTTP 端点。
 // 提供完整的 CRUD 以及库存和定价子资源的管理功能。
-type CabinHandler struct{ svc CabinService }
+type CabinHandler struct {
+	svc        CabinService
+	indexer    CabinIndexer
+	retryQueue CabinIndexRetryQueue
+}
 
 // NewCabinHandler 创建舱房处理器实例。
 func NewCabinHandler(svc CabinService) *CabinHandler { return &CabinHandler{svc: svc} }
+
+// NewCabinHandlerWithIndexing 创建带索引与重试能力的舱房处理器实例。
+func NewCabinHandlerWithIndexing(svc CabinService, indexer CabinIndexer, retryQueue CabinIndexRetryQueue) *CabinHandler {
+	return &CabinHandler{svc: svc, indexer: indexer, retryQueue: retryQueue}
+}
+
+// indexCabinDocument 将舱位变更同步到搜索索引，失败时进入重试队列。
+func (h *CabinHandler) indexCabinDocument(doc domain.CabinSKU) {
+	if h.indexer == nil {
+		return
+	}
+	if err := h.indexer.IndexCabin(doc); err != nil && h.retryQueue != nil {
+		h.retryQueue.Enqueue(doc)
+	}
+}
 
 // List 查询指定航次下的所有舱房 SKU。
 func (h *CabinHandler) List(c *gin.Context) {
@@ -52,6 +81,7 @@ func (h *CabinHandler) Create(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
+	h.indexCabinDocument(req)
 	response.Success(c, req)
 }
 
@@ -72,6 +102,7 @@ func (h *CabinHandler) Update(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
+	h.indexCabinDocument(req)
 	response.Success(c, req)
 }
 
@@ -122,7 +153,7 @@ func (h *CabinHandler) AdjustInventory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.svc.AdjustInventory(id, req.Delta, req.Reason); err != nil {
+	if err := h.svc.AdjustInventory(c.Request.Context(), id, req.Delta, req.Reason); err != nil {
 		response.InternalError(c, err)
 		return
 	}
@@ -137,7 +168,7 @@ func (h *CabinHandler) ListPrices(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	prices, err := h.svc.ListPrices(id)
+	prices, err := h.svc.ListPrices(c.Request.Context(), id)
 	if err != nil {
 		response.InternalError(c, err)
 		return

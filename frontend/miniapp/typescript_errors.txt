@@ -1,7 +1,0 @@
-node_modules/.pnpm/@testing-library+vue@8.1.0__ebe9e4fef9b24bc9fa3d0e91ff0d6cbd/node_modules/@testing-library/vue/types/index.d.ts(10,36): error TS2307: Cannot find module 'type-fest' or its corresponding type declarations.
-node_modules/.pnpm/happy-dom@20.7.0/node_modules/happy-dom/lib/console/VirtualConsole.d.ts(2,15): error TS2305: Module '"console"' has no exported member 'ConsoleConstructor'.
-src/stores/auth.ts(4,19): error TS2304: Cannot find name 'ref'.
-src/stores/auth.ts(5,21): error TS2304: Cannot find name 'ref'.
-src/stores/auth.ts(20,29): error TS2304: Cannot find name 'computed'.
-src/stores/auth.ts(21,19): error TS2304: Cannot find name 'computed'.
-tests/cabin-list.spec.ts(3,18): error TS2307: Cannot find module '../pages/cabin/list.vue' or its corresponding type declarations.

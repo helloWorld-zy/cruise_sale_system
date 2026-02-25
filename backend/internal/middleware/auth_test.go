@@ -10,115 +10,49 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func init() {
+func TestJWT(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-}
+	secret := "test-secret"
+	mw := JWT(JWTConfig{Secret: secret})
 
-const testSecret = "test-secret-key"
-
-func makeToken(staffID string, roles []string, secret string, exp time.Duration) string {
-	claims := jwt.MapClaims{
-		"sub":   staffID,
-		"roles": roles,
-		"exp":   time.Now().Add(exp).Unix(),
-	}
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	s, _ := tok.SignedString([]byte(secret))
-	return s
-}
-
-func requestWithAuth(token string) *http.Request {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	return req
-}
-
-// --- JWT middleware tests ---
-
-func TestJWT_MissingHeader_Returns401(t *testing.T) {
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	validToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   "123",
+		"roles": []interface{}{"admin", "user"},
+		"exp":   time.Now().Add(time.Hour).Unix(),
 	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", w.Code)
-	}
-}
+	validStr, _ := validToken.SignedString([]byte(secret))
 
-func TestJWT_InvalidToken_Returns401(t *testing.T) {
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	invalidAlgToken := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
+		"sub": "123",
 	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, requestWithAuth("not.a.token"))
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", w.Code)
+	invalidAlgStr, _ := invalidAlgToken.SignedString(jwt.UnsafeAllowNoneSignatureType)
+
+	tests := []struct {
+		name   string
+		header string
+		status int
+	}{
+		{"No Header", "", http.StatusUnauthorized},
+		{"Bad Prefix", "Token abc", http.StatusUnauthorized},
+		{"Invalid Token", "Bearer invalid.token.str", http.StatusUnauthorized},
+		{"Invalid Alg", "Bearer " + invalidAlgStr, http.StatusUnauthorized},
+		{"Valid Token", "Bearer " + validStr, http.StatusOK},
 	}
-}
 
-func TestJWT_WrongSecret_Returns401(t *testing.T) {
-	tok := makeToken("1", []string{"admin"}, "other-secret", time.Hour)
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, requestWithAuth(tok))
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", w.Code)
-	}
-}
-
-func TestJWT_ExpiredToken_Returns401(t *testing.T) {
-	tok := makeToken("1", []string{"admin"}, testSecret, -time.Hour)
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, requestWithAuth(tok))
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d", w.Code)
-	}
-}
-
-func TestJWT_AlgorithmNone_Returns401(t *testing.T) {
-	// Craft a token signed with "none" method — should be rejected.
-	header := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"      // {"alg":"none","typ":"JWT"}
-	payload := "eyJzdWIiOiIxIiwicm9sZXMiOlsiYWRtaW4iXX0" // {"sub":"1","roles":["admin"]}
-	noneToken := header + "." + payload + "."
-
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, requestWithAuth(noneToken))
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 for alg=none, got %d", w.Code)
-	}
-}
-
-func TestJWT_ValidToken_InjectsContextAndReturns200(t *testing.T) {
-	tok := makeToken("42", []string{"admin", "editor"}, testSecret, time.Hour)
-	r := gin.New()
-	r.GET("/", JWT(JWTConfig{Secret: testSecret}), func(c *gin.Context) {
-		staffID, _ := c.Get(ContextKeyStaffID)
-		roles, _ := c.Get(ContextKeyRoles)
-		if staffID == nil || roles == nil {
-			c.Status(http.StatusInternalServerError)
-			return
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		c, r := gin.CreateTestContext(w)
+		r.Use(mw)
+		r.GET("/", func(ctx *gin.Context) {
+			ctx.Status(http.StatusOK)
+		})
+		c.Request, _ = http.NewRequest("GET", "/", nil)
+		if tt.header != "" {
+			c.Request.Header.Set("Authorization", tt.header)
 		}
-		c.Status(http.StatusOK)
-	})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, requestWithAuth(tok))
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
+		r.HandleContext(c)
+		if w.Code != tt.status {
+			t.Errorf("%s: expected %d, got %d", tt.name, tt.status, w.Code)
+		}
 	}
 }

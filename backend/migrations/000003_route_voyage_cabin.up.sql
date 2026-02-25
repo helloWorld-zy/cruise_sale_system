@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS routes (
 CREATE TABLE IF NOT EXISTS voyages (
   id BIGSERIAL PRIMARY KEY,
   route_id BIGINT NOT NULL REFERENCES routes(id),
-  cruise_id BIGINT NOT NULL,
+  cruise_id BIGINT NOT NULL REFERENCES cruises(id),
   code VARCHAR(50) UNIQUE NOT NULL,
   depart_date TIMESTAMP NOT NULL,
   return_date TIMESTAMP NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS voyages (
 CREATE TABLE IF NOT EXISTS cabin_skus (
   id BIGSERIAL PRIMARY KEY,
   voyage_id BIGINT NOT NULL REFERENCES voyages(id),
-  cabin_type_id BIGINT NOT NULL,
+  cabin_type_id BIGINT NOT NULL REFERENCES cabin_types(id),
   code VARCHAR(80) UNIQUE NOT NULL,
   deck VARCHAR(20),
   area DOUBLE PRECISION,

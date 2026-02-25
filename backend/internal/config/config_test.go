@@ -1,16 +1,63 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
-func TestLoad_Defaults(t *testing.T) {
-	t.Setenv("CRUISE_SERVER_PORT", ":9000")
+func TestLoad(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	content := []byte(`
+server:
+  port: 8080
+  mode: debug
+database:
+  driver: sqlite
+  dsn: test.db
+jwt:
+  secret: testsecret
+  expire: 24h
+`)
+	requireFile(t, tmpDir, "config.yaml", content)
+	requireFile(t, tmpDir, "config.test.yaml", content)
 
-	cfg := Load("../../")
+	// Test mapping
+	os.Setenv("ENV", "test")
+	defer os.Unsetenv("ENV")
 
-	if cfg.Server.Port != ":9000" {
-		t.Fatalf("expected port :9000, got %s", cfg.Server.Port)
+	// Call Load with the temp path
+	cfg := Load(tmpDir)
+
+	if cfg.Server.Port != "8080" {
+		t.Errorf("Expected port 8080, got %s", cfg.Server.Port)
 	}
-	if cfg.Database.Host == "" {
-		t.Fatalf("expected database host to be set")
+}
+
+func TestLoadPanicsOnMissingConfig(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic on missing config")
+		}
+	}()
+	Load(t.TempDir() + "/doesnotexist")
+}
+
+func TestLoadPanicsOnBadConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	requireFile(t, tmpDir, "config.yaml", []byte("\tinvalid_yaml: \n- item\n"))
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic on bad config")
+		}
+	}()
+	Load(tmpDir)
+}
+
+func requireFile(t *testing.T, dir, name string, content []byte) {
+	err := os.WriteFile(filepath.Join(dir, name), content, 0644)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

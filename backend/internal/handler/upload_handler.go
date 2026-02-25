@@ -33,11 +33,6 @@ func queryInt64(c *gin.Context, key string, defaultVal int64) int64 {
 	return v
 }
 
-// paramInt64 从路径参数中读取 int64 值。
-func paramInt64(c *gin.Context, key string) (int64, error) {
-	return strconv.ParseInt(c.Param(key), 10, 64)
-}
-
 // UploadHandler 处理文件上传端点（当前为桩实现，完整的 MinIO 集成将在 Sprint 2 完成）。
 type UploadHandler struct{}
 

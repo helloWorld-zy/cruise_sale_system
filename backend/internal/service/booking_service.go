@@ -1,33 +1,58 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
+	"gorm.io/gorm"
 )
 
-type BookingRepo interface{ Create(b *domain.Booking) error }
-type PriceService interface {
-	FindPrice(skuID int64, date time.Time, occupancy int) (int64, bool)
-}
-type HoldService interface {
-	Hold(skuID int64, userID int64, qty int) bool
+// BookingRepo 定义预订写入与事务边界能力。
+type BookingRepo interface {
+	Create(b *domain.Booking) error
+	InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) error) error) error
 }
 
+// PriceService 定义舱位价格查询能力。
+type PriceService interface {
+	FindPrice(ctx context.Context, skuID int64, date time.Time, occupancy int) (int64, bool, error)
+}
+
+// HoldService 定义库存占用能力。
+type HoldService interface {
+	HoldWithTx(tx *gorm.DB, skuID int64, userID int64, qty int) bool
+}
+
+// BookingService 负责预订创建流程编排。
 type BookingService struct {
 	repo  BookingRepo
 	price PriceService
 	hold  HoldService
 }
 
+// NewBookingService 创建预订服务实例。
 func NewBookingService(repo BookingRepo, price PriceService, hold HoldService) *BookingService {
 	return &BookingService{repo: repo, price: price, hold: hold}
 }
 
+// Create 创建预订并在事务内完成库存占用与金额计算。
 func (s *BookingService) Create(userID, voyageID, skuID int64, guests int) error {
-	if !s.hold.Hold(skuID, userID, 1) {
-		return nil
+	if s.repo == nil || s.price == nil || s.hold == nil {
+		return errors.New("booking dependencies not ready")
 	}
-	price, _ := s.price.FindPrice(skuID, time.Now(), guests)
-	return s.repo.Create(&domain.Booking{UserID: userID, VoyageID: voyageID, CabinSKUID: skuID, Status: "created", TotalCents: price})
+
+	return s.repo.InTx(func(tx *gorm.DB, create func(b *domain.Booking) error) error {
+		if !s.hold.HoldWithTx(tx, skuID, userID, 1) {
+			return errors.New("cannot hold inventory")
+		}
+
+		price, _, err := s.price.FindPrice(context.Background(), skuID, time.Now(), guests)
+		if err != nil {
+			return err
+		}
+
+		return create(&domain.Booking{UserID: userID, VoyageID: voyageID, CabinSKUID: skuID, Status: "created", TotalCents: price})
+	})
 }

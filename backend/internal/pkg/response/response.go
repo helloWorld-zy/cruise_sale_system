@@ -26,6 +26,7 @@ func Error(c *gin.Context, httpStatus int, businessCode int, message string) {
 }
 
 // InternalError 返回 HTTP 500 服务器内部错误响应。
-func InternalError(c *gin.Context, err error) {
-	c.JSON(http.StatusInternalServerError, Response{Code: 500, Message: err.Error(), Data: nil})
+// 原始错误仅供调用方日志记录，不暴露给客户端（防止路径/SQL 信息泄露）。
+func InternalError(c *gin.Context, _ error) {
+	c.JSON(http.StatusInternalServerError, Response{Code: 500, Message: "internal server error", Data: nil})
 }

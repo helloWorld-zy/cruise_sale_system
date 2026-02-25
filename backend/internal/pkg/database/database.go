@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -32,8 +33,16 @@ func BuildDSN(cfg Config) string {
 // Connect 使用 GORM 连接 PostgreSQL 数据库，并配置连接池参数。
 // 返回已配置好的 gorm.DB 实例。
 func Connect(cfg Config) (*gorm.DB, error) {
+	if cfg.Host == "sqlite" || cfg.Host == "memory" {
+		return ConnectWithDialector(sqlite.Open("file::memory:?cache=shared"), cfg)
+	}
+	return ConnectWithDialector(postgres.Open(BuildDSN(cfg)), cfg)
+}
+
+// ConnectWithDialector 允许传入自定义的 Dialector（如 sqlite）以便于单元测试。
+func ConnectWithDialector(dialector gorm.Dialector, cfg Config) (*gorm.DB, error) {
 	// 打开数据库连接
-	db, err := gorm.Open(postgres.Open(BuildDSN(cfg)), &gorm.Config{})
+	db, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

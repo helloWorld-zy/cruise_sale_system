@@ -1,9 +1,12 @@
 package router
 
 import (
+	"time"
+
 	"github.com/casbin/casbin/v2"
 	"github.com/cruisebooking/backend/internal/handler"
 	"github.com/cruisebooking/backend/internal/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -35,6 +38,14 @@ func Setup(deps Dependencies) *gin.Engine {
 	// 全局中间件：崩溃恢复 + 请求日志
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Swagger API 文档界面（无需认证）
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -137,15 +148,21 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	// ------------------------------------------
 	// 小程序/Web C端 API（无需 admin 权限，部分需要 user auth）
+	// C 端 JWT 使用独立 ContextKey（ContextKeyUserID）区分管理员身份
 	// ------------------------------------------
+	cUserJWT := middleware.JWT(middleware.JWTConfig{Secret: deps.JWTSecret, ContextKey: middleware.ContextKeyUserID})
+
 	users := api.Group("/users")
 	{
 		users.POST("/login", deps.User.Login)
+		users.POST("/sms-code", deps.User.SendCode)
+		users.Use(cUserJWT)
 		users.GET("/profile", deps.User.Profile)
 	}
 
 	bookings := api.Group("/bookings")
 	{
+		bookings.Use(cUserJWT)
 		bookings.POST("", deps.Booking.Create)
 	}
 

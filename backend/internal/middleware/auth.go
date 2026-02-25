@@ -9,20 +9,29 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// ContextKeyStaffID 是 gin 上下文中存储已认证员工 ID 的键名。
+// ContextKeyStaffID 是 gin 上下文中存储已认证管理员 ID 的键名。
 const ContextKeyStaffID = "staffID"
+
+// ContextKeyUserID 是 gin 上下文中存储已认证 C 端用户 ID 的键名。
+const ContextKeyUserID = "userID"
 
 // ContextKeyRoles 是 gin 上下文中存储已认证员工角色列表的键名。
 const ContextKeyRoles = "roles"
 
 // JWTConfig 包含 JWT 中间件的配置参数。
 type JWTConfig struct {
-	Secret string // JWT 签名密钥
+	Secret     string // JWT 签名密钥
+	ContextKey string // 存入 gin.Context 的 key，默认为 ContextKeyStaffID
 }
 
 // JWT 返回一个 Gin 中间件函数，用于验证 Bearer 令牌。
-// 该中间件强制使用 HS256 签名算法，并将员工 ID 和角色信息注入到请求上下文中。
+// 该中间件强制使用 HS256 签名算法，并将身份标识注入到请求上下文中。
+// 通过 cfg.ContextKey 区分管理员（ContextKeyStaffID）与 C 端用户（ContextKeyUserID）。
 func JWT(cfg JWTConfig) gin.HandlerFunc {
+	contextKey := cfg.ContextKey
+	if contextKey == "" {
+		contextKey = ContextKeyStaffID
+	}
 	return func(c *gin.Context) {
 		// 从请求头获取 Authorization 字段
 		auth := c.GetHeader("Authorization")
@@ -60,7 +69,7 @@ func JWT(cfg JWTConfig) gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		c.Set(ContextKeyStaffID, sub)
+		c.Set(contextKey, sub)
 
 		// 从 claims 中提取角色列表
 		if rolesRaw, exists := claims["roles"]; exists {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,12 +10,14 @@ import (
 
 type fakePriceRepo struct{ prices []domain.CabinPrice }
 
-func (f fakePriceRepo) ListBySKU(skuID int64) ([]domain.CabinPrice, error) { return f.prices, nil }
+func (f fakePriceRepo) ListBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error) {
+	return f.prices, nil
+}
 
 func TestPricingServiceFindPrice(t *testing.T) {
 	d := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 	svc := NewPricingService(fakePriceRepo{prices: []domain.CabinPrice{{CabinSKUID: 1, Date: d, Occupancy: 2, PriceCents: 19900}}})
-	p, ok, err := svc.FindPrice(1, d, 2)
+	p, ok, err := svc.FindPrice(context.Background(), 1, d, 2)
 	if err != nil || !ok || p != 19900 {
 		t.Fatalf("expected price 19900 ok=true err=nil, got p=%d ok=%v err=%v", p, ok, err)
 	}
@@ -22,7 +25,7 @@ func TestPricingServiceFindPrice(t *testing.T) {
 
 func TestPricingServiceFindPrice_NotFound(t *testing.T) {
 	svc := NewPricingService(fakePriceRepo{prices: nil})
-	_, ok, err := svc.FindPrice(1, time.Now(), 2)
+	_, ok, err := svc.FindPrice(context.Background(), 1, time.Now(), 2)
 	if err != nil || ok {
 		t.Fatal("expected ok=false, err=nil for empty repo")
 	}
@@ -40,7 +43,7 @@ func TestPricingServiceFindPrice_TimezoneSafety(t *testing.T) {
 		{CabinSKUID: 1, Date: utcDate, Occupancy: 2, PriceCents: 19900},
 	}})
 
-	p, ok, err := svc.FindPrice(1, cstDate, 2)
+	p, ok, err := svc.FindPrice(context.Background(), 1, cstDate, 2)
 	if err != nil || !ok || p != 19900 {
 		t.Fatalf("timezone-safe lookup failed: p=%d ok=%v err=%v", p, ok, err)
 	}
@@ -57,7 +60,7 @@ func TestPricingServiceFindPrice_TimezoneMismatch(t *testing.T) {
 		{CabinSKUID: 1, Date: utcDate, Occupancy: 2, PriceCents: 19900},
 	}})
 
-	_, ok, err := svc.FindPrice(1, cstDate, 2)
+	_, ok, err := svc.FindPrice(context.Background(), 1, cstDate, 2)
 	if err != nil || ok {
 		t.Fatal("expected no match for different UTC dates")
 	}

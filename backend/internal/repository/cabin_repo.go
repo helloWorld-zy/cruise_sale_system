@@ -48,9 +48,9 @@ func (r *CabinRepository) DeleteSKU(ctx context.Context, id int64) error {
 // AdjustInventoryAtomic 使用单条原子化 SQL 更新库存总量，
 // 防止并发请求导致竞态条件（CRITICAL-01 修复项）。
 // 当 total+delta 为负时 WHERE 子句不匹配，会返回 ErrInsufficientInventory。
-func (r *CabinRepository) AdjustInventoryAtomic(skuID int64, delta int) error {
-	result := r.db.Exec(
-		`UPDATE cabin_inventories SET total = total + ?, updated_at = NOW()
+func (r *CabinRepository) AdjustInventoryAtomic(ctx context.Context, skuID int64, delta int) error {
+	result := r.db.WithContext(ctx).Exec(
+		`UPDATE cabin_inventories SET total = total + ?, updated_at = CURRENT_TIMESTAMP
 		 WHERE cabin_sku_id = ? AND total + ? >= 0`,
 		delta, skuID, delta,
 	)
@@ -70,19 +70,27 @@ func (r *CabinRepository) GetInventoryBySKU(ctx context.Context, skuID int64) (d
 }
 
 // AppendInventoryLog 追加一条库存变动审计日志。
-func (r *CabinRepository) AppendInventoryLog(log *domain.InventoryLog) error {
-	return r.db.Create(log).Error
+func (r *CabinRepository) AppendInventoryLog(ctx context.Context, log *domain.InventoryLog) error {
+	return r.db.WithContext(ctx).Create(log).Error
 }
 
 // ListPricesBySKU 查询指定 SKU 的价格列表，按日期和入住人数排序。
-func (r *CabinRepository) ListPricesBySKU(skuID int64) ([]domain.CabinPrice, error) {
+func (r *CabinRepository) ListPricesBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error) {
 	var out []domain.CabinPrice
-	return out, r.db.Where("cabin_sku_id = ?", skuID).Order("date asc, occupancy asc").Find(&out).Error
+	return out, r.db.WithContext(ctx).Where("cabin_sku_id = ?", skuID).Order("date asc, occupancy asc").Find(&out).Error
+}
+
+// ListBySKU 兼容 PricingService 的方法。
+func (r *CabinRepository) ListBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error) {
+	return r.ListPricesBySKU(ctx, skuID)
 }
 
 // UpsertPrice 新增或更新价格记录。
+//
+//go:noinline
 func (r *CabinRepository) UpsertPrice(ctx context.Context, p *domain.CabinPrice) error {
-	return r.db.WithContext(ctx).Save(p).Error
+	err := r.db.WithContext(ctx).Save(p).Error
+	return err
 }
 
 // 编译时接口实现检查

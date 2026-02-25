@@ -20,9 +20,9 @@ type CabinSKU struct {
 // CabinPrice 表示舱房的日历价格，按日期和入住人数维度定价。
 // 价格以"分"为单位存储，避免浮点数精度问题。
 type CabinPrice struct {
-	ID         int64     `gorm:"primaryKey"` // 主键 ID
-	CabinSKUID int64     `gorm:"index"`      // 关联的舱房 SKU ID
-	Date       time.Time `gorm:"index"`      // 价格生效日期
+	ID         int64     `gorm:"primaryKey"`                // 主键 ID
+	CabinSKUID int64     `gorm:"column:cabin_sku_id;index"` // 关联的舱房 SKU ID
+	Date       time.Time `gorm:"index"`                     // 价格生效日期
 	Occupancy  int       // 入住人数
 	PriceCents int64     `gorm:"column:price_cents"` // 价格（单位：分）
 	CreatedAt  time.Time // 创建时间
@@ -32,8 +32,8 @@ type CabinPrice struct {
 // CabinInventory 表示舱房的库存信息，记录总量、锁定量和已售量。
 // 可用库存 = Total - Locked - Sold。
 type CabinInventory struct {
-	ID         int64     `gorm:"primaryKey"`  // 主键 ID
-	CabinSKUID int64     `gorm:"uniqueIndex"` // 关联的舱房 SKU ID（唯一索引）
+	ID         int64     `gorm:"primaryKey"`                      // 主键 ID
+	CabinSKUID int64     `gorm:"column:cabin_sku_id;uniqueIndex"` // 关联的舱房 SKU ID（唯一索引）
 	Total      int       // 库存总量
 	Locked     int       // 锁定量（待支付订单占用）
 	Sold       int       // 已售数量
@@ -42,8 +42,8 @@ type CabinInventory struct {
 
 // InventoryLog 记录库存变动的审计日志，用于追溯库存调整的原因。
 type InventoryLog struct {
-	ID         int64     `gorm:"primaryKey"` // 主键 ID
-	CabinSKUID int64     `gorm:"index"`      // 关联的舱房 SKU ID
+	ID         int64     `gorm:"primaryKey"`                // 主键 ID
+	CabinSKUID int64     `gorm:"column:cabin_sku_id;index"` // 关联的舱房 SKU ID
 	Change     int       // 变动量（正数为增加，负数为减少）
 	Reason     string    `gorm:"size:200"` // 变动原因说明
 	CreatedAt  time.Time // 变动时间

@@ -81,9 +81,9 @@ type CabinSKURepository interface {
 	DeleteSKU(ctx context.Context, id int64) error                           // 删除舱房 SKU
 	// AdjustInventoryAtomic 使用单条 SQL 语句原子化更新库存总量，
 	// 防止并发请求导致超卖。当 total+delta < 0 时返回 ErrInsufficientInventory。
-	AdjustInventoryAtomic(skuID int64, delta int) error
+	AdjustInventoryAtomic(ctx context.Context, skuID int64, delta int) error
 	GetInventoryBySKU(ctx context.Context, skuID int64) (CabinInventory, error) // 查询舱房库存
-	AppendInventoryLog(log *InventoryLog) error                                 // 追加库存变动日志
-	ListPricesBySKU(skuID int64) ([]CabinPrice, error)                          // 查询某 SKU 的价格列表
+	AppendInventoryLog(ctx context.Context, log *InventoryLog) error            // 追加库存变动日志
+	ListPricesBySKU(ctx context.Context, skuID int64) ([]CabinPrice, error)     // 查询某 SKU 的价格列表
 	UpsertPrice(ctx context.Context, p *CabinPrice) error                       // 新增或更新价格记录
 }

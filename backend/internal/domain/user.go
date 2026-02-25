@@ -2,6 +2,7 @@ package domain
 
 import "time"
 
+// User 表示 C 端登录用户基础资料。
 type User struct {
 	ID        int64  `gorm:"primaryKey"`
 	Phone     string `gorm:"size:20;uniqueIndex"`

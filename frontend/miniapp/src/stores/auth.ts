@@ -2,6 +2,7 @@
 // 使用 Pinia Composition API 风格管理用户认证状态
 
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
 
 /**
  * useAuthStore 管理小程序端的用户认证信息。

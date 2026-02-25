@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
@@ -8,7 +9,7 @@ import (
 
 // PriceRepo 定义价格查询的端口接口。
 type PriceRepo interface {
-	ListBySKU(skuID int64) ([]domain.CabinPrice, error) // 查询某 SKU 的所有价格记录
+	ListBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error) // 查询某 SKU 的所有价格记录
 }
 
 // PricingService 提供舱房定价相关的业务逻辑。
@@ -31,8 +32,8 @@ func sameDay(a, b time.Time) bool {
 // FindPrice 查找指定 SKU 在某个日期、某个入住人数下的价格（单位：分）。
 // 返回值：价格金额、是否找到、错误信息。
 // 通过返回 error 使调用方能够区分"无价格"和"数据库故障"（HIGH-02 修复项）。
-func (s *PricingService) FindPrice(skuID int64, date time.Time, occupancy int) (int64, bool, error) {
-	list, err := s.repo.ListBySKU(skuID)
+func (s *PricingService) FindPrice(ctx context.Context, skuID int64, date time.Time, occupancy int) (int64, bool, error) {
+	list, err := s.repo.ListBySKU(ctx, skuID)
 	if err != nil {
 		return 0, false, err
 	}
