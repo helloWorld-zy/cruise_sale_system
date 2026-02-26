@@ -62,3 +62,8 @@ func (h *BookingHandler) Create(c *gin.Context) {
 
 	response.Success(c, gin.H{"status": "created"})
 }
+
+// UpdateStatus stub for testing
+func (h *BookingHandler) UpdateStatus(ctx context.Context, orderID int64, status string) error {
+	return nil
+}
