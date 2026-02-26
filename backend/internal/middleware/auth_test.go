@@ -22,6 +22,11 @@ func TestJWT(t *testing.T) {
 	})
 	validStr, _ := validToken.SignedString([]byte(secret))
 
+	missingSubToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	missingSubStr, _ := missingSubToken.SignedString([]byte(secret))
+
 	invalidAlgToken := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
 		"sub": "123",
 	})
@@ -36,6 +41,7 @@ func TestJWT(t *testing.T) {
 		{"Bad Prefix", "Token abc", http.StatusUnauthorized},
 		{"Invalid Token", "Bearer invalid.token.str", http.StatusUnauthorized},
 		{"Invalid Alg", "Bearer " + invalidAlgStr, http.StatusUnauthorized},
+		{"Missing Sub", "Bearer " + missingSubStr, http.StatusUnauthorized},
 		{"Valid Token", "Bearer " + validStr, http.StatusOK},
 	}
 

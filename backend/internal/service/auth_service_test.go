@@ -32,5 +32,10 @@ func TestAuthService_Full(t *testing.T) {
 	_, _, _ = svc.Login(ctx, "test", "wrong")
 	_, _, _ = svc.Login(ctx, "disabled", "123456")
 
+	// Add test for disabled logic when repo throws disabled status, wait the repo actually is used in this test
+	disabledPwd, _ := HashPassword("123456")
+	_ = repo.Create(ctx, &domain.Staff{Username: "disabled_status_2", PasswordHash: disabledPwd, Status: 2})
+	_, _, _ = svc.Login(ctx, "disabled_status_2", "123456")
+
 	_, _ = svc.GetProfile(ctx, "1")
 }

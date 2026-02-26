@@ -53,3 +53,13 @@ func TestDatabaseConnect(t *testing.T) {
 		t.Fatal("expected non-nil database instance")
 	}
 }
+
+func TestDatabaseConnectMemory(t *testing.T) {
+	db, err := Connect(Config{Host: "memory"})
+	if err != nil {
+		t.Errorf("expected no error")
+	}
+	if db == nil {
+		t.Errorf("expected non-nil database")
+	}
+}

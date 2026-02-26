@@ -55,6 +55,17 @@ func TestLoadPanicsOnBadConfig(t *testing.T) {
 	Load(tmpDir)
 }
 
+func TestLoadPanicsOnUnmarshalError(t *testing.T) {
+	tmpDir := t.TempDir()
+	requireFile(t, tmpDir, "config.yaml", []byte("server:\n  port: [1, 2, 3]\n"))
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic on unmarshal error")
+		}
+	}()
+	Load(tmpDir)
+}
+
 func requireFile(t *testing.T, dir, name string, content []byte) {
 	err := os.WriteFile(filepath.Join(dir, name), content, 0644)
 	if err != nil {

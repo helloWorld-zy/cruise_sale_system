@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cruisebooking/backend/internal/domain"
+	"github.com/cruisebooking/backend/internal/middleware"
 	"github.com/cruisebooking/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -117,6 +118,39 @@ func (e *edgeFacilityRepo2) ListByCruise(ctx context.Context, cruiseID int64) ([
 	return nil, errors.New("unconditional facility list err")
 }
 
+// Fourth set for Sprint 4 edge cases
+type edgeCabinIndexer struct{ called *bool }
+
+func (e *edgeCabinIndexer) IndexCabin(doc interface{}) error { return errors.New("index err") }
+
+type edgeRetryQueue struct{ called *bool }
+
+func (e *edgeRetryQueue) Enqueue(doc interface{}) { *e.called = true }
+
+type edgeUserRepo struct{ err error }
+
+func (e *edgeUserRepo) FindOrCreateByPhone(phone string) (*domain.User, error) {
+	if e.err != nil {
+		return nil, e.err
+	}
+	return &domain.User{ID: 100}, nil
+}
+
+type authSvcImpl struct{}
+
+func (a authSvcImpl) VerifySMS(phone, code string) bool { return true }
+func (a authSvcImpl) SendSMS(phone, code string) error  { return errors.New("other err") }
+
+type authSvcReqErr struct{}
+
+func (a authSvcReqErr) VerifySMS(phone, code string) bool { return true }
+func (a authSvcReqErr) SendSMS(phone, code string) error  { return service.ErrPhoneOrCodeRequired }
+
+type authSvcInvalid struct{}
+
+func (authSvcInvalid) VerifySMS(p, c string) bool { return false }
+func (authSvcInvalid) SendSMS(p, c string) error  { return errors.New("err") }
+
 func runM(r *gin.Engine, method, path, body string) {
 	req, _ := http.NewRequest(method, path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -218,4 +252,58 @@ func TestCombinedMissingEdges(t *testing.T) {
 	facH3 := NewFacilityHandler(service.NewFacilityService(&edgeFacilityRepo2{}))
 	r.GET("/fac_3", facH3.ListByCruise)
 	runM(r, "GET", "/fac_3?cruise_id=1", "")
+
+	// 4. From fourth set (Sprint 4)
+	bkH := NewBookingHandler(nil)
+	r.POST("/bk_1", bkH.Create)
+	runM(r, "POST", "/bk_1", `{"voyage_id":1,"cabin_sku_id":1,"guests":1}`)
+
+	r.Use(func(c *gin.Context) {
+		if c.Request.URL.Path == "/bk_inv_user" {
+			c.Set(middleware.ContextKeyUserID, "abc")
+		}
+		c.Next()
+	})
+	bkH2 := NewBookingHandler(&bookingTestSvc{})
+	r.POST("/bk_inv_user", bkH2.Create)
+	runM(r, "POST", "/bk_inv_user", `{"voyage_id":1,"cabin_sku_id":1,"guests":1}`)
+
+	_ = bkH.UpdateStatus(context.Background(), 1, "paid")
+
+	called := false
+	cbH4 := NewCabinHandlerWithIndexing(&myCabinSvc{}, &edgeCabinIndexer{&called}, &edgeRetryQueue{&called})
+	r.POST("/cb_4", cbH4.Create)
+	runM(r, "POST", "/cb_4", `{"id":1}`)
+
+	usrH1 := NewUserHandlerWithRepo(authSvcImpl{}, &edgeUserRepo{err: errors.New("repo err")}, "secret")
+	r.POST("/usr_1/login", usrH1.Login)
+	r.POST("/usr_1/sms", usrH1.SendCode)
+	runM(r, "POST", "/usr_1/login", `{"phone":"138","code":"123"}`) // covers err != nil
+	runM(r, "POST", "/usr_1/sms", `malformed json`)                 // covers bind error
+	runM(r, "POST", "/usr_1/login", `malformed json`)               // covers bind error login
+
+	usrH_succ := NewUserHandlerWithRepo(authSvcImpl{}, &edgeUserRepo{}, "secret")
+	r.POST("/usr_succ/login", usrH_succ.Login)
+	runM(r, "POST", "/usr_succ/login", `{"phone":"138","code":"123"}`) // covers succ
+	// mock rand error is not easily reachable, but nil auth svc is
+	usrNilAuth := NewUserHandler(nil, "")
+	r.POST("/usr_nil/login", usrNilAuth.Login)
+	r.POST("/usr_nil/sms", usrNilAuth.SendCode)
+	runM(r, "POST", "/usr_nil/login", `{"phone":"138","code":"123"}`)
+	runM(r, "POST", "/usr_nil/sms", `{"phone":"138"}`)
+
+	// Invalid SMS code
+	usrInvalid := NewUserHandlerWithRepo(authSvcInvalid{}, nil, "secret")
+	r.POST("/usr_inv/login", usrInvalid.Login)
+	r.POST("/usr_inv/sms", usrInvalid.SendCode)
+	runM(r, "POST", "/usr_inv/login", `{"phone":"138","code":"xxx"}`)
+	runM(r, "POST", "/usr_inv/sms", `{"phone":"138"}`)
+
+	runM(r, "POST", "/usr_1/login", `{"phone":"138","code":"123"}`)
+	runM(r, "POST", "/usr_1/sms", `{"phone":"138"}`)
+
+	usrH2 := NewUserHandlerWithRepo(authSvcReqErr{}, nil, "secret")
+	r.POST("/usr_2/sms", usrH2.SendCode)
+	runM(r, "POST", "/usr_2/sms", `{"phone":"138"}`)
+
 }

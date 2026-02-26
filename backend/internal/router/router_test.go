@@ -28,6 +28,9 @@ func TestSetup(t *testing.T) {
 		Booking:          &handler.BookingHandler{},
 		User:             &handler.UserHandler{},
 		Upload:           &handler.UploadHandler{},
+		Payment:          &handler.PaymentHandler{},
+		Refund:           &handler.RefundHandler{},
+		Analytics:        &handler.AnalyticsHandler{},
 		JWTSecret:        "test-secret",
 		Enforcer:         &casbin.Enforcer{},
 	}

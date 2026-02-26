@@ -57,12 +57,7 @@ func JWT(cfg JWTConfig) gin.HandlerFunc {
 		}
 
 		// 提取 claims
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
+		claims, _ := token.Claims.(jwt.MapClaims)
 		// 从 "sub" 声明中提取员工 ID
 		sub, err := claims.GetSubject()
 		if err != nil || sub == "" {

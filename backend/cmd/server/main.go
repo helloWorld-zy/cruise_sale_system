@@ -104,6 +104,9 @@ func RunApp(configDir string) error {
 	bookingHandler := handler.NewBookingHandler(bookingSvc)
 	userAuthSvc := service.NewUserAuthService(service.NewInMemoryCodeStore())
 	userHandler := handler.NewUserHandlerWithRepo(userAuthSvc, userRepo, cfg.JWT.Secret) // M-03
+	paymentHandler := handler.NewPaymentHandler(nil)                                     // Sprint 04: 支付回调
+	refundHandler := handler.NewRefundHandler()                                          // Sprint 04: 退款
+	analyticsHandler := handler.NewAnalyticsHandler()                                    // Sprint 04: 统计分析
 
 	// 7. 初始化 Casbin RBAC 权限执行器
 	mPath := filepath.Join(configDir, "rbac/model.conf")
@@ -127,6 +130,9 @@ func RunApp(configDir string) error {
 		Cabin:            cabinHandler,
 		Booking:          bookingHandler,
 		User:             userHandler,
+		Payment:          paymentHandler,
+		Refund:           refundHandler,
+		Analytics:        analyticsHandler,
 		JWTSecret:        cfg.JWT.Secret,
 		Enforcer:         enforcer,
 	})

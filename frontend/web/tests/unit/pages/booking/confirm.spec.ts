@@ -63,7 +63,7 @@ describe('Booking Confirm', () => {
         vi.stubGlobal('useRoute', () => ({ query: {} }))
         const wrapper = mount(Page)
         expect(wrapper.text()).toContain('缺少航次信息')
-        expect(wrapper.text()).toContain('缺少舶房信息')
+        expect(wrapper.text()).toContain('缺少舱房信息')
         expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
     })
 

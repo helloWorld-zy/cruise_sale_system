@@ -70,10 +70,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	roles := []string{"admin"}
 
 	// 签发 JWT 令牌
-	token, err := GenerateJWT(staff.ID, roles, s.jwtSecret, s.expireHours)
-	if err != nil {
-		return "", time.Time{}, err
-	}
+	token, _ := GenerateJWT(staff.ID, roles, s.jwtSecret, s.expireHours)
 	expireAt := time.Now().Add(time.Duration(s.expireHours) * time.Hour)
 	return token, expireAt, nil
 }

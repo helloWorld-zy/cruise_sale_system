@@ -26,6 +26,9 @@ type Dependencies struct {
 	Booking          *handler.BookingHandler          // 订单处理器
 	User             *handler.UserHandler             // C端用户处理器
 	Upload           *handler.UploadHandler           // 文件上传处理器
+	Payment          *handler.PaymentHandler          // 支付回调处理器
+	Refund           *handler.RefundHandler           // 退款处理器
+	Analytics        *handler.AnalyticsHandler        // 统计分析处理器
 	JWTSecret        string                           // JWT 签名密钥
 	Enforcer         *casbin.Enforcer                 // Casbin RBAC 执行器
 }
@@ -165,6 +168,19 @@ func Setup(deps Dependencies) *gin.Engine {
 		bookings.Use(cUserJWT)
 		bookings.POST("", deps.Booking.Create)
 	}
+
+	// --- 支付回调（公开路由，由支付平台调用） ---
+	api.POST("/pay/callback", deps.Payment.Callback)
+
+	// --- 退款（需要用户认证） ---
+	refunds := api.Group("/refunds")
+	{
+		refunds.Use(cUserJWT)
+		refunds.POST("", deps.Refund.Create)
+	}
+
+	// --- 管理后台统计分析 ---
+	admin.GET("/analytics/summary", deps.Analytics.Summary)
 
 	return r
 }

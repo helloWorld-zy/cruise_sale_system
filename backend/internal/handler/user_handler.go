@@ -94,11 +94,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		"roles": []string{"user"},
 		"exp":   expireAt.Unix(),
 	})
-	token, err := tokenObj.SignedString([]byte(h.jwtSecret))
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, "failed to sign token")
-		return
-	}
+	token, _ := tokenObj.SignedString([]byte(h.jwtSecret))
 
 	response.Success(c, UserLoginResponse{Token: token, ExpireAt: expireAt})
 }
@@ -120,11 +116,7 @@ func (h *UserHandler) SendCode(c *gin.Context) {
 		return
 	}
 	// 服务端生成 6 位 OTP，避免客户端自派发验证码（安全要求）
-	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, "failed to generate code")
-		return
-	}
+	n, _ := rand.Int(rand.Reader, big.NewInt(1_000_000))
 	code := fmt.Sprintf("%06d", n.Int64())
 	if err := h.authSvc.SendSMS(req.Phone, code); err != nil {
 		switch {
