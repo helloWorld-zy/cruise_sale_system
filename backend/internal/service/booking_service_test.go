@@ -45,21 +45,21 @@ func (f *fakeHoldService) HoldWithTx(_ *gorm.DB, _ int64, _ int64, _ int) bool {
 
 func TestBookingServiceCreate(t *testing.T) {
 	svc := NewBookingService(&fakeBookingRepo{}, fakePriceService{}, &fakeHoldService{})
-	if err := svc.Create(context.Background(), 1, 2, 3, 2); err != nil {
+	if _, err := svc.Create(context.Background(), 1, 2, 3, 2); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestBookingServiceCreate_TxFail(t *testing.T) {
 	svc := NewBookingService(&fakeBookingRepoTxErr{}, fakePriceService{}, &fakeHoldService{})
-	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
+	if _, err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected tx failure")
 	}
 }
 
 func TestBookingServiceCreate_DependencyNotReady(t *testing.T) {
 	svc := NewBookingService(nil, nil, nil)
-	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
+	if _, err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected dependency error")
 	}
 }
@@ -93,7 +93,7 @@ func TestBookingServiceCreate_RollbackHoldAndInventoryOnCreateFail(t *testing.T)
 	holdSvc := NewCabinHoldService(repository.NewCabinHoldRepository(db), time.Minute)
 	svc := NewBookingService(&txFailBookingRepo{db: db}, fakePriceService{}, holdSvc)
 
-	if err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
+	if _, err := svc.Create(context.Background(), 1, 2, 3, 2); err == nil {
 		t.Fatal("expected create to fail")
 	}
 

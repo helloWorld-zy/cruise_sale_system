@@ -7,7 +7,7 @@ declare const $fetch: any
 
 /**
  * useApi 提供统一的后端 API 请求方法。
- * 与 admin 版本不同，前台接口无需身份认证。
+ * 前台接口默认无需身份认证，但支持从 sessionStorage 注入可选 token。
  */
 export const useApi = () => {
     const config = useRuntimeConfig()
@@ -21,7 +21,24 @@ export const useApi = () => {
      * @returns API 响应数据
      */
     const request = async <T>(path: string, options: any = {}) => {
-        return await $fetch<T>(`${baseUrl}${path}`, options)
+        // 统一处理请求头并按需附带登录令牌。
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+        }
+        try {
+            const token = globalThis?.sessionStorage?.getItem('auth_token')
+            if (token && !headers.Authorization) {
+                headers.Authorization = `Bearer ${token}`
+            }
+        } catch {
+            // SSR 或不可访问 sessionStorage 场景下忽略 token 注入。
+        }
+
+        return await $fetch<T>(`${baseUrl}${path}`, {
+            ...options,
+            headers,
+        })
     }
     return { baseUrl, request }
 }

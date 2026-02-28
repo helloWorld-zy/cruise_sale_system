@@ -45,19 +45,66 @@ async function handleSubmit() {
 
 <template>
   <view class="page">
-    <text>Create Booking</text>
+    <text class="title">创建预订</text>
 
     <view class="form">
       <input v-model="voyageId" type="number" placeholder="Voyage ID" :disabled="submitting" />
       <input v-model="cabinSkuId" type="number" placeholder="Cabin SKU ID" :disabled="submitting" />
       <input v-model.number="guests" type="number" min="1" placeholder="Guests" :disabled="submitting" />
 
-      <button :disabled="!canSubmit" @click="handleSubmit">
+      <button class="submit-btn" :disabled="!canSubmit" @click="handleSubmit">
         {{ submitting ? 'Submitting...' : 'Submit Booking' }}
       </button>
 
-      <text v-if="errorMsg">{{ errorMsg }}</text>
-      <text v-if="successMsg">{{ successMsg }}</text>
+      <text v-if="errorMsg" class="error">{{ errorMsg }}</text>
+      <text v-if="successMsg" class="success">{{ successMsg }}</text>
     </view>
   </view>
 </template>
+
+<style scoped>
+.page {
+  min-height: 100vh;
+  padding: 40rpx;
+  background: linear-gradient(180deg, #fff9f2 0%, #fff 100%);
+}
+
+.title {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #7f3f1c;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  padding: 28rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  box-shadow: 0 14rpx 32rpx rgba(160, 90, 47, 0.14);
+}
+
+input {
+  border: 2rpx solid #f2d7c6;
+  border-radius: 14rpx;
+  padding: 18rpx;
+  background: #fffdfb;
+}
+
+.submit-btn {
+  border-radius: 14rpx;
+  background: #f06a29;
+  color: #fff;
+}
+
+.error {
+  color: #d13e5b;
+}
+
+.success {
+  color: #0f8b62;
+}
+</style>

@@ -29,7 +29,7 @@ var osExit = os.Exit
 
 // main 为服务进程入口。
 func main() {
-	if err := RunApp("../../"); err != nil {
+	if err := RunApp("./"); err != nil {
 		log.Printf("服务启动失败: %v", err)
 		osExit(1)
 	}
@@ -101,12 +101,29 @@ func RunApp(configDir string) error {
 
 	bookingRepo := repository.NewBookingRepository(db)
 	bookingSvc := service.NewBookingService(bookingRepo, pricingSvc, holdSvc)
-	bookingHandler := handler.NewBookingHandler(bookingSvc)
+	bookingHandler := handler.NewBookingHandler(bookingSvc, bookingRepo)
 	userAuthSvc := service.NewUserAuthService(service.NewInMemoryCodeStore())
 	userHandler := handler.NewUserHandlerWithRepo(userAuthSvc, userRepo, cfg.JWT.Secret) // M-03
-	paymentHandler := handler.NewPaymentHandler(nil)                                     // Sprint 04: 支付回调
-	refundHandler := handler.NewRefundHandler()                                          // Sprint 04: 退款
-	analyticsHandler := handler.NewAnalyticsHandler()                                    // Sprint 04: 统计分析
+
+	// Sprint 04: 支付 / 退款 / 通知 / 统计分析 依赖注入
+	paymentRepo := repository.NewPaymentRepository(db)
+	refundRepo := repository.NewRefundRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
+	analyticsRepo := repository.NewAnalyticsRepository(db)
+
+	payVerifiers := map[string]service.PaymentVerifier{
+		"wechat": service.NewHMACVerifier(cfg.JWT.Secret),
+		"alipay": service.NewHMACVerifier(cfg.JWT.Secret),
+	}
+	payCallbackSvc := service.NewPaymentCallbackService(paymentRepo, bookingRepo, payVerifiers)
+	refundSvc := service.NewRefundService(paymentRepo, refundRepo)
+	notifySvc := service.NewNotifyService(notifRepo)
+	_ = notifySvc // 通知服务供预订/支付流程调用
+	analyticsSvc := service.NewAnalyticsService(analyticsRepo)
+
+	paymentHandler := handler.NewPaymentHandler(payCallbackSvc)
+	refundHandler := handler.NewRefundHandler(refundSvc)
+	analyticsHandler := handler.NewAnalyticsHandler(analyticsSvc)
 
 	// 7. 初始化 Casbin RBAC 权限执行器
 	mPath := filepath.Join(configDir, "rbac/model.conf")

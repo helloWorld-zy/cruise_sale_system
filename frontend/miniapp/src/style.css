@@ -1,0 +1,60 @@
+:root {
+	color: #12223a;
+	font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+	background: #eef3fb;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: radial-gradient(circle at 8% 8%, #dceaff 0, transparent 38%),
+		#eef3fb;
+}
+
+.preview-shell {
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.preview-header h1 {
+	margin: 0;
+	font-size: 28px;
+}
+
+.preview-header p {
+	margin: 6px 0 0;
+	color: #4f6079;
+}
+
+.preview-tabs {
+	margin-top: 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.tab-btn {
+	border: 0;
+	border-radius: 999px;
+	padding: 8px 14px;
+	background: #d9e7fb;
+	color: #25466d;
+	cursor: pointer;
+}
+
+.tab-btn.active {
+	background: #1f7bd5;
+	color: #fff;
+}
+
+.preview-stage {
+	margin-top: 16px;
+	border-radius: 18px;
+	overflow: hidden;
+	border: 1px solid #d3dfee;
+	background: #fff;
+}

@@ -15,6 +15,7 @@ type VoyageService interface {
 	ListByRoute(ctx context.Context, routeID int64) ([]domain.Voyage, error) // 查询某航线下的航次列表
 	Create(ctx context.Context, v *domain.Voyage) error                      // 创建航次
 	Update(ctx context.Context, v *domain.Voyage) error                      // 更新航次
+	GetByID(ctx context.Context, id int64) (*domain.Voyage, error)           // 根据 ID 查询航次
 	Delete(ctx context.Context, id int64) error                              // 删除航次
 }
 
@@ -34,6 +35,21 @@ func (h *VoyageHandler) List(c *gin.Context) {
 		return
 	}
 	response.Success(c, list)
+}
+
+// Get 查询单条航次详情。
+func (h *VoyageHandler) Get(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	item, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "voyage not found"})
+		return
+	}
+	response.Success(c, item)
 }
 
 // Create 创建新的航次。
@@ -78,7 +94,7 @@ func (h *VoyageHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
-		response.InternalError(c, err)
+		respondDeleteError(c, err, "voyage")
 		return
 	}
 	c.Status(http.StatusNoContent)

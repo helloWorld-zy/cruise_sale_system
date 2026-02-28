@@ -10,6 +10,7 @@ import (
 type cabinAdminRepo interface {
 	CreateSKU(ctx context.Context, s *domain.CabinSKU) error
 	UpdateSKU(ctx context.Context, s *domain.CabinSKU) error
+	GetSKUByID(ctx context.Context, id int64) (*domain.CabinSKU, error)
 	DeleteSKU(ctx context.Context, id int64) error
 	ListSKUByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)
 	GetInventoryBySKU(ctx context.Context, skuID int64) (domain.CabinInventory, error)
@@ -42,6 +43,11 @@ func (s *CabinAdminService) Create(ctx context.Context, sku *domain.CabinSKU) er
 // Update 更新舱位 SKU。
 func (s *CabinAdminService) Update(ctx context.Context, sku *domain.CabinSKU) error {
 	return s.repo.UpdateSKU(ctx, sku)
+}
+
+// GetByID 查询单个舱位 SKU 详情。
+func (s *CabinAdminService) GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error) {
+	return s.repo.GetSKUByID(ctx, id)
 }
 
 // Delete 删除舱位 SKU。

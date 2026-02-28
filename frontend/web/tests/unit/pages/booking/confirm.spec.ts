@@ -1,13 +1,20 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Page from '../../../../pages/booking/confirm.vue'
+import Page from '../../../../app/pages/booking/confirm.vue'
 
 // Nuxt 自动导入 stub
 vi.stubGlobal('useRoute', () => ({ query: { voyage_id: '2', cabin_sku_id: '3', guests: '2' } }))
-const mockFetch = vi.fn().mockResolvedValue({})
-vi.stubGlobal('$fetch', mockFetch)
+const mockRequest = vi.fn().mockResolvedValue({ data: { id: 42 } })
+const mockNavigateTo = vi.fn().mockResolvedValue(undefined)
+vi.stubGlobal('useApi', () => ({ request: mockRequest }))
+vi.stubGlobal('navigateTo', mockNavigateTo)
 
 describe('Booking Confirm', () => {
+    beforeEach(() => {
+        mockRequest.mockClear()
+        mockNavigateTo.mockClear()
+    })
+
     it('渲染标题和表单', () => {
         const wrapper = mount(Page)
         expect(wrapper.text()).toContain('Confirm Booking')
@@ -21,25 +28,28 @@ describe('Booking Confirm', () => {
         expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
     })
 
-    it('提交调用 API 并显示成功', async () => {
+    it('提交调用 API 后跳转到成功页', async () => {
         const wrapper = mount(Page)
         await wrapper.find('input#guests').setValue('4')
         await wrapper.find('form').trigger('submit')
         await flushPromises()
-        expect(mockFetch).toHaveBeenCalledWith(
-            '/api/v1/bookings',
+        expect(mockRequest).toHaveBeenCalledWith(
+            '/bookings',
             expect.objectContaining({
                 method: 'POST',
                 body: expect.objectContaining({ guests: 4 }),
             })
         )
-        expect(wrapper.text()).toContain('预订成功')
+        expect(mockNavigateTo).toHaveBeenCalledWith({
+            path: '/booking/success',
+            query: { order_id: '42' },
+        })
     })
 
     it('提交进行中显示 loading 文案', async () => {
         vi.stubGlobal('useRoute', () => ({ query: { voyage_id: '2', cabin_sku_id: '3', guests: '2' } }))
         let resolver: (() => void) | null = null
-        mockFetch.mockImplementationOnce(() => new Promise((resolve) => {
+        mockRequest.mockImplementationOnce(() => new Promise((resolve) => {
             resolver = () => resolve({})
         }))
 
@@ -52,7 +62,7 @@ describe('Booking Confirm', () => {
     })
 
     it('失败时显示错误信息', async () => {
-        mockFetch.mockRejectedValueOnce({ message: 'cabin unavailable' })
+        mockRequest.mockRejectedValueOnce({ message: 'cabin unavailable' })
         const wrapper = mount(Page)
         await wrapper.find('form').trigger('submit')
         await flushPromises()
@@ -69,7 +79,7 @@ describe('Booking Confirm', () => {
 
     it('失败时优先展示 data.message', async () => {
         vi.stubGlobal('useRoute', () => ({ query: { voyage_id: '2', cabin_sku_id: '3', guests: '2' } }))
-        mockFetch.mockRejectedValueOnce({ data: { message: 'from data message' } })
+        mockRequest.mockRejectedValueOnce({ data: { message: 'from data message' } })
         const wrapper = mount(Page)
         await wrapper.find('form').trigger('submit')
         await flushPromises()
@@ -78,10 +88,18 @@ describe('Booking Confirm', () => {
 
     it('失败时无 message 字段使用默认文案', async () => {
         vi.stubGlobal('useRoute', () => ({ query: { voyage_id: '2', cabin_sku_id: '3', guests: '2' } }))
-        mockFetch.mockRejectedValueOnce({})
+        mockRequest.mockRejectedValueOnce({})
         const wrapper = mount(Page)
         await wrapper.find('form').trigger('submit')
         await flushPromises()
         expect(wrapper.find('.error').text()).toContain('预订失败，请重试')
+    })
+
+    it('成功但缺少订单号时展示错误', async () => {
+        mockRequest.mockResolvedValueOnce({ data: {} })
+        const wrapper = mount(Page)
+        await wrapper.find('form').trigger('submit')
+        await flushPromises()
+        expect(wrapper.find('.error').text()).toContain('订单号缺失')
     })
 })

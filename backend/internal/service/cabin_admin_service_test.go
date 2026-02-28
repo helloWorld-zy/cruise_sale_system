@@ -31,6 +31,12 @@ func (f *fakeCabinAdminRepo) CreateSKU(ctx context.Context, s *domain.CabinSKU) 
 func (f *fakeCabinAdminRepo) UpdateSKU(ctx context.Context, s *domain.CabinSKU) error {
 	return f.updateErr
 }
+func (f *fakeCabinAdminRepo) GetSKUByID(ctx context.Context, id int64) (*domain.CabinSKU, error) {
+	if id <= 0 {
+		return nil, errors.New("invalid id")
+	}
+	return &domain.CabinSKU{ID: id, Code: "SKU-TEST"}, nil
+}
 func (f *fakeCabinAdminRepo) DeleteSKU(ctx context.Context, id int64) error { return f.deleteErr }
 func (f *fakeCabinAdminRepo) ListSKUByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error) {
 	return f.listByVoyageData, f.listErr

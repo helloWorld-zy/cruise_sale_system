@@ -21,6 +21,7 @@ type userHandlerSendErrAuthSvc struct{ err error }
 func (s userHandlerSendErrAuthSvc) VerifySMS(phone, code string) bool { return true }
 func (s userHandlerSendErrAuthSvc) SendSMS(_, _ string) error         { return s.err }
 
+// TestUserHandlerLogin 测试用户登录处理
 func TestUserHandlerLogin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -37,6 +38,7 @@ func TestUserHandlerLogin(t *testing.T) {
 	}
 }
 
+// TestUserHandlerProfileRequiresAuth 测试获取用户资料需要认证
 func TestUserHandlerProfileRequiresAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -50,6 +52,7 @@ func TestUserHandlerProfileRequiresAuth(t *testing.T) {
 	}
 }
 
+// TestUserHandlerProfileSuccess 测试获取用户资料成功
 func TestUserHandlerProfileSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -68,6 +71,7 @@ func TestUserHandlerProfileSuccess(t *testing.T) {
 	}
 }
 
+// TestUserHandlerSendCodeSuccess 测试发送验证码成功
 func TestUserHandlerSendCodeSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -84,6 +88,7 @@ func TestUserHandlerSendCodeSuccess(t *testing.T) {
 	}
 }
 
+// TestUserHandlerSendCodeTooFrequent 测试发送验证码过于频繁
 func TestUserHandlerSendCodeTooFrequent(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

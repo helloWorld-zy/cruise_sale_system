@@ -51,6 +51,15 @@ type FacilityRepository interface {
 	Delete(ctx context.Context, id int64) error                           // 删除设施（软删除）
 }
 
+// StaffRepository 定义员工账号的数据持久化接口。
+type StaffRepository interface {
+	Create(ctx context.Context, staff *Staff) error                     // 创建员工账号
+	GetByUsername(ctx context.Context, username string) (*Staff, error) // 根据用户名查询员工
+	GetByID(ctx context.Context, id int64) (*Staff, error)              // 根据 ID 查询员工
+	Update(ctx context.Context, staff *Staff) error                     // 更新员工信息
+	Delete(ctx context.Context, id int64) error                         // 删除员工账号
+}
+
 // Sprint 2 仓储端口 —— 按照 DDD 规范定义在领域层。
 
 // RouteRepository 定义航线的数据持久化接口。
@@ -86,4 +95,43 @@ type CabinSKURepository interface {
 	AppendInventoryLog(ctx context.Context, log *InventoryLog) error            // 追加库存变动日志
 	ListPricesBySKU(ctx context.Context, skuID int64) ([]CabinPrice, error)     // 查询某 SKU 的价格列表
 	UpsertPrice(ctx context.Context, p *CabinPrice) error                       // 新增或更新价格记录
+}
+
+// --- Sprint 4: 支付 / 退款 / 通知 / 分析仓储 ---
+
+// PaymentRepository 定义支付持久化操作。
+type PaymentRepository interface {
+	Create(ctx context.Context, p *Payment) error
+	FindByTradeNo(ctx context.Context, tradeNo string) (*Payment, error)
+	FindByID(ctx context.Context, id int64) (*Payment, error)
+	UpdateStatus(ctx context.Context, id int64, status string) error
+}
+
+// RefundRepository 定义退款持久化操作。
+type RefundRepository interface {
+	Create(ctx context.Context, r *Refund) error
+	// SumByPaymentID 返回支付的已批准/待定退款总额，
+	// 用于强制执行累计退款限制。
+	SumByPaymentID(ctx context.Context, paymentID int64) (int64, error)
+}
+
+// NotificationRepository 定义发件箱模式的发件箱持久化操作。
+type NotificationRepository interface {
+	CreateOutbox(ctx context.Context, n *Notification) error
+	ListPending(ctx context.Context, limit int) ([]Notification, error)
+	MarkSent(ctx context.Context, id int64) error
+	MarkFailed(ctx context.Context, id int64) error
+}
+
+// AnalyticsRepository 定义只读分析查询操作。
+type AnalyticsRepository interface {
+	TodaySales(ctx context.Context) (int64, error)
+	WeeklyTrend(ctx context.Context) ([]int64, error)
+	TodayOrderCount(ctx context.Context) (int64, error)
+}
+
+// BookingStatusRepository 提供订单状态更新功能，
+// 供支付回调服务确认订单支付。
+type BookingStatusRepository interface {
+	UpdateStatus(ctx context.Context, id int64, status string) error
 }

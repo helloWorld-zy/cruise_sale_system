@@ -1,22 +1,24 @@
 <!-- admin/app/layouts/default.vue — 管理后台默认布局 -->
 <!-- 包含顶部导航栏、左侧菜单和主内容区域 -->
 <template>
-  <div class="min-h-screen bg-[var(--admin-bg)]">
+  <div class="admin-shell">
     <!-- 顶部导航栏 -->
-    <header class="h-14 bg-white border-b px-4 flex items-center">
-      <div class="font-semibold">CruiseBooking Admin</div>
+    <header class="admin-header">
+      <div class="admin-brand">CruiseBooking Admin</div>
     </header>
-    <div class="flex">
+    <div class="admin-body">
       <!-- 左侧菜单 -->
-      <aside class="w-64 bg-white border-r min-h-[calc(100vh-56px)]">
-        <nav class="p-3 space-y-1">
-          <NuxtLink class="block px-3 py-2 rounded hover:bg-gray-50" to="/cruises">邮轮管理</NuxtLink>
-          <NuxtLink class="block px-3 py-2 rounded hover:bg-gray-50" to="/cabin-types">舱房类型</NuxtLink>
-          <NuxtLink class="block px-3 py-2 rounded hover:bg-gray-50" to="/facilities">设施管理</NuxtLink>
+      <aside class="admin-sidebar">
+        <nav class="admin-nav">
+          <NuxtLink class="admin-link" to="/cruises">邮轮管理</NuxtLink>
+          <NuxtLink class="admin-link" to="/routes">航线管理</NuxtLink>
+          <NuxtLink class="admin-link" to="/voyages">航次管理</NuxtLink>
+          <NuxtLink class="admin-link" to="/cabins">舱房管理</NuxtLink>
+          <NuxtLink class="admin-link" to="/bookings">订单管理</NuxtLink>
         </nav>
       </aside>
       <!-- 主内容区域：通过 slot 渲染当前页面 -->
-      <main class="flex-1 p-6">
+      <main class="admin-main">
         <slot />
       </main>
     </div>

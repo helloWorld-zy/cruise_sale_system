@@ -8,6 +8,9 @@ vi.stubGlobal('useRuntimeConfig', () => ({
 
 const mockFetch = vi.fn().mockResolvedValue({ data: 'ok' })
 vi.stubGlobal('$fetch', mockFetch)
+vi.stubGlobal('sessionStorage', {
+    getItem: vi.fn(() => null)
+})
 
 describe('useApi', () => {
     beforeEach(() => {
@@ -23,6 +26,25 @@ describe('useApi', () => {
     it('makes request', async () => {
         const api = useApi()
         await api.request('/test', { method: 'POST' })
-        expect(mockFetch).toHaveBeenCalledWith('/api/v1/test', { method: 'POST' })
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+    })
+
+    it('injects token when sessionStorage has auth_token', async () => {
+        vi.stubGlobal('sessionStorage', {
+            getItem: vi.fn(() => 'token-1')
+        })
+        const api = useApi()
+        await api.request('/secure')
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/secure', {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer token-1'
+            }
+        })
     })
 })

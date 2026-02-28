@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Replicate mocks here for service testing
+// 在此处为服务测试复制 mock
 
 type allMockCompanyRepo struct{}
 
@@ -33,7 +33,7 @@ func (m *allMockCompanyRepo) GetByID(ctx context.Context, id int64) (*domain.Cru
 	if id == 99 {
 		return nil, errors.New("error")
 	}
-	return nil, nil // not found
+	return nil, nil // 未找到
 }
 func (m *allMockCompanyRepo) List(ctx context.Context, keyword string, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
 	if keyword == "error" {
@@ -69,7 +69,7 @@ func (m *allMockCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Crui
 	if id == 99 {
 		return nil, errors.New("error")
 	}
-	return nil, nil // not found
+	return nil, nil // 未找到
 }
 func (m *allMockCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
 	if companyID == 99 {
@@ -77,7 +77,7 @@ func (m *allMockCruiseRepo) List(ctx context.Context, companyID int64, page, pag
 	}
 	if companyID == 88 {
 		return []domain.Cruise{{ID: 1}}, 1, nil
-	} // has cruises
+	} // 有邮轮
 	return nil, 0, nil
 }
 func (m *allMockCruiseRepo) Delete(ctx context.Context, id int64) error {
@@ -183,7 +183,7 @@ func TestCompanyServiceAll(t *testing.T) {
 	svc.List(ctx, "error", 1, 10)
 
 	svc.Delete(ctx, 1)
-	svc.Delete(ctx, 88) // has cruises
+	svc.Delete(ctx, 88) // 有邮轮
 	svc.Delete(ctx, 99)
 }
 
@@ -192,9 +192,9 @@ func TestCruiseServiceAll(t *testing.T) {
 	ctx := context.Background()
 
 	svc.Create(ctx, &domain.Cruise{Name: "test", CompanyID: 1})
-	svc.Create(ctx, &domain.Cruise{Name: "test", CompanyID: 2})  // invalid comp
-	svc.Create(ctx, &domain.Cruise{Name: "test", CompanyID: 99}) // error comp
-	svc.Create(ctx, &domain.Cruise{Name: "error", CompanyID: 1}) // create err
+	svc.Create(ctx, &domain.Cruise{Name: "test", CompanyID: 2})  // 无效公司
+	svc.Create(ctx, &domain.Cruise{Name: "test", CompanyID: 99}) // 公司错误
+	svc.Create(ctx, &domain.Cruise{Name: "error", CompanyID: 1}) // 创建错误
 
 	svc.Update(ctx, &domain.Cruise{Name: "test"})
 	svc.Update(ctx, &domain.Cruise{Name: "error"})
@@ -206,8 +206,8 @@ func TestCruiseServiceAll(t *testing.T) {
 	svc.List(ctx, 1, 1, 10)
 	svc.List(ctx, 99, 1, 10)
 
-	svc.Delete(ctx, 1)  // success
-	svc.Delete(ctx, 88) // has cabin types
+	svc.Delete(ctx, 1)  // 成功
+	svc.Delete(ctx, 88) // 有舱房类型
 	svc.Delete(ctx, 99)
 }
 
@@ -250,7 +250,7 @@ func TestFacilitySvcAll(t *testing.T) {
 	fs.Delete(ctx, 99)
 }
 
-// User AuthService
+// 用户认证服务
 type dummyCodeStore struct{}
 
 func (m *dummyCodeStore) Save(phone, code string) error {
@@ -272,7 +272,7 @@ func TestUserAuthServiceAll(t *testing.T) {
 	svc.WechatLogin("code")
 }
 
-// Misc Service tests
+// 其他服务测试
 type mockInvRepo struct{}
 
 func (m *mockInvRepo) GetBySKU(id int64) (domain.CabinInventory, error) {
@@ -321,7 +321,7 @@ func (m *mockBkRepo) InTx(fn func(tx *gorm.DB, create func(b *domain.Booking) er
 func TestMiscServices(t *testing.T) {
 	inv := NewInventoryService(&mockInvRepo{})
 	inv.Available(1)
-	inv.Available(99) // error branch
+	inv.Available(99) // 错误分支
 
 	price := NewPricingService(&mockPriceRepo{})
 	price.FindPrice(context.Background(), 1, time.Now(), 2)
@@ -329,6 +329,6 @@ func TestMiscServices(t *testing.T) {
 
 	bk := NewBookingService(&mockBkRepo{}, &mockPriceSvc{}, &mockHoldSvc{})
 	bk.Create(context.Background(), 1, 1, 1, 2)
-	bk.Create(context.Background(), 1, 1, 99, 2) // hold fail
-	bk.Create(context.Background(), 1, 1, 88, 2) // price fail
+	bk.Create(context.Background(), 1, 1, 99, 2) // 占座失败
+	bk.Create(context.Background(), 1, 1, 88, 2) // 价格失败
 }

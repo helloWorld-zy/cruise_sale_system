@@ -7,8 +7,8 @@ import (
 
 func TestSprint4MigrationFilesExist(t *testing.T) {
 	files := []string{
-		"000004_payment_notify.up.sql",
-		"000004_payment_notify.down.sql",
+		"000005_payment_notify.up.sql",
+		"000005_payment_notify.down.sql",
 	}
 	for _, f := range files {
 		if _, err := os.Stat(f); err != nil {

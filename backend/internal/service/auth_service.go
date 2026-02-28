@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
-	"github.com/cruisebooking/backend/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,13 +15,13 @@ import (
 // AuthService 提供员工认证相关的业务逻辑，
 // 包括密码哈希验证、JWT 令牌生成和员工登录功能。
 type AuthService struct {
-	staffRepo   *repository.StaffRepository // 员工数据仓储
-	jwtSecret   string                      // JWT 签名密钥
-	expireHours int                         // JWT 过期时间（小时）
+	staffRepo   domain.StaffRepository // 员工数据仓储接口
+	jwtSecret   string                 // JWT 签名密钥
+	expireHours int                    // JWT 过期时间（小时）
 }
 
 // NewAuthService 创建认证服务实例，通过依赖注入传入员工仓储和 JWT 配置。
-func NewAuthService(staffRepo *repository.StaffRepository, jwtSecret string, expireHours int) *AuthService {
+func NewAuthService(staffRepo domain.StaffRepository, jwtSecret string, expireHours int) *AuthService {
 	return &AuthService{staffRepo: staffRepo, jwtSecret: jwtSecret, expireHours: expireHours}
 }
 

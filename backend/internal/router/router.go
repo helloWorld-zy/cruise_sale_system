@@ -42,7 +42,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:8080"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:3013", "http://localhost:3014", "http://localhost:3301", "http://localhost:3302", "http://localhost:5175", "http://localhost:8080"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -84,6 +84,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	cruises := admin.Group("/cruises")
 	{
 		cruises.GET("", deps.Cruise.List)          // 查询邮轮列表
+		cruises.GET("/:id", deps.Cruise.Get)       // 查询邮轮详情
 		cruises.POST("", deps.Cruise.Create)       // 创建邮轮
 		cruises.PUT("/:id", deps.Cruise.Update)    // 更新邮轮
 		cruises.DELETE("/:id", deps.Cruise.Delete) // 删除邮轮
@@ -124,6 +125,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	routes := admin.Group("/routes")
 	{
 		routes.GET("", deps.Route.List)          // 查询航线列表
+		routes.GET("/:id", deps.Route.Get)       // 查询航线详情
 		routes.POST("", deps.Route.Create)       // 创建航线
 		routes.PUT("/:id", deps.Route.Update)    // 更新航线
 		routes.DELETE("/:id", deps.Route.Delete) // 删除航线
@@ -132,6 +134,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	voyages := admin.Group("/voyages")
 	{
 		voyages.GET("", deps.Voyage.List)          // 查询航次列表
+		voyages.GET("/:id", deps.Voyage.Get)       // 查询航次详情
 		voyages.POST("", deps.Voyage.Create)       // 创建航次
 		voyages.PUT("/:id", deps.Voyage.Update)    // 更新航次
 		voyages.DELETE("/:id", deps.Voyage.Delete) // 删除航次
@@ -140,6 +143,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	cabins := admin.Group("/cabins")
 	{
 		cabins.GET("", deps.Cabin.List)                                  // 查询舱房列表
+		cabins.GET("/:id", deps.Cabin.Get)                               // 查询舱房详情
 		cabins.POST("", deps.Cabin.Create)                               // 创建舱房 SKU
 		cabins.PUT("/:id", deps.Cabin.Update)                            // 更新舱房 SKU
 		cabins.DELETE("/:id", deps.Cabin.Delete)                         // 删除舱房 SKU
@@ -147,6 +151,15 @@ func Setup(deps Dependencies) *gin.Engine {
 		cabins.POST("/:id/inventory/adjust", deps.Cabin.AdjustInventory) // 调整库存
 		cabins.GET("/:id/prices", deps.Cabin.ListPrices)                 // 查询价格日历
 		cabins.POST("/:id/prices", deps.Cabin.UpsertPrice)               // 设置价格
+	}
+
+	bookingsAdmin := admin.Group("/bookings")
+	{
+		bookingsAdmin.GET("", deps.Booking.AdminList)       // 管理后台查询订单列表
+		bookingsAdmin.GET("/:id", deps.Booking.AdminGet)    // 管理后台查询订单详情
+		bookingsAdmin.POST("", deps.Booking.Create)         // 管理后台创建订单
+		bookingsAdmin.PUT("/:id", deps.Booking.AdminUpdate) // 管理后台更新订单状态
+		bookingsAdmin.DELETE("/:id", deps.Booking.AdminDelete)
 	}
 
 	// ------------------------------------------

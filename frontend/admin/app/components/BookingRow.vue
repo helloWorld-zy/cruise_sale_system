@@ -13,6 +13,20 @@ defineProps<{
 
 <template>
   <div class="booking-row">
-    {{ booking.id }} - {{ booking.status }} - {{ booking.total }}
+    <strong>#{{ booking.id }}</strong>
+    <span>状态：{{ booking.status }}</span>
+    <span>总额：{{ booking.total }}</span>
   </div>
 </template>
+
+<style scoped>
+.booking-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+span {
+  color: #38506f;
+}
+</style>

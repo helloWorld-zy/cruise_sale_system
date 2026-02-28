@@ -14,6 +14,7 @@ type mockCruiseService struct{}
 
 func (m *mockCruiseService) Create(c *gin.Context) {}
 
+// TestCruiseHandler_Create 测试创建邮轮处理器
 func TestCruiseHandler_Create(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

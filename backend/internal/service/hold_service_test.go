@@ -103,7 +103,7 @@ func TestCabinHoldServiceHold_UsesInjectableClock(t *testing.T) {
 	svc := NewCabinHoldService(repo, time.Minute)
 	svc.now = func() time.Time { return fixedTime }
 
-	_ = svc.Hold(1, 1, 1) // invoke; capturedNow should be set
+	_ = svc.Hold(1, 1, 1) // 调用；应当设置 capturedNow
 
 	if !capturedNow.Equal(fixedTime) {
 		t.Fatalf("expected now=%v to be passed to repo, got %v", fixedTime, capturedNow)

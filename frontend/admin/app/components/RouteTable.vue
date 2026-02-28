@@ -6,9 +6,17 @@ defineProps<{ items: { id: number; code: string; name: string }[] }>()
 </script>
 
 <template>
-  <table>
+  <table class="route-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>编码</th>
+        <th>名称</th>
+      </tr>
+    </thead>
     <tbody>
       <tr v-for="r in items" :key="r.id">
+        <td>{{ r.id }}</td>
         <td>{{ r.code }}</td>
         <td>{{ r.name }}</td>
       </tr>

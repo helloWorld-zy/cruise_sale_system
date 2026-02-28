@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -17,11 +18,15 @@ type bookingTestSvc struct {
 	err    error
 }
 
-func (s *bookingTestSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) error {
+func (s *bookingTestSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) (*domain.Booking, error) {
 	s.called = true
-	return s.err
+	if s.err != nil {
+		return nil, s.err
+	}
+	return &domain.Booking{ID: 1, Status: "created", TotalCents: 10000}, nil
 }
 
+// TestCreateBooking 测试创建预订
 func TestCreateBooking(t *testing.T) {
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
@@ -45,6 +50,7 @@ func TestCreateBooking(t *testing.T) {
 
 // M-05: 补充缺少的边界条件测试
 
+// TestCreateBookingMissingBody 测试缺少请求体的创建预订
 func TestCreateBookingMissingBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -62,6 +68,7 @@ func TestCreateBookingMissingBody(t *testing.T) {
 	}
 }
 
+// TestCreateBookingNotAuthenticated 测试未认证时的创建预订
 func TestCreateBookingNotAuthenticated(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -76,6 +83,7 @@ func TestCreateBookingNotAuthenticated(t *testing.T) {
 	}
 }
 
+// TestCreateBookingServiceError 测试预订服务错误
 func TestCreateBookingServiceError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

@@ -10,7 +10,7 @@ type Passenger struct {
 	Name      string    `gorm:"size:50"`                  // 乘客姓名
 	IDType    string    `gorm:"size:20"`                  // 证件类型（身份证/护照等）
 	IDNumber  string    `gorm:"size:50;column:id_number"` // 证件号码
-	Birthday  time.Time                                    // 出生日期
-	CreatedAt time.Time                                    // 创建时间
-	UpdatedAt time.Time                                    // 更新时间
+	Birthday  time.Time // 出生日期
+	CreatedAt time.Time // 创建时间
+	UpdatedAt time.Time // 更新时间
 }

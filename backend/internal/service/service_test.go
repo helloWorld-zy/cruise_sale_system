@@ -8,7 +8,7 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
-// --- Mock implementations ---
+// --- Mock 实现 ---
 
 type mockCompanyRepo struct{}
 
@@ -41,7 +41,7 @@ func (m *mockCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise,
 }
 func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
 	if companyID == 55 {
-		// Simulate company 55 having cruises → Delete should fail
+		// 模拟公司 55 有邮轮 → 删除应失败
 		return []domain.Cruise{{ID: 1}}, 1, nil
 	}
 	return nil, 0, nil
@@ -63,7 +63,7 @@ func (m *mockCabinRepo) ListByCruise(ctx context.Context, cruiseID int64, page, 
 }
 func (m *mockCabinRepo) Delete(ctx context.Context, id int64) error { return nil }
 
-// --- CruiseService tests ---
+// --- CruiseService 测试 ---
 
 func TestCruiseService_CreateRequiresCompany(t *testing.T) {
 	svc := NewCruiseService(&mockCruiseRepo{}, &mockCabinRepo{}, &mockCompanyRepo{})
@@ -98,17 +98,17 @@ func TestCruiseService_DeleteFailsWhenCabinsExist(t *testing.T) {
 
 func TestCruiseService_DeleteSucceedsWhenNoCabins(t *testing.T) {
 	svc := NewCruiseService(&mockCruiseRepo{}, &mockCabinRepo{}, &mockCompanyRepo{})
-	err := svc.Delete(context.Background(), 99) // cruiseID 99 → no cabins
+	err := svc.Delete(context.Background(), 99) // cruiseID 99 → 无舱房
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
 	}
 }
 
-// --- CompanyService tests ---
+// --- CompanyService 测试 ---
 
 func TestCompanyService_DeleteFailsWhenCruisesExist(t *testing.T) {
 	svc := NewCompanyService(&mockCompanyRepo{}, &mockCruiseRepo{})
-	// Company 55 has cruises in the mock
+	// Mock 中公司 55 有邮轮
 	err := svc.Delete(context.Background(), 55)
 	if err == nil {
 		t.Fatal("expected error when company has cruises")
@@ -120,7 +120,7 @@ func TestCompanyService_DeleteFailsWhenCruisesExist(t *testing.T) {
 
 func TestCompanyService_DeleteSucceedsWhenNoCruises(t *testing.T) {
 	svc := NewCompanyService(&mockCompanyRepo{}, &mockCruiseRepo{})
-	// Company 1 has no cruises in the mock
+	// Mock 中公司 1 没有邮轮
 	err := svc.Delete(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)

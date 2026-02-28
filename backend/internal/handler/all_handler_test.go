@@ -291,8 +291,8 @@ func doReq(r *gin.Engine, method, path string, body interface{}) *httptest.Respo
 	if w.Code >= 400 {
 		importFmt := true
 		if importFmt {
-			// This is just a compilation hack to ensure fmt is used or I'll just use t.Log if I pass t.
-			// Let's print it to os.Stdout directly
+			// 这只是一个编译技巧，以确保使用 fmt，或者如果我传递了 t，我只会使用 t.Log。
+			// 让我们直接打印到 os.Stdout
 			_ = importFmt
 		}
 		os.Stdout.WriteString("doReq " + method + " " + path + " returned " + w.Body.String() + "\n")
@@ -300,6 +300,7 @@ func doReq(r *gin.Engine, method, path string, body interface{}) *httptest.Respo
 	return w
 }
 
+// TestAuthHandler 测试认证处理器
 func TestAuthHandler(t *testing.T) {
 	r, authH, _, _, _, _, _, _, _ := setupRouter()
 	r.POST("/login", authH.Login)
@@ -319,6 +320,7 @@ func TestAuthHandler(t *testing.T) {
 	doReq(r, "GET", "/profile", nil)
 }
 
+// TestCompanyHandler 测试公司处理器
 func TestCompanyHandler(t *testing.T) {
 	r, _, compH, _, _, _, _, _, _ := setupRouter()
 	r.GET("/companies", compH.List)
@@ -343,6 +345,7 @@ func TestCompanyHandler(t *testing.T) {
 	doReq(r, "DELETE", "/companies/x", nil)
 }
 
+// TestCruiseHandler 测试邮轮处理器
 func TestCruiseHandler(t *testing.T) {
 	r, _, _, cruiseH, _, _, _, _, _ := setupRouter()
 	r.GET("/cruises", cruiseH.List)
@@ -370,6 +373,7 @@ func TestCruiseHandler(t *testing.T) {
 	doReq(r, "DELETE", "/cruises/x", nil)
 }
 
+// TestCabinTypeHandler 测试舱房类型处理器
 func TestCabinTypeHandler(t *testing.T) {
 	r, _, _, _, ctH, _, _, _, _ := setupRouter()
 	r.GET("/cabin-types", ctH.List)
@@ -394,6 +398,7 @@ func TestCabinTypeHandler(t *testing.T) {
 	doReq(r, "GET", "/cabin-types?cruise_id=1&err=1", nil)
 }
 
+// TestFacilityCategoryHandler 测试设施分类处理器
 func TestFacilityCategoryHandler(t *testing.T) {
 	r, _, _, _, _, fcH, _, _, _ := setupRouter()
 	r.GET("/facility-categories", fcH.List)
@@ -416,6 +421,7 @@ func TestFacilityCategoryHandler(t *testing.T) {
 	doReq(r, "POST", "/facility-categories", map[string]interface{}{"name": "success_test_category"})
 }
 
+// TestFacilityHandler 测试设施处理器
 func TestFacilityHandler(t *testing.T) {
 	r, _, _, _, _, _, facH, _, _ := setupRouter()
 	r.GET("/facilities", facH.ListByCruise)
@@ -436,12 +442,14 @@ func TestFacilityHandler(t *testing.T) {
 	doReq(r, "GET", "/facilities?cruise_id=-1", nil)
 }
 
+// TestUploadHandler 测试上传处理器
 func TestUploadHandler(t *testing.T) {
 	r, _, _, _, _, _, _, upH, _ := setupRouter()
 	r.POST("/upload", upH.UploadImage)
 	doReq(r, "POST", "/upload", nil)
 }
 
+// TestUserHandler 测试用户处理器
 func TestUserHandler(t *testing.T) {
 	r, _, _, _, _, _, _, _, usH := setupRouter()
 	r.POST("/user/login", usH.Login)
@@ -451,7 +459,7 @@ func TestUserHandler(t *testing.T) {
 	doReq(r, "GET", "/user/profile", nil)
 }
 
-// Mocks for interface-based handlers
+// 基于接口的处理器的模拟
 
 type mockRouteSvc struct{}
 
@@ -557,6 +565,12 @@ func (m *mockCabinSvc) ListByVoyage(ctx context.Context, id int64) ([]domain.Cab
 	}
 	return nil, nil
 }
+func (m *mockCabinSvc) GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error) {
+	if id == 99 {
+		return nil, errors.New("error")
+	}
+	return &domain.CabinSKU{ID: id, Code: "SKU-1"}, nil
+}
 func (m *mockCabinSvc) Create(ctx context.Context, c *domain.CabinSKU) error {
 	if isErr(ctx) {
 		return errors.New("error")
@@ -614,11 +628,11 @@ func (m *mockCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) er
 
 type mockBookingSvc struct{}
 
-func (m *mockBookingSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) error {
+func (m *mockBookingSvc) Create(_ context.Context, userID, voyageID, skuID int64, guests int) (*domain.Booking, error) {
 	if voyageID == 99 {
-		return errors.New("error")
+		return nil, errors.New("error")
 	}
-	return nil
+	return &domain.Booking{ID: 1, Status: "created", TotalCents: 10000}, nil
 }
 
 func isErr(ctx context.Context) bool {
@@ -627,6 +641,8 @@ func isErr(ctx context.Context) bool {
 	}
 	return false
 }
+
+// TestRestHandlers 测试所有 REST 处理器
 func TestRestHandlers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -663,7 +679,7 @@ func TestRestHandlers(t *testing.T) {
 
 	r.POST("/bookings", bkH.Create)
 
-	// Routes
+	// 航线
 	doReq(r, "GET", "/routes", nil)
 	doReq(r, "GET", "/routes?err=1", nil)
 	doReq(r, "GET", "/routes?err=1&page=abc&page_size=xyz", nil)
@@ -681,7 +697,7 @@ func TestRestHandlers(t *testing.T) {
 	doReq(r, "DELETE", "/routes/99", nil)
 	doReq(r, "DELETE", "/routes/x", nil)
 
-	// Voyages
+	// 航次
 	doReq(r, "GET", "/voyages", nil)
 	doReq(r, "GET", "/voyages?route_id=99", nil)
 	doReq(r, "POST", "/voyages", map[string]interface{}{"route_id": 1, "code": "test"})
@@ -696,7 +712,7 @@ func TestRestHandlers(t *testing.T) {
 	doReq(r, "DELETE", "/voyages/99", nil)
 	doReq(r, "DELETE", "/voyages/x", nil)
 
-	// Cabins
+	// 舱位
 	doReq(r, "GET", "/cabins", nil)
 	doReq(r, "GET", "/cabins?voyage_id=99", nil)
 	doReq(r, "POST", "/cabins", map[string]interface{}{"voyage_id": 1, "cabin_type_id": 1, "code": "test"})
@@ -725,6 +741,6 @@ func TestRestHandlers(t *testing.T) {
 	doReq(r, "POST", "/cabins/1/prices", map[string]int{"price": 1}) // bad
 	doReq(r, "POST", "/cabins/x/prices", nil)
 
-	// Bookings
+	// 订单
 	doReq(r, "POST", "/bookings", nil)
 }

@@ -37,13 +37,15 @@ func NewBookingService(repo BookingRepo, price PriceService, hold HoldService) *
 	return &BookingService{repo: repo, price: price, hold: hold}
 }
 
-// Create 创建预订并在事务内完成库存占用与金额计算。
-func (s *BookingService) Create(ctx context.Context, userID, voyageID, skuID int64, guests int) error {
+// Create 创建预订并在事务内完成库存占用与金额计算，返回已创建订单。
+func (s *BookingService) Create(ctx context.Context, userID, voyageID, skuID int64, guests int) (*domain.Booking, error) {
 	if s.repo == nil || s.price == nil || s.hold == nil {
-		return errors.New("booking dependencies not ready")
+		return nil, errors.New("booking dependencies not ready")
 	}
 
-	return s.repo.InTx(func(tx *gorm.DB, create func(b *domain.Booking) error) error {
+	var created domain.Booking
+
+	err := s.repo.InTx(func(tx *gorm.DB, create func(b *domain.Booking) error) error {
 		if !s.hold.HoldWithTx(tx, skuID, userID, 1) {
 			return errors.New("cannot hold inventory")
 		}
@@ -53,6 +55,12 @@ func (s *BookingService) Create(ctx context.Context, userID, voyageID, skuID int
 			return err
 		}
 
-		return create(&domain.Booking{UserID: userID, VoyageID: voyageID, CabinSKUID: skuID, Status: "created", TotalCents: price})
+		created = domain.Booking{UserID: userID, VoyageID: voyageID, CabinSKUID: skuID, Status: "created", TotalCents: price}
+		return create(&created)
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &created, nil
 }

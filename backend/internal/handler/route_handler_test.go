@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// fakeRouteService implements RouteService for testing.
+// fakeRouteService 实现了用于测试的 RouteService。
 type fakeRouteService struct{ routes []domain.Route }
 
 func (f *fakeRouteService) List(_ context.Context) ([]domain.Route, error) { return f.routes, nil }
@@ -24,6 +24,7 @@ func (f *fakeRouteService) GetByID(_ context.Context, id int64) (*domain.Route, 
 }
 func (f *fakeRouteService) Delete(_ context.Context, id int64) error { return nil }
 
+// TestRouteListHandler 测试航线列表处理器
 func TestRouteListHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -37,6 +38,7 @@ func TestRouteListHandler(t *testing.T) {
 	}
 }
 
+// TestRouteDeleteHandler 测试航线删除处理器
 func TestRouteDeleteHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -49,7 +51,7 @@ func TestRouteDeleteHandler(t *testing.T) {
 	}
 }
 
-// fakeVoyageService implements VoyageService for testing.
+// fakeVoyageService 实现了用于测试的 VoyageService。
 type fakeVoyageService struct{}
 
 func (f *fakeVoyageService) ListByRoute(_ context.Context, routeID int64) ([]domain.Voyage, error) {
@@ -57,8 +59,12 @@ func (f *fakeVoyageService) ListByRoute(_ context.Context, routeID int64) ([]dom
 }
 func (f *fakeVoyageService) Create(_ context.Context, v *domain.Voyage) error { return nil }
 func (f *fakeVoyageService) Update(_ context.Context, v *domain.Voyage) error { return nil }
-func (f *fakeVoyageService) Delete(_ context.Context, id int64) error         { return nil }
+func (f *fakeVoyageService) GetByID(_ context.Context, id int64) (*domain.Voyage, error) {
+	return &domain.Voyage{ID: id}, nil
+}
+func (f *fakeVoyageService) Delete(_ context.Context, id int64) error { return nil }
 
+// TestVoyageListHandler 测试航次列表处理器
 func TestVoyageListHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

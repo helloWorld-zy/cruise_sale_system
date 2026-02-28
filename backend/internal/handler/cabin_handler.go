@@ -14,6 +14,7 @@ import (
 // 包含 SKU 的 CRUD、库存管理和价格管理功能。
 type CabinService interface {
 	ListByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)      // 查询航次下的舱房列表
+	GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error)                  // 查询单个舱房 SKU
 	Create(ctx context.Context, s *domain.CabinSKU) error                             // 创建舱房 SKU
 	Update(ctx context.Context, s *domain.CabinSKU) error                             // 更新舱房 SKU
 	Delete(ctx context.Context, id int64) error                                       // 删除舱房 SKU
@@ -70,6 +71,21 @@ func (h *CabinHandler) List(c *gin.Context) {
 	response.Success(c, list)
 }
 
+// Get 查询单个舱房 SKU 详情。
+func (h *CabinHandler) Get(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	item, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "cabin not found"})
+		return
+	}
+	response.Success(c, item)
+}
+
 // Create 创建新的舱房 SKU。
 func (h *CabinHandler) Create(c *gin.Context) {
 	var req domain.CabinSKU
@@ -114,7 +130,7 @@ func (h *CabinHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
-		response.InternalError(c, err)
+		respondDeleteError(c, err, "cabin")
 		return
 	}
 	c.Status(http.StatusNoContent)

@@ -14,8 +14,8 @@ func TestSprint3MigrationFilesExist(t *testing.T) {
 	files := []string{
 		"000004_user_booking.up.sql",
 		"000004_user_booking.down.sql",
-		"000005_cabin_hold_unique.up.sql",
-		"000005_cabin_hold_unique.down.sql",
+		"000006_cabin_hold_unique.up.sql",
+		"000006_cabin_hold_unique.down.sql",
 	}
 	for _, f := range files {
 		if _, err := os.Stat(f); err != nil {
@@ -25,11 +25,11 @@ func TestSprint3MigrationFilesExist(t *testing.T) {
 }
 
 func TestSprint3HoldUniqueMigrationHasIndexStatements(t *testing.T) {
-	up, err := os.ReadFile("000005_cabin_hold_unique.up.sql")
+	up, err := os.ReadFile("000006_cabin_hold_unique.up.sql")
 	if err != nil {
 		t.Fatalf("read up migration failed: %v", err)
 	}
-	down, err := os.ReadFile("000005_cabin_hold_unique.down.sql")
+	down, err := os.ReadFile("000006_cabin_hold_unique.down.sql")
 	if err != nil {
 		t.Fatalf("read down migration failed: %v", err)
 	}
@@ -73,7 +73,7 @@ INSERT INTO cabin_holds (cabin_sku_id, user_id, qty, expires_at) VALUES
 		t.Fatalf("seed failed: %v", err)
 	}
 
-	upBytes, err := os.ReadFile("000005_cabin_hold_unique.up.sql")
+	upBytes, err := os.ReadFile("000006_cabin_hold_unique.up.sql")
 	if err != nil {
 		t.Fatalf("read up failed: %v", err)
 	}
@@ -94,7 +94,7 @@ INSERT INTO cabin_holds (cabin_sku_id, user_id, qty, expires_at) VALUES
 		t.Fatal("expected duplicate insert to fail after unique index created")
 	}
 
-	downBytes, err := os.ReadFile("000005_cabin_hold_unique.down.sql")
+	downBytes, err := os.ReadFile("000006_cabin_hold_unique.down.sql")
 	if err != nil {
 		t.Fatalf("read down failed: %v", err)
 	}

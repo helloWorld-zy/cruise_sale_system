@@ -37,6 +37,21 @@ func (h *RouteHandler) List(c *gin.Context) {
 	response.Success(c, list)
 }
 
+// Get 查询单条航线详情。
+func (h *RouteHandler) Get(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+	item, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "route not found"})
+		return
+	}
+	response.Success(c, item)
+}
+
 // Create 创建新的航线。
 func (h *RouteHandler) Create(c *gin.Context) {
 	var req domain.Route
@@ -79,7 +94,7 @@ func (h *RouteHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
-		response.InternalError(c, err)
+		respondDeleteError(c, err, "route")
 		return
 	}
 	c.Status(http.StatusNoContent)

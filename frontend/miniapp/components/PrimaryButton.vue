@@ -3,3 +3,12 @@
 <template>
   <button class="primary-button"><slot/></button>
 </template>
+
+<style scoped>
+.primary-button {
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #1f7bd5, #2d9af9);
+  color: #fff;
+  font-weight: 700;
+}
+</style>

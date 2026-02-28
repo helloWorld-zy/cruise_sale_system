@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Part 1: First set of edges
+// 第一部分：第一组边界情况
 type myCompRepo struct{ *mockCompanyRepo }
 type myCruiseRepo struct{ *mockCruiseRepo }
 type myCabinTypeRepo struct{ *mockCabinTypeRepo }
@@ -24,7 +24,7 @@ type myCabinSvc struct{ *mockCabinSvc }
 
 func (m *myCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
 	if companyID == 2 {
-		return nil, 1, nil // force ErrCompanyHasCruises in Company Service
+		return nil, 1, nil // 强制在公司服务中触发 ErrCompanyHasCruises
 	}
 	return nil, 0, errors.New("error")
 }
@@ -44,7 +44,7 @@ func (m *myCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) erro
 	return nil
 }
 
-// Part 2: Second set of edges
+// 第二部分：第二组边界情况
 type edgeCabinSvc struct{ *mockCabinSvc }
 
 func (e *edgeCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) error {
@@ -82,7 +82,7 @@ type edgeCruiseRepo struct{ *mockCruiseRepo }
 
 func (e *edgeCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
 	if companyID == 2 {
-		return nil, 1, nil // Force ErrCompanyHasCruises when checking count
+		return nil, 1, nil // 在检查计数时强制触发 ErrCompanyHasCruises
 	}
 	if companyID == 4 {
 		return nil, 0, errors.New("cruise list err")
@@ -96,10 +96,10 @@ func (e *edgeCruiseRepo) Delete(ctx context.Context, id int64) error {
 type edgeCompanyRepo struct{ *mockCompanyRepo }
 
 func (e *edgeCompanyRepo) Delete(ctx context.Context, id int64) error {
-	return nil // Clean delete for success coverage
+	return nil // 干净的删除以保证成功覆盖率
 }
 
-// Third set from TestTrulyMissingEdges2
+// 第三组：来自 TestTrulyMissingEdges2
 type edgeCabinTypeRepo2 struct{ *mockCabinTypeRepo }
 
 func (e *edgeCabinTypeRepo2) List(ctx context.Context, p, ps int) ([]domain.CabinType, int64, error) {
@@ -118,7 +118,7 @@ func (e *edgeFacilityRepo2) ListByCruise(ctx context.Context, cruiseID int64) ([
 	return nil, errors.New("unconditional facility list err")
 }
 
-// Fourth set for Sprint 4 edge cases
+// 第四组：Sprint 4 的边界情况
 type edgeCabinIndexer struct{ called *bool }
 
 func (e *edgeCabinIndexer) IndexCabin(doc interface{}) error { return errors.New("index err") }
@@ -158,11 +158,12 @@ func runM(r *gin.Engine, method, path, body string) {
 	r.ServeHTTP(w, req)
 }
 
+// TestCombinedMissingEdges 测试组合缺失的边界情况
 func TestCombinedMissingEdges(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	// 1. From first test (upload cov, specific company errs, etc)
+	// 1. 来自第一个测试 (上传覆盖率, 特定的公司错误等)
 	compSvc := service.NewCompanyService(&mockCompanyRepo{}, &myCruiseRepo{})
 	compH := NewCompanyHandler(compSvc)
 	r.DELETE("/companies/:id", compH.Delete)
@@ -199,7 +200,7 @@ func TestCombinedMissingEdges(t *testing.T) {
 	runM(r, "POST", "/cabins/1/prices", `{"price_cents": 100}`)
 	runM(r, "POST", "/cabins/1/prices", `{"price_cents": 99}`)
 
-	// 2. From second test (TrulyMissingEdges)
+	// 2. 来自第二个测试 (TrulyMissingEdges)
 	cbH2 := NewCabinHandler(&edgeCabinSvc{})
 	r.POST("/cb_2/:id/prices", cbH2.UpsertPrice)
 	runM(r, "POST", "/cb_2/1/prices", `{"price_cents": 100}`)
@@ -234,7 +235,7 @@ func TestCombinedMissingEdges(t *testing.T) {
 	runM(r, "GET", "/up?i=a&i64=b", "")
 	runM(r, "GET", "/up", "")
 
-	// 3. From third test (TrulyMissingEdges2)
+	// 3. 来自第三个测试 (TrulyMissingEdges2)
 	cbH3 := NewCabinHandler(&edgeCabinSvc{})
 	r.POST("/cb_3/:id/prices", cbH3.UpsertPrice)
 	runM(r, "POST", "/cb_3/1/prices", `{malformed json for sure}`)
@@ -253,7 +254,7 @@ func TestCombinedMissingEdges(t *testing.T) {
 	r.GET("/fac_3", facH3.ListByCruise)
 	runM(r, "GET", "/fac_3?cruise_id=1", "")
 
-	// 4. From fourth set (Sprint 4)
+	// 4. 来自第四组 (Sprint 4)
 	bkH := NewBookingHandler(nil)
 	r.POST("/bk_1", bkH.Create)
 	runM(r, "POST", "/bk_1", `{"voyage_id":1,"cabin_sku_id":1,"guests":1}`)
@@ -278,21 +279,21 @@ func TestCombinedMissingEdges(t *testing.T) {
 	usrH1 := NewUserHandlerWithRepo(authSvcImpl{}, &edgeUserRepo{err: errors.New("repo err")}, "secret")
 	r.POST("/usr_1/login", usrH1.Login)
 	r.POST("/usr_1/sms", usrH1.SendCode)
-	runM(r, "POST", "/usr_1/login", `{"phone":"138","code":"123"}`) // covers err != nil
-	runM(r, "POST", "/usr_1/sms", `malformed json`)                 // covers bind error
-	runM(r, "POST", "/usr_1/login", `malformed json`)               // covers bind error login
+	runM(r, "POST", "/usr_1/login", `{"phone":"138","code":"123"}`) // 覆盖 err != nil
+	runM(r, "POST", "/usr_1/sms", `malformed json`)                 // 覆盖绑定错误
+	runM(r, "POST", "/usr_1/login", `malformed json`)               // 覆盖登录绑定错误
 
 	usrH_succ := NewUserHandlerWithRepo(authSvcImpl{}, &edgeUserRepo{}, "secret")
 	r.POST("/usr_succ/login", usrH_succ.Login)
-	runM(r, "POST", "/usr_succ/login", `{"phone":"138","code":"123"}`) // covers succ
-	// mock rand error is not easily reachable, but nil auth svc is
+	runM(r, "POST", "/usr_succ/login", `{"phone":"138","code":"123"}`) // 覆盖成功
+	// 模拟 rand 错误不容易达到，但 nil 认证服务可以
 	usrNilAuth := NewUserHandler(nil, "")
 	r.POST("/usr_nil/login", usrNilAuth.Login)
 	r.POST("/usr_nil/sms", usrNilAuth.SendCode)
 	runM(r, "POST", "/usr_nil/login", `{"phone":"138","code":"123"}`)
 	runM(r, "POST", "/usr_nil/sms", `{"phone":"138"}`)
 
-	// Invalid SMS code
+	// 无效的短信验证码
 	usrInvalid := NewUserHandlerWithRepo(authSvcInvalid{}, nil, "secret")
 	r.POST("/usr_inv/login", usrInvalid.Login)
 	r.POST("/usr_inv/sms", usrInvalid.SendCode)

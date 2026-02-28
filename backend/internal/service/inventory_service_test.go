@@ -7,7 +7,7 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
-// fakeInventoryRepo satisfies the updated InventoryRepo interface (CRITICAL-01).
+// fakeInventoryRepo 实现了更新后的 InventoryRepo 接口 (CRITICAL-01)。
 type fakeInventoryRepo struct {
 	inv  domain.CabinInventory
 	logs []domain.InventoryLog
@@ -15,7 +15,7 @@ type fakeInventoryRepo struct {
 
 func (f *fakeInventoryRepo) GetBySKU(id int64) (domain.CabinInventory, error) { return f.inv, nil }
 
-// AdjustAtomic simulates the atomic SQL update: only applies if total+delta >= 0.
+// AdjustAtomic 模拟原子 SQL 更新：仅当 total+delta >= 0 时应用。
 func (f *fakeInventoryRepo) AdjustAtomic(ctx context.Context, id int64, delta int) error {
 	if f.inv.Total+delta < 0 {
 		return domain.ErrInsufficientInventory

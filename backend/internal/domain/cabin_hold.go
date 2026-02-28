@@ -8,7 +8,7 @@ type CabinHold struct {
 	ID         int64     `gorm:"primaryKey"`                // 主键 ID
 	CabinSKUID int64     `gorm:"column:cabin_sku_id;index"` // 占座的舱房 SKU ID
 	UserID     int64     `gorm:"index"`                     // 占座用户 ID
-	Qty        int                                           // 占用数量
-	ExpiresAt  time.Time `gorm:"index"`                     // 占座过期时间
-	CreatedAt  time.Time                                     // 创建时间
+	Qty        int       // 占用数量
+	ExpiresAt  time.Time `gorm:"index"` // 占座过期时间
+	CreatedAt  time.Time // 创建时间
 }

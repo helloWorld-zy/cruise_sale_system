@@ -60,6 +60,23 @@ func (h *CruiseHandler) List(c *gin.Context) {
 	response.Success(c, gin.H{"list": items, "total": total})
 }
 
+// Get 查询单个邮轮详情。
+func (h *CruiseHandler) Get(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
+		return
+	}
+
+	item, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, errcode.ErrNotFound, "cruise not found")
+		return
+	}
+
+	response.Success(c, item)
+}
+
 // Create godoc
 // @Summary Create cruise
 // @Tags Cruise

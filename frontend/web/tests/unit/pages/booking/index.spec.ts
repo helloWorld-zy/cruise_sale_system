@@ -1,12 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import Page from '../../../../pages/booking/index.vue'
 
 // Nuxt 自动导入 stub
 const mockPush = vi.fn()
 const mockQuery = {}
+const mockRequest = vi.fn().mockResolvedValue({ id: 1, available: 3, departure_date: '2099-01-01' })
 vi.stubGlobal('useRouter', () => ({ push: mockPush }))
 vi.stubGlobal('useRoute', () => ({ query: mockQuery }))
+vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 
 describe('Booking Step 1', () => {
     it('渲染标题和输入框', () => {
@@ -35,6 +37,9 @@ describe('Booking Step 1', () => {
         await wrapper.find('input#cabin-sku-id').setValue('3')
         await wrapper.find('input#guests').setValue('2')
         await wrapper.find('form').trigger('submit')
+        await flushPromises()
+        expect(mockRequest).toHaveBeenCalledWith('/voyages/2')
+        expect(mockRequest).toHaveBeenCalledWith('/cabins/3')
         expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({
             path: '/booking/confirm',
         }))
@@ -47,6 +52,7 @@ describe('Booking Step 1', () => {
         await wrapper.find('input#cabin-sku-id').setValue('3')
         await wrapper.find('input#guests').setValue('2')
         await wrapper.find('form').trigger('submit')
+        await flushPromises()
         expect(wrapper.text()).toContain('route push failed')
     })
 })

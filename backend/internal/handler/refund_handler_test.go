@@ -1,7 +1,9 @@
 package handler
 
 import (
-	"encoding/json"
+	"bytes"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,18 +12,83 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRefundHandler_Create(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
+type fakeRefundSvc struct{ err error }
 
-	h := NewRefundHandler()
-	h.Create(ctx)
+func (f fakeRefundSvc) Create(_ context.Context, _ int64, _ int64, _ string) error { return f.err }
+
+// TestRefundHandler_CreateOK 测试创建退款成功
+func TestRefundHandler_CreateOK(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewRefundHandler(fakeRefundSvc{})
+	r := gin.New()
+	r.POST("/refunds", h.Create)
+
+	body := bytes.NewBufferString(`{"payment_id":1,"amount_cents":5000,"reason":"cancel"}`)
+	req := httptest.NewRequest("POST", "/refunds", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
 
-	var res map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &res)
-	assert.NoError(t, err)
-	assert.Equal(t, float64(0), res["code"])
+// TestRefundHandler_MissingPaymentID 测试缺少支付ID时的处理
+func TestRefundHandler_MissingPaymentID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewRefundHandler(fakeRefundSvc{})
+	r := gin.New()
+	r.POST("/refunds", h.Create)
+
+	req := httptest.NewRequest("POST", "/refunds", bytes.NewBufferString(`{"amount_cents":500,"reason":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestRefundHandler_MissingAmountCents 测试缺少金额时的处理
+func TestRefundHandler_MissingAmountCents(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewRefundHandler(fakeRefundSvc{})
+	r := gin.New()
+	r.POST("/refunds", h.Create)
+
+	req := httptest.NewRequest("POST", "/refunds", bytes.NewBufferString(`{"payment_id":1,"reason":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestRefundHandler_MissingReason 测试缺少原因时的处理
+func TestRefundHandler_MissingReason(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewRefundHandler(fakeRefundSvc{})
+	r := gin.New()
+	r.POST("/refunds", h.Create)
+
+	req := httptest.NewRequest("POST", "/refunds", bytes.NewBufferString(`{"payment_id":1,"amount_cents":500}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// TestRefundHandler_ServiceError_ExceedsAmount 测试超过退款金额时的服务错误
+func TestRefundHandler_ServiceError_ExceedsAmount(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewRefundHandler(fakeRefundSvc{err: errors.New("refund amount exceeds remaining refundable balance 0")})
+	r := gin.New()
+	r.POST("/refunds", h.Create)
+
+	body := bytes.NewBufferString(`{"payment_id":1,"amount_cents":99999,"reason":"too much"}`)
+	req := httptest.NewRequest("POST", "/refunds", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }

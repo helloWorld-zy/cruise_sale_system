@@ -6,10 +6,12 @@
     <header class="border-b bg-white/90 backdrop-blur">
       <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <!-- 网站 Logo / 首页链接 -->
-        <NuxtLink to="/" class="text-lg font-semibold">CruiseBooking</NuxtLink>
+        <NuxtLink to="/search" class="text-lg font-semibold">CruiseBooking</NuxtLink>
         <!-- 导航菜单 -->
         <nav class="space-x-4 text-sm">
-          <NuxtLink to="/cruises">邮轮</NuxtLink>
+          <NuxtLink to="/search">搜索</NuxtLink>
+          <NuxtLink to="/booking">预订</NuxtLink>
+          <NuxtLink to="/account/login">登录</NuxtLink>
         </nav>
       </div>
     </header>

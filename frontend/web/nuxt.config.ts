@@ -6,5 +6,5 @@ export default defineNuxtConfig({
     future: {
         compatibilityVersion: 4,     // 启用 Nuxt 4 兼容模式
     },
-    modules: ['@pinia/nuxt']         // 注册 Pinia 状态管理模块
+    modules: ['@pinia/nuxt', '@nuxt/ui'], // 注册 Pinia 状态管理模块和 UI 库
 })
