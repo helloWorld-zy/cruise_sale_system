@@ -192,11 +192,11 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	bookingsAdmin := admin.Group("/bookings")
 	{
-		bookingsAdmin.GET("", deps.Booking.AdminList)       // 管理后台查询订单列表
+		bookingsAdmin.GET("", deps.Booking.AdminList)          // 管理后台查询订单列表
 		bookingsAdmin.GET("/export", deps.Booking.AdminExport) // 管理后台导出订单 CSV
-		bookingsAdmin.GET("/:id", deps.Booking.AdminGet)    // 管理后台查询订单详情
-		bookingsAdmin.POST("", deps.Booking.Create)         // 管理后台创建订单
-		bookingsAdmin.PUT("/:id", deps.Booking.AdminUpdate) // 管理后台更新订单状态
+		bookingsAdmin.GET("/:id", deps.Booking.AdminGet)       // 管理后台查询订单详情
+		bookingsAdmin.POST("", deps.Booking.Create)            // 管理后台创建订单
+		bookingsAdmin.PUT("/:id", deps.Booking.AdminUpdate)    // 管理后台更新订单状态
 		bookingsAdmin.DELETE("/:id", deps.Booking.AdminDelete)
 	}
 
