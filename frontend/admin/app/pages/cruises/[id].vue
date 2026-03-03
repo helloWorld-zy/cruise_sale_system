@@ -12,6 +12,7 @@ const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 const form = ref({
   id: 0,
   name: '',
@@ -36,9 +37,14 @@ const id = Number(route.params.id)
 async function loadDetail() {
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request(`/cruises/${id}`)
     const data = res?.data ?? res ?? {}
+    if (Object.keys(data).length === 0) {
+      empty.value = true
+      return
+    }
     form.value = {
       id: Number(data.id ?? id),
       name: data.name ?? '',
@@ -117,6 +123,7 @@ onMounted(loadDetail)
     <div class="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <h1 class="mb-4 text-xl font-semibold text-slate-900">编辑邮轮 #{{ id }}</h1>
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
+      <p v-else-if="empty" data-test="empty" class="text-sm text-slate-600">暂无邮轮数据</p>
       <form v-else class="space-y-4" @submit.prevent="handleSave">
         <div class="grid gap-4 md:grid-cols-2">
           <label class="text-sm text-slate-600">名称<input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>

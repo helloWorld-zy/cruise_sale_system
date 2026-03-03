@@ -34,7 +34,9 @@ func (m *mockBookingAdminStore) GetByID(_ context.Context, id int64) (*domain.Bo
 	}
 	return &domain.Booking{ID: id}, nil
 }
-func (m *mockBookingAdminStore) UpdateStatus(_ context.Context, id int64, status string) error {
+func (m *mockBookingAdminStore) TransitionStatus(_ context.Context, id int64, status string, operatorID int64, remark string) error {
+	_ = operatorID
+	_ = remark
 	if id == 99 {
 		return errors.New("update error")
 	}

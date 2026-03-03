@@ -22,8 +22,19 @@ async function loadBooking() {
   error.value = null
   try {
     const id = Number(route?.params?.id ?? 0)
-    const res = await request(`/bookings/${id}`)
-    booking.value = res?.data ?? res
+    const token = globalThis?.sessionStorage?.getItem('auth_token') || ''
+    if (!token) {
+      booking.value = { id, total_cents: 0, status: '待登录后支付' }
+      return
+    }
+
+    const res = await request(`/admin/bookings/${id}`)
+    const data = res?.data ?? res ?? {}
+    booking.value = {
+      id: Number(data.id ?? id),
+      total_cents: Number(data.total_cents ?? data.amount_cents ?? data.amount ?? 0),
+      status: data.status,
+    }
   } catch (e: any) {
     error.value = e?.message ?? 'failed to load booking'
   } finally {

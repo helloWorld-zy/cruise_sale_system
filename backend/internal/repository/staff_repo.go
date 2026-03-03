@@ -49,3 +49,13 @@ func (r *StaffRepository) Update(ctx context.Context, staff *domain.Staff) error
 func (r *StaffRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.Staff{}, id).Error
 }
+
+// List 返回未软删除的员工列表。
+func (r *StaffRepository) List(ctx context.Context) ([]domain.Staff, error) {
+	var list []domain.Staff
+	err := r.db.WithContext(ctx).
+		Where("deleted_at IS NULL").
+		Order("id DESC").
+		Find(&list).Error
+	return list, err
+}

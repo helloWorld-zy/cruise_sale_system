@@ -13,14 +13,20 @@ const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 const form = ref({ code: '', name: '' })
 
 async function loadDetail() {
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request(`/routes/${id}`)
     const data = res?.data ?? res ?? {}
+    if (Object.keys(data).length === 0) {
+      empty.value = true
+      return
+    }
     form.value = { code: data.code ?? '', name: data.name ?? '' }
   } catch (e: any) {
     error.value = e?.message ?? 'failed to load route detail'
@@ -68,6 +74,7 @@ onMounted(loadDetail)
   <div class="page">
     <h1>编辑航线 #{{ id }}</h1>
     <p v-if="loading">Loading...</p>
+    <p v-else-if="empty" data-test="empty">暂无航线数据</p>
     <form v-else @submit.prevent="handleSave">
       <input v-model="form.code" placeholder="Code" :disabled="saving || deleting" />
       <input v-model="form.name" placeholder="Name" :disabled="saving || deleting" />

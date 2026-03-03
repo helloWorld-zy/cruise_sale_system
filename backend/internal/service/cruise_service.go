@@ -18,6 +18,10 @@ type CruiseService struct {
 	companyRepo domain.CompanyRepository   // 公司数据仓储（用于外键验证）
 }
 
+type cruiseBatchStatusWriter interface {
+	BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error
+}
+
 // NewCruiseService 创建邮轮服务实例，通过依赖注入传入所需的仓储。
 func NewCruiseService(cruiseRepo domain.CruiseRepository, cabinRepo domain.CabinTypeRepository, companyRepo domain.CompanyRepository) *CruiseService {
 	return &CruiseService{cruiseRepo: cruiseRepo, cabinRepo: cabinRepo, companyRepo: companyRepo}
@@ -53,6 +57,9 @@ func (s *CruiseService) ListWithFilters(ctx context.Context, companyID int64, ke
 
 // BatchUpdateStatus 批量更新邮轮状态。
 func (s *CruiseService) BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error {
+	if writer, ok := s.cruiseRepo.(cruiseBatchStatusWriter); ok {
+		return writer.BatchUpdateStatus(ctx, ids, status)
+	}
 	for _, id := range ids {
 		item, err := s.cruiseRepo.GetByID(ctx, id)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +59,10 @@ func (m *allMockCabinRepo) ListPricesBySKU(_ context.Context, _ int64) ([]domain
 	return nil, nil
 }
 func (m *allMockCabinRepo) UpsertPrice(_ context.Context, _ *domain.CabinPrice) error { return nil }
-func (m *allMockCabinRepo) GetCategoryTree(_ context.Context) (interface{}, error)    { return nil, nil }
+func (m *allMockCabinRepo) BatchSetPrice(_ context.Context, _ int64, _ time.Time, _ time.Time, _ int, _ int64, _ int64, _ int64, _ string) error {
+	return nil
+}
+func (m *allMockCabinRepo) GetCategoryTree(_ context.Context) (interface{}, error) { return nil, nil }
 
 // === CabinAdminService.GetByID ===
 func TestCabinAdminService_GetByID(t *testing.T) {

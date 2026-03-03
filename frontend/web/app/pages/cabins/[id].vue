@@ -182,16 +182,22 @@ function nextSlide() {
 }
 
 async function loadData() {
-  const [detailRes, priceRes, inventoryRes] = await Promise.all([
-    request(`/cabins/${id}`),
-    request(`/cabins/${id}/prices`),
-    request(`/cabins/${id}/inventory`),
+  const [typeRes] = await Promise.allSettled([
+    request('/cabin-types', { query: { page: 1, page_size: 200 } }),
   ])
 
-  detail.value = detailRes?.data ?? detailRes ?? null
-  const pricePayload = priceRes?.data ?? priceRes ?? []
-  prices.value = Array.isArray(pricePayload) ? pricePayload : pricePayload?.list ?? []
-  inventory.value = inventoryRes?.data ?? inventoryRes ?? null
+  const typePayload = typeRes.status === 'fulfilled' ? (typeRes.value?.data ?? typeRes.value ?? []) : []
+  const typeList = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+  detail.value = typeList.find((item: Record<string, any>) => Number(item.id) === id) ?? null
+
+  // C-end public API does not expose per-cabin price/inventory endpoints yet.
+  prices.value = []
+  inventory.value = {
+    total: Number(detail.value?.total_inventory || detail.value?.inventory || 0),
+    available: Number(detail.value?.available_inventory || detail.value?.inventory || 0),
+    sold: 0,
+    locked: 0,
+  }
 }
 
 onMounted(loadData)

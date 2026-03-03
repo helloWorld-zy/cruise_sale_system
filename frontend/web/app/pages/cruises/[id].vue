@@ -135,29 +135,35 @@ function nextSlide() {
 }
 
 async function loadAll() {
-  const [detailRes, typeRes, facilityRes, categoryRes, routeRes] = await Promise.all([
+  const [detailRes, typeRes, facilityRes, categoryRes] = await Promise.allSettled([
     request(`/cruises/${id}`),
     request('/cabin-types', { query: { cruise_id: id, page: 1, page_size: 50 } }),
     request('/facilities', { query: { cruise_id: id } }),
     request('/facility-categories'),
-    request('/routes'),
   ])
 
-  detail.value = detailRes?.data ?? detailRes ?? null
-  const typePayload = typeRes?.data ?? typeRes ?? {}
-  cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
-  const facilityPayload = facilityRes?.data ?? facilityRes ?? []
-  facilities.value = Array.isArray(facilityPayload) ? facilityPayload : facilityPayload?.list ?? []
-  const categoryPayload = categoryRes?.data ?? categoryRes ?? []
-  facilityCategories.value = Array.isArray(categoryPayload) ? categoryPayload : categoryPayload?.list ?? []
-  const routePayload = routeRes?.data ?? routeRes ?? []
-  const source = Array.isArray(routePayload) ? routePayload : routePayload?.list ?? []
-  relatedRoutes.value = source.slice(0, 5).map((item: Record<string, any>) => ({
-    id: item.id || Math.random().toString(36).substr(2, 9),
-    date: item.departure_date || item.date || '-',
-    name: item.name || item.route_name || '-',
-    price: Math.round(Number(item.min_price_cents || item.price_cents || 0) / 100) || '-',
-  }))
+  const unwrap = (result: PromiseSettledResult<any>, fallback: any) => {
+    if (result.status === 'fulfilled') return result.value
+    return fallback
+  }
+
+  const detailPayload = unwrap(detailRes, null)
+  detail.value = detailPayload?.data ?? detailPayload ?? null
+
+  const typePayload = unwrap(typeRes, [])
+  const typeData = typePayload?.data ?? typePayload ?? {}
+  cabinTypes.value = Array.isArray(typeData) ? typeData : typeData?.list ?? []
+
+  const facilityPayload = unwrap(facilityRes, [])
+  const facilityData = facilityPayload?.data ?? facilityPayload ?? []
+  facilities.value = Array.isArray(facilityData) ? facilityData : facilityData?.list ?? []
+
+  const categoryPayload = unwrap(categoryRes, [])
+  const categoryData = categoryPayload?.data ?? categoryPayload ?? []
+  facilityCategories.value = Array.isArray(categoryData) ? categoryData : categoryData?.list ?? []
+
+  // Public API currently has no dedicated route list endpoint for C-end, so keep this optional.
+  relatedRoutes.value = []
 }
 
 onMounted(loadAll)

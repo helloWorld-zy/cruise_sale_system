@@ -82,5 +82,6 @@ async function handleDelete() {
         <button type="button" style="margin-left:8px" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除订单' }}</button>
       </div>
     </div>
+    <p v-else data-test="empty">暂无订单数据</p>
   </div>
 </template>

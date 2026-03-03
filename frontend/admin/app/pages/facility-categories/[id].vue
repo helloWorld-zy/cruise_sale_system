@@ -2,6 +2,8 @@
   <div class="min-h-screen bg-slate-50 p-4 md:p-6">
     <div class="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h1 class="mb-6 text-xl font-semibold text-slate-900">编辑设施分类</h1>
+      <p v-if="loading" class="mb-3 text-sm text-slate-600">加载中...</p>
+      <p v-else-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无分类数据</p>
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <label class="block space-y-1 text-sm text-slate-600">
           <span>名称</span>
@@ -41,6 +43,7 @@ const route = useRoute()
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 
 const id = computed(() => {
   const value = Number(route.params.id)
@@ -57,13 +60,14 @@ const form = ref({
 async function loadDetail() {
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request('/facility-categories')
     const payload = res?.data ?? res ?? []
     const list = Array.isArray(payload) ? payload : payload?.list ?? []
     const detail = list.find((item: Record<string, any>) => Number(item.id) === id.value)
     if (!detail) {
-      error.value = '未找到该分类'
+      empty.value = true
       return
     }
     form.value = {

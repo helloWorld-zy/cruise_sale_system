@@ -86,3 +86,25 @@ func TestTieredRefund_Boundary(t *testing.T) {
 	amount = svc.CalcRefundAmount(10000, 30, rules)
 	assert.Equal(t, int64(8000), amount)
 }
+
+func TestTieredRefund_BoundaryExactDays30_7_0(t *testing.T) {
+	rules := []domain.RefundRule{
+		{MinDays: 31, MaxDays: 9999, RefundRate: 100},
+		{MinDays: 15, MaxDays: 31, RefundRate: 80},
+		{MinDays: 7, MaxDays: 15, RefundRate: 50},
+		{MinDays: 0, MaxDays: 7, RefundRate: 0},
+	}
+	svc := &RefundService{}
+
+	assert.Equal(t, int64(8000), svc.CalcRefundAmount(10000, 30, rules))
+	assert.Equal(t, int64(5000), svc.CalcRefundAmount(10000, 7, rules))
+	assert.Equal(t, int64(0), svc.CalcRefundAmount(10000, 0, rules))
+}
+
+func TestTieredRefund_IntegerArithmeticNoPrecisionLoss(t *testing.T) {
+	rules := []domain.RefundRule{{MinDays: 15, MaxDays: 31, RefundRate: 80}}
+	svc := &RefundService{}
+
+	amount := svc.CalcRefundAmount(9999, 20, rules)
+	assert.Equal(t, int64(7999), amount)
+}

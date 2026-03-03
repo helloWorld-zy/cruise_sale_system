@@ -83,16 +83,99 @@ func TestUserAuthVerifyExpiryAndLockout(t *testing.T) {
 
 func TestUserAuthAlipayLogin(t *testing.T) {
 	svc := NewUserAuthService(&fakeCodeStore{ok: true})
-	token := svc.AlipayLogin("alipay_uid_001")
-	if token == "" {
-		t.Fatal("expected alipay token")
+	signedUID := "alipay_uid_001"
+	sig := svc.signAlipayUID(signedUID)
+
+	token, err := svc.AlipayLogin("alipay_uid_001", signedUID, sig)
+	if err != nil {
+		t.Fatalf("expected alipay login success, got error: %v", err)
+	}
+	if token != signedUID {
+		t.Fatalf("expected verified uid %s, got %s", signedUID, token)
+	}
+}
+
+func TestUserAuthAlipayLoginRejectsInvalidSignature(t *testing.T) {
+	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+
+	_, err := svc.AlipayLogin("alipay_uid_001", "alipay_uid_001", "bad-signature")
+	if err == nil {
+		t.Fatal("expected invalid signature error")
+	}
+}
+
+func TestUserAuthAlipayLoginRejectsForgedClientUID(t *testing.T) {
+	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+	providerUID := "alipay_uid_real"
+	sig := svc.signAlipayUID(providerUID)
+
+	_, err := svc.AlipayLogin("alipay_uid_forged", providerUID, sig)
+	if err == nil {
+		t.Fatal("expected forged uid to be rejected")
 	}
 }
 
 func TestUserAuthBindAccount(t *testing.T) {
-	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+	now := time.Now()
+	store := &fakeCodeStore{ok: true}
+	svc := NewUserAuthServiceWithPolicy(store, UserAuthPolicy{
+		CodeTTL:        time.Minute,
+		ResendInterval: time.Second,
+		MaxAttempts:    5,
+		LockDuration:   time.Minute,
+		Now:            func() time.Time { return now },
+	})
+	// 先发 SMS 验证码
+	if err := svc.SendSMS("13800000000", "1234"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.AuthorizeBinding(1, "13800000000", "1234"); err != nil {
+		t.Fatalf("expected authorize success: %v", err)
+	}
 	err := svc.BindAccount(1, "alipay", "alipay_uid_001")
 	if err != nil {
 		t.Fatal("expected bind success")
+	}
+}
+
+func TestUserAuthBindAccountRequiresConfirmation(t *testing.T) {
+	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+
+	err := svc.BindAccount(1, "alipay", "alipay_uid_001")
+	if err == nil {
+		t.Fatal("expected bind to fail without confirmation")
+	}
+}
+
+func TestUserAuthBindAccountRejectsDuplicateIdentifier(t *testing.T) {
+	now := time.Now()
+	store := &fakeCodeStore{ok: true}
+	svc := NewUserAuthServiceWithPolicy(store, UserAuthPolicy{
+		CodeTTL:        time.Minute,
+		ResendInterval: time.Second,
+		MaxAttempts:    5,
+		LockDuration:   time.Minute,
+		Now:            func() time.Time { return now },
+	})
+
+	if err := svc.SendSMS("13800000001", "0001"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.AuthorizeBinding(1, "13800000001", "0001"); err != nil {
+		t.Fatalf("authorize user1 failed: %v", err)
+	}
+	if err := svc.BindAccount(1, "alipay", "alipay_uid_001"); err != nil {
+		t.Fatalf("user1 bind failed: %v", err)
+	}
+
+	if err := svc.SendSMS("13800000002", "0002"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.AuthorizeBinding(2, "13800000002", "0002"); err != nil {
+		t.Fatalf("authorize user2 failed: %v", err)
+	}
+	err := svc.BindAccount(2, "alipay", "alipay_uid_001")
+	if err == nil {
+		t.Fatal("expected duplicate binding to be rejected")
 	}
 }

@@ -9,6 +9,7 @@ const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 const amenityOptions = ['浴缸', '迷你吧', '智能电视', '胶囊咖啡机', '沙发床', '独立衣帽间']
 
 const form = ref({
@@ -30,9 +31,14 @@ const form = ref({
 async function loadDetail() {
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request(`/cabins/${id}`)
     const data = res?.data ?? res ?? {}
+    if (Object.keys(data).length === 0) {
+      empty.value = true
+      return
+    }
     form.value = {
       voyage_id: Number(data.voyage_id ?? 0),
       cabin_type_id: Number(data.cabin_type_id ?? 0),
@@ -121,6 +127,7 @@ onMounted(loadDetail)
     <div class="mx-auto max-w-5xl space-y-4">
       <h1 class="text-xl font-semibold text-slate-900">编辑舱位 #{{ id }}</h1>
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
+      <p v-else-if="empty" data-test="empty" class="text-sm text-slate-600">暂无舱位数据</p>
       <form v-else class="space-y-4" @submit.prevent="handleSave">
         <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 class="mb-3 text-sm font-semibold text-slate-700">基本信息</h2>

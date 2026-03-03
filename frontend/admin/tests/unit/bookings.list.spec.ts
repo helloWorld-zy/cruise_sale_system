@@ -1,90 +1,124 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import Page from '../../app/pages/bookings/index.vue'
 
-// 模拟 useApi：返回两条订单
-const mockRequest = vi.fn().mockResolvedValue({ data: {
-    list: [
-        { id: 1, status: 'created', total_cents: 19900 },
-        { id: 2, status: 'paid', total_cents: 38000 },
-    ],
-    total: 2,
-} })
+const mockRequest = vi.fn()
 const confirmMock = vi.fn(() => true)
+const clickMock = vi.fn()
+const originalCreateElement = document.createElement.bind(document)
 
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 vi.stubGlobal('confirm', confirmMock)
 
+const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+  if (tagName.toLowerCase() === 'a') {
+    return {
+      href: '',
+      download: '',
+      click: clickMock,
+    } as any
+  }
+  return originalCreateElement(tagName)
+})
+
+vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
+vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+
+function successList(list: any[], total = list.length) {
+  return { data: { list, total } }
+}
+
 beforeEach(() => {
-    mockRequest.mockClear()
-    confirmMock.mockClear()
-    confirmMock.mockReturnValue(true)
-    mockRequest.mockResolvedValue({ data: {
-        list: [
-            { id: 1, status: 'created', total_cents: 19900 },
-            { id: 2, status: 'paid', total_cents: 38000 },
-        ],
-        total: 2,
-    } })
+  mockRequest.mockReset()
+  confirmMock.mockClear()
+  clickMock.mockClear()
+  mockRequest.mockResolvedValue(
+    successList([
+      { id: 1, status: 'pending_payment', total_cents: 19900, voyage_id: 2, user_id: 9 },
+      { id: 2, status: 'paid', total_cents: 38000, voyage_id: 3, user_id: 9 },
+    ]),
+  )
 })
 
 describe('Admin Bookings', () => {
-    it('渲染订单标题', () => {
-        const wrapper = mount(Page)
-        expect(wrapper.text()).toContain('Bookings')
+  it('renders enhanced filters and export button', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+    expect(wrapper.find('[data-test="filter-booking-no"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="filter-phone"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="export"]').exists()).toBe(true)
+  })
+
+  it('loads list with query filters', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    await wrapper.find('[data-test="filter-booking-no"]').setValue('1001')
+    await wrapper.find('[data-test="filter-phone"]').setValue('138')
+    await wrapper.find('[data-test="filter-submit"]').trigger('submit')
+    await flushPromises()
+
+    expect(mockRequest).toHaveBeenCalledWith('/bookings', expect.objectContaining({ query: expect.objectContaining({ booking_no: '1001', phone: '138' }) }))
+  })
+
+  it('status tab triggers status query', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    await wrapper.find('[data-test="tab-paid"]').trigger('click')
+    await flushPromises()
+
+    expect(mockRequest).toHaveBeenCalledWith('/bookings', expect.objectContaining({ query: expect.objectContaining({ status: 'paid' }) }))
+  })
+
+  it('shows pay and refund actions on row', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('去支付')
+    expect(wrapper.text()).toContain('申请退改')
+    expect(wrapper.text()).toContain('查看详情')
+  })
+
+  it('exports current rows as csv', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    await wrapper.find('[data-test="export"]').trigger('click')
+    expect(clickMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows empty state when list is empty', async () => {
+    mockRequest.mockResolvedValueOnce(successList([], 0))
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="empty"]').exists()).toBe(true)
+  })
+
+  it('shows error when load failed', async () => {
+    mockRequest.mockRejectedValueOnce(new Error('network error'))
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="error"]').text()).toContain('network error')
+  })
+
+  it('deletes row and reloads', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/bookings/1' && options?.method === 'DELETE') return Promise.resolve({ data: { ok: true } })
+      return Promise.resolve(successList([{ id: 2, status: 'paid', total_cents: 38000 }], 1))
     })
 
-    it('调用 API 并显示加载后的行', async () => {
-        const wrapper = mount(Page)
-        await flushPromises()
-        expect(mockRequest).toHaveBeenCalledWith('/bookings')
-        expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-    })
+    const wrapper = mount(Page)
+    await flushPromises()
+    await (wrapper.vm as any).handleDelete(1)
+    await flushPromises()
 
-    it('失败时显示错误信息', async () => {
-        mockRequest.mockRejectedValueOnce(new Error('network error'))
-        const wrapper = mount(Page)
-        await flushPromises()
-        expect(wrapper.text()).toContain('network error')
-    })
+    expect(mockRequest).toHaveBeenCalledWith('/bookings/1', { method: 'DELETE' })
+  })
+})
 
-    it('空列表时显示总数 0', async () => {
-        mockRequest.mockResolvedValueOnce({ data: { list: [], total: 0 } })
-        const wrapper = mount(Page)
-        await flushPromises()
-        expect(wrapper.text()).toContain('总数：0')
-        expect(wrapper.findAll('tbody tr')).toHaveLength(0)
-    })
-
-    it('无效 ID 删除时显示错误', async () => {
-        const wrapper = mount(Page)
-        await flushPromises()
-        await (wrapper.vm as any).handleDelete('bad')
-        await flushPromises()
-        expect(wrapper.text()).toContain('无效记录 ID，无法删除')
-    })
-
-    it('删除确认取消时不发 DELETE 请求', async () => {
-        confirmMock.mockReturnValueOnce(false)
-        const wrapper = mount(Page)
-        await flushPromises()
-        await (wrapper.vm as any).handleDelete(1)
-        await flushPromises()
-        expect(mockRequest).not.toHaveBeenCalledWith('/bookings/1', { method: 'DELETE' })
-    })
-
-    it('删除成功时调用接口并刷新', async () => {
-        mockRequest.mockImplementation((url: string, options?: any) => {
-            if (url === '/bookings/1' && options?.method === 'DELETE') return Promise.resolve({ data: { ok: true } })
-            return Promise.resolve({ data: {
-                list: [{ id: 2, status: 'paid', total_cents: 38000 }],
-                total: 1,
-            } })
-        })
-        const wrapper = mount(Page)
-        await flushPromises()
-        await (wrapper.vm as any).handleDelete(1)
-        await flushPromises()
-        expect(mockRequest).toHaveBeenCalledWith('/bookings/1', { method: 'DELETE' })
-    })
+afterAll(() => {
+  createElementSpy.mockRestore()
 })

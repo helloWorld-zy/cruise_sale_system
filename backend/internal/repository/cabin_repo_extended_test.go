@@ -66,3 +66,33 @@ func TestCabinRepository_BatchUpdateStatus(t *testing.T) {
 		t.Fatalf("expected both status=0, got one=%d two=%d", one.Status, two.Status)
 	}
 }
+
+func TestCabinRepository_BatchUpdateStatusRollbackOnPartialMatch(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite failed: %v", err)
+	}
+	if err := db.AutoMigrate(&domain.CabinSKU{}); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	repo := NewCabinRepository(db)
+	ctx := context.Background()
+
+	a := &domain.CabinSKU{Code: "A1", Status: 1}
+	b := &domain.CabinSKU{Code: "B1", Status: 1}
+	if err := repo.CreateSKU(ctx, a); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.CreateSKU(ctx, b); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.BatchUpdateStatus(ctx, []int64{a.ID, 999999, b.ID}, 0); err == nil {
+		t.Fatal("expected partial-match batch update error")
+	}
+	one, _ := repo.GetSKUByID(ctx, a.ID)
+	two, _ := repo.GetSKUByID(ctx, b.ID)
+	if one.Status != 1 || two.Status != 1 {
+		t.Fatalf("expected rollback keep status=1, got one=%d two=%d", one.Status, two.Status)
+	}
+}

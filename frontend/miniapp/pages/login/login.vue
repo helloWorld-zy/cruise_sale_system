@@ -87,15 +87,24 @@ async function handleLogin() {
 
 <template>
   <view class="page">
-    <text class="title">用户登录</text>
-    <input v-model="phone" type="number" placeholder="手机号" :disabled="loading || sending" />
-    <input v-model="code" type="number" placeholder="验证码" :disabled="loading" />
-    <button class="sub-btn" :disabled="sending || countdown > 0" @click="sendCode">
-      {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
-    </button>
-    <PrimaryButton @click="handleLogin">{{ loading ? '提交中...' : '登录' }}</PrimaryButton>
-    <text v-if="error" class="error">{{ error }}</text>
-    <text v-if="success" class="success">{{ success }}</text>
+    <view class="hero">
+      <text class="eyebrow">Azure Deck Member</text>
+      <text class="title">用户登录</text>
+      <text class="subtitle">输入手机号与验证码，继续你的海上假期计划。</text>
+    </view>
+
+    <view class="panel">
+      <input v-model="phone" type="number" placeholder="手机号" :disabled="loading || sending" />
+      <view class="code-row">
+        <input v-model="code" type="number" placeholder="验证码" :disabled="loading" />
+        <button class="sub-btn" :disabled="sending || countdown > 0" @click="sendCode">
+          {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+        </button>
+      </view>
+      <PrimaryButton @click="handleLogin">{{ loading ? '提交中...' : '登录' }}</PrimaryButton>
+      <text v-if="error" class="error">{{ error }}</text>
+      <text v-if="success" class="success">{{ success }}</text>
+    </view>
   </view>
 </template>
 
@@ -103,36 +112,76 @@ async function handleLogin() {
 .page {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  padding: 40rpx;
+  gap: 18rpx;
+  padding: 30rpx;
   min-height: 100vh;
-  background: linear-gradient(180deg, #eff7ff 0%, #f9fcff 100%);
+  background:
+    radial-gradient(circle at 8% 4%, #d9e9f5 0, transparent 30%),
+    linear-gradient(180deg, #f3f8fb 0%, #eef3f7 100%);
+}
+
+.hero {
+  padding: 22rpx 4rpx 6rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.eyebrow {
+  font-size: 20rpx;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8a6f3f;
 }
 
 .title {
-  font-size: 44rpx;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #16395b;
+  color: #122b42;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  color: #5a728a;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding: 24rpx;
+  background: #fff;
+  border: 1rpx solid #d4e0ea;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
 }
 
 input {
-  background: #fff;
-  border: 2rpx solid #c9dff5;
+  background: #f9fcff;
+  border: 2rpx solid #d0dee8;
   border-radius: 16rpx;
   padding: 20rpx;
 }
 
+.code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10rpx;
+}
+
 .sub-btn {
   border-radius: 16rpx;
-  background: #e8f0ff;
-  color: #2a4d74;
+  padding: 0 20rpx;
+  background: #e9f1f8;
+  color: #204666;
+  font-size: 24rpx;
 }
 
 .error {
-  color: #d13e5b;
+  color: #c53f57;
 }
 
 .success {
-  color: #0f8b62;
+  color: #0f8a60;
 }
 </style>

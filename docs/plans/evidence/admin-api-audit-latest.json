@@ -1,0 +1,363 @@
+{
+  "ok": false,
+  "auth": {
+    "username": "admin",
+    "loginOk": true,
+    "loginError": ""
+  },
+  "startedAt": "2026-03-03T14:59:32.906Z",
+  "finishedAt": "2026-03-03T14:59:54.398Z",
+  "base": "http://127.0.0.1:3013",
+  "checkedRoutes": 16,
+  "totalApiCalls": 22,
+  "failedRouteCount": 3,
+  "failedRoutes": [
+    "/cabins/inventory?skuId=1",
+    "/settings/shop",
+    "/notifications/templates"
+  ],
+  "routeResults": [
+    {
+      "route": "/dashboard",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/analytics/summary",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/finance",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/analytics/summary",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cruises",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cruises?page=1&page_size=10",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/routes",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/routes",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/voyages",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/voyages",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cabin-types",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cruises?page=1&page_size=100",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cabin-types?cruise_id=8&page=1&page_size=50",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cabins",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cruises?page=1&page_size=100",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cabins/alerts",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cabins/alerts",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/cabins/inventory?skuId=1",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cabins/1/inventory",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cabins/1/inventory/logs",
+          "count": 1,
+          "statuses": [
+            404
+          ],
+          "hasHttpError": true
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": false
+    },
+    {
+      "route": "/cabins/pricing?skuId=1",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cabins/1/prices",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/bookings",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/bookings?page=1&page_size=20",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/staff",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/staffs",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/settings/shop",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/shop-info",
+          "count": 2,
+          "statuses": [
+            500,
+            500
+          ],
+          "hasHttpError": true
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": false
+    },
+    {
+      "route": "/notifications/templates",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/notification-templates",
+          "count": 2,
+          "statuses": [
+            500,
+            500
+          ],
+          "hasHttpError": true
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": false
+    },
+    {
+      "route": "/facilities",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/facility-categories",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/cruises?page=1&page_size=100",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/facilities?cruise_id=8",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    },
+    {
+      "route": "/facility-categories",
+      "navigationStatus": 200,
+      "navigationError": "",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:3013/api/v1/admin/facility-categories",
+          "count": 1,
+          "statuses": [
+            200
+          ],
+          "hasHttpError": false
+        }
+      ],
+      "requestFailures": [],
+      "pageErrors": [],
+      "ok": true
+    }
+  ]
+}

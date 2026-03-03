@@ -72,6 +72,8 @@ func RunApp(configDir string) error {
 	voyageRepo := repository.NewVoyageRepository(db)
 	cabinRepo := repository.NewCabinRepository(db)
 	userRepo := repository.NewUserRepository(db)
+	shopInfoRepo := repository.NewShopInfoRepository(db)
+	notifyTplRepo := repository.NewNotificationTemplateRepository(db)
 
 	// 5. 初始化业务服务层
 	authSvc := service.NewAuthService(staffRepo, cfg.JWT.Secret, cfg.JWT.ExpireHours)
@@ -88,6 +90,15 @@ func RunApp(configDir string) error {
 	searchRetryQueue.Start()
 	holdRepo := repository.NewCabinHoldRepository(db)
 	holdSvc := service.NewCabinHoldService(holdRepo, 15*time.Minute)
+	operationLogRepo := repository.NewOperationLogRepository(db)
+
+	// 7. 初始化 Casbin RBAC 权限执行器
+	mPath := filepath.Join(configDir, "rbac/model.conf")
+	pPath := filepath.Join(configDir, "rbac/policy.csv")
+	enforcer, err := casbinv2.NewEnforcer(mPath, pPath)
+	if err != nil {
+		return fmt.Errorf("Casbin 执行器初始化失败: %w", err)
+	}
 
 	// 6. 初始化 HTTP 处理器层
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -107,6 +118,14 @@ func RunApp(configDir string) error {
 	bookingHandler := handler.NewBookingHandler(bookingSvc, bookingRepo)
 	userAuthSvc := service.NewUserAuthService(service.NewInMemoryCodeStore())
 	userHandler := handler.NewUserHandlerWithRepo(userAuthSvc, userRepo, cfg.JWT.Secret) // M-03
+	staffRoleSync := service.NewCasbinStaffRoleSync(enforcer)
+	staffAuditLogger := service.NewStaffOperationLogger(operationLogRepo)
+	staffSvc := service.NewStaffServiceWithDeps(staffRepo, staffRoleSync, staffAuditLogger)
+	shopInfoSvc := service.NewShopInfoService(shopInfoRepo)
+	notifyTplSvc := service.NewNotificationTemplateService(notifyTplRepo)
+	staffHandler := handler.NewStaffHandler(staffSvc)
+	shopInfoHandler := handler.NewShopInfoHandler(shopInfoSvc)
+	notifyTplHandler := handler.NewNotificationTemplateHandler(notifyTplSvc)
 
 	// Sprint 04: 支付 / 退款 / 通知 / 统计分析 依赖注入
 	paymentRepo := repository.NewPaymentRepository(db)
@@ -128,14 +147,6 @@ func RunApp(configDir string) error {
 	refundHandler := handler.NewRefundHandler(refundSvc)
 	analyticsHandler := handler.NewAnalyticsHandler(analyticsSvc)
 
-	// 7. 初始化 Casbin RBAC 权限执行器
-	mPath := filepath.Join(configDir, "rbac/model.conf")
-	pPath := filepath.Join(configDir, "rbac/policy.csv")
-	enforcer, err := casbinv2.NewEnforcer(mPath, pPath)
-	if err != nil {
-		return fmt.Errorf("Casbin 执行器初始化失败: %w", err)
-	}
-
 	// 8. 配置路由并启动 HTTP 服务器
 	r := router.Setup(router.Dependencies{
 		Auth:             authHandler,
@@ -154,6 +165,9 @@ func RunApp(configDir string) error {
 		Payment:          paymentHandler,
 		Refund:           refundHandler,
 		Analytics:        analyticsHandler,
+		Staff:            staffHandler,
+		ShopInfo:         shopInfoHandler,
+		NotificationTpl:  notifyTplHandler,
 		JWTSecret:        cfg.JWT.Secret,
 		Enforcer:         enforcer,
 	})

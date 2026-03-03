@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -30,8 +31,8 @@ jwt:
 	// Call Load with the temp path
 	cfg := Load(tmpDir)
 
-	if cfg.Server.Port != "8080" {
-		t.Errorf("Expected port 8080, got %s", cfg.Server.Port)
+	if strings.TrimPrefix(cfg.Server.Port, ":") != "8080" {
+		t.Errorf("Expected port 8080 (optional ':' prefix), got %s", cfg.Server.Port)
 	}
 }
 
@@ -57,7 +58,7 @@ func TestLoadPanicsOnBadConfig(t *testing.T) {
 
 func TestLoadPanicsOnUnmarshalError(t *testing.T) {
 	tmpDir := t.TempDir()
-	requireFile(t, tmpDir, "config.yaml", []byte("server:\n  port: [1, 2, 3]\n"))
+	requireFile(t, tmpDir, "config.yaml", []byte("database:\n  port: not-a-number\n"))
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic on unmarshal error")

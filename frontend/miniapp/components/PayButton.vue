@@ -23,7 +23,7 @@ async function handlePay() {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await request('/payments', {
+    const raw = await request('/payments', {
       method: 'POST',
       data: {
         order_id: props.bookingId,
@@ -31,6 +31,7 @@ async function handlePay() {
         provider: 'wechat',
       },
     })
+    const res = raw as Record<string, any>
     const payUrl = res?.pay_url ?? res?.data?.pay_url ?? ''
     const payParams = res?.pay_params ?? res?.data?.pay_params
     if (payParams?.timeStamp) {
@@ -58,9 +59,14 @@ async function handlePay() {
 
 <style scoped>
 .pay-btn {
-  border-radius: 14rpx;
-  background: linear-gradient(135deg, #5a45c2, #816af0);
+  border: 0;
+  border-radius: 18rpx;
+  height: 86rpx;
+  line-height: 86rpx;
+  background: linear-gradient(135deg, #0f3d5c, #1f5f86);
   color: #fff;
+  font-weight: 700;
+  box-shadow: 0 12rpx 26rpx rgba(16, 47, 72, 0.25);
 }
 
 .pay-btn[disabled] {

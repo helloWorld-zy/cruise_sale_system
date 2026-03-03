@@ -8,8 +8,17 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      // 默认直连本地后端，避免 runtimeConfig 缺失导致请求地址异常。
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:18080/api/v1',
+      // 默认使用同源 API 路径，避免本地开发时浏览器跨域失败。
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',
+    },
+  },
+  nitro: {
+    // 本地开发代理到 Go 后端，保持前端始终同源请求。
+    devProxy: {
+      '/api/v1': {
+        target: 'http://localhost:8080/api/v1',
+        changeOrigin: true,
+      },
     },
   },
   modules: ['@pinia/nuxt'], // 仅保留必要模块，避免 UI 模块与 Tailwind 版本冲突

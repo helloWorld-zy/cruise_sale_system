@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 )
@@ -22,6 +23,7 @@ type cabinAdminRepo interface {
 	AppendInventoryLog(ctx context.Context, log *domain.InventoryLog) error
 	ListPricesBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error)
 	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error
+	BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error
 	GetCategoryTree(ctx context.Context) (interface{}, error)
 }
 
@@ -116,6 +118,11 @@ func (s *CabinAdminService) ListPrices(ctx context.Context, skuID int64) ([]doma
 // UpsertPrice 新增或更新指定 SKU 的价格记录。
 func (s *CabinAdminService) UpsertPrice(ctx context.Context, p *domain.CabinPrice) error {
 	return s.repo.UpsertPrice(ctx, p)
+}
+
+// BatchSetPrice 按日期范围批量设置价格。
+func (s *CabinAdminService) BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error {
+	return s.repo.BatchSetPrice(ctx, skuID, start, end, occupancy, priceCents, childPriceCents, singleSupplementCents, priceType)
 }
 
 // GetCategoryTree 获取邮轮→航线→舱型三级分类树。

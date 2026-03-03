@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cruisebooking/backend/internal/domain"
@@ -80,6 +82,52 @@ func TestCruiseHandler_BatchUpdateStatus(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestCruiseHandler_BatchUpdateStatusRejectsOversize(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewCruiseHandler(service.NewCruiseService(&mockCruiseRepo{}, &mockCabinTypeRepo{}, &mockCompanyRepo{}))
+	r.PUT("/api/v1/admin/cruises/batch-status", h.BatchUpdateStatus)
+
+	ids := make([]string, 0, maxBatchUpdateSize+1)
+	for i := 0; i < maxBatchUpdateSize+1; i++ {
+		ids = append(ids, "1")
+	}
+	body := bytes.NewBufferString(`{"ids":[` + strings.Join(ids, ",") + `],"status":0}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/cruises/batch-status", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d, body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestCruiseHandler_BatchUpdateStatusWritesAuditLog(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewCruiseHandler(service.NewCruiseService(&mockCruiseRepo{}, &mockCabinTypeRepo{}, &mockCompanyRepo{}))
+	r.PUT("/api/v1/admin/cruises/batch-status", h.BatchUpdateStatus)
+
+	var buf bytes.Buffer
+	origin := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(origin)
+
+	body := bytes.NewBufferString(`{"ids":[1],"status":0}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/cruises/batch-status", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(buf.String(), "audit bulk update cruises") {
+		t.Fatalf("expected cruise audit log, got: %s", buf.String())
 	}
 }
 

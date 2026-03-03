@@ -1,6 +1,13 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"text/template"
+	"text/template/parse"
+	"time"
+)
 
 type NotificationChannel string
 
@@ -21,35 +28,75 @@ type NotificationTemplate struct {
 	UpdatedAt time.Time           `json:"updated_at"`
 }
 
-func (t *NotificationTemplate) Render(data map[string]string) string {
-	result := t.Template
-	for k, v := range data {
-		placeholder := "{{." + k + "}}"
-		result = replaceAll(result, placeholder, v)
-	}
-	return result
+var (
+	ErrNotificationTemplateInvalid       = errors.New("invalid notification template")
+	ErrNotificationTemplateVarNotAllowed = errors.New("notification template variable not allowed")
+)
+
+var defaultNotificationTemplateWhitelist = map[string]struct{}{
+	"OrderNo":      {},
+	"Name":         {},
+	"Amount":       {},
+	"RefundAmount": {},
+	"VoyageName":   {},
+	"TravelDate":   {},
+	"Status":       {},
 }
 
-func replaceAll(s, old, new string) string {
-	result := s
-	for {
-		if len(result) == 0 {
-			break
-		}
-		i := find(result, old)
-		if i == -1 {
-			break
-		}
-		result = result[:i] + new + result[i+len(old):]
+func (t *NotificationTemplate) Render(data map[string]string) (string, error) {
+	tpl, err := template.New("notification").Option("missingkey=error").Parse(t.Template)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrNotificationTemplateInvalid, err)
 	}
-	return result
+	if err := validateTemplateWhitelist(tpl.Tree.Root, defaultNotificationTemplateWhitelist); err != nil {
+		return "", err
+	}
+	b := strings.Builder{}
+	if err := tpl.Execute(&b, data); err != nil {
+		return "", fmt.Errorf("%w: %v", ErrNotificationTemplateInvalid, err)
+	}
+	return b.String(), nil
 }
 
-func find(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
+func validateTemplateWhitelist(node parse.Node, whitelist map[string]struct{}) error {
+	if node == nil {
+		return nil
 	}
-	return -1
+	switch n := node.(type) {
+	case *parse.ListNode:
+		for _, child := range n.Nodes {
+			if err := validateTemplateWhitelist(child, whitelist); err != nil {
+				return err
+			}
+		}
+	case *parse.ActionNode:
+		for _, cmd := range n.Pipe.Cmds {
+			for _, arg := range cmd.Args {
+				fieldNode, ok := arg.(*parse.FieldNode)
+				if !ok || len(fieldNode.Ident) == 0 {
+					continue
+				}
+				name := fieldNode.Ident[0]
+				if _, ok := whitelist[name]; !ok {
+					return fmt.Errorf("%w: %s", ErrNotificationTemplateVarNotAllowed, name)
+				}
+			}
+		}
+	case *parse.IfNode:
+		if err := validateTemplateWhitelist(n.List, whitelist); err != nil {
+			return err
+		}
+		return validateTemplateWhitelist(n.ElseList, whitelist)
+	case *parse.RangeNode:
+		if err := validateTemplateWhitelist(n.List, whitelist); err != nil {
+			return err
+		}
+		return validateTemplateWhitelist(n.ElseList, whitelist)
+	case *parse.WithNode:
+		if err := validateTemplateWhitelist(n.List, whitelist); err != nil {
+			return err
+		}
+		return validateTemplateWhitelist(n.ElseList, whitelist)
+	}
+	return nil
 }

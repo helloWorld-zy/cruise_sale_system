@@ -6,9 +6,18 @@
 
 <style scoped>
 .primary-button {
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #1f7bd5, #2d9af9);
+  border: 0;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #0f3d5c, #1f5f86);
   color: #fff;
   font-weight: 700;
+  height: 86rpx;
+  line-height: 86rpx;
+  box-shadow: 0 12rpx 26rpx rgba(16, 47, 72, 0.28);
+}
+
+.primary-button:active {
+  transform: translateY(1rpx);
+  opacity: 0.94;
 }
 </style>

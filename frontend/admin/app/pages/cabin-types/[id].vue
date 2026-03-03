@@ -2,6 +2,8 @@
   <div class="min-h-screen bg-slate-50 p-4 md:p-6">
     <div class="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h1 class="mb-6 text-xl font-semibold text-slate-900">编辑舱房类型</h1>
+      <p v-if="loading" class="mb-3 text-sm text-slate-600">加载中...</p>
+      <p v-else-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无舱房类型数据</p>
       <form class="space-y-6" @submit.prevent="handleSubmit">
         <section>
           <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">基本信息</h2>
@@ -122,6 +124,7 @@ const route = useRoute()
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 const cruises = ref<Record<string, any>[]>([])
 const tagOptions = ['亲子优选', '高性价比', '景观优先', '静音', '无障碍']
 const amenityOptions = ['独立卫浴', '迷你吧', '阳台桌椅', '智能电视', '胶囊咖啡机', '浴缸']
@@ -168,6 +171,7 @@ async function loadDetail() {
   }
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request('/cabin-types', {
       query: {
@@ -180,7 +184,7 @@ async function loadDetail() {
     const list = Array.isArray(payload) ? payload : payload?.list ?? []
     const detail = list.find((item: Record<string, any>) => Number(item.id) === id.value)
     if (!detail) {
-      error.value = '未找到该舱房类型'
+      empty.value = true
       return
     }
     form.value = {

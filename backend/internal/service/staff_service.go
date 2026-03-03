@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/cruisebooking/backend/internal/domain"
 )
@@ -16,11 +17,32 @@ type StaffRepository interface {
 }
 
 type StaffService struct {
-	repo StaffRepository
+	repo        StaffRepository
+	roleSyncer  StaffRoleSyncer
+	auditLogger StaffRoleAuditLogger
+}
+
+type StaffRoleSyncer interface {
+	SyncRoleForStaff(ctx context.Context, staffID int64, role string) error
+}
+
+type StaffRoleAuditEntry struct {
+	OperatorID    int64
+	TargetStaffID int64
+	OldRole       string
+	NewRole       string
+}
+
+type StaffRoleAuditLogger interface {
+	LogRoleChange(ctx context.Context, entry StaffRoleAuditEntry) error
 }
 
 func NewStaffService(repo StaffRepository) *StaffService {
 	return &StaffService{repo: repo}
+}
+
+func NewStaffServiceWithDeps(repo StaffRepository, roleSyncer StaffRoleSyncer, auditLogger StaffRoleAuditLogger) *StaffService {
+	return &StaffService{repo: repo, roleSyncer: roleSyncer, auditLogger: auditLogger}
 }
 
 func (s *StaffService) Create(ctx context.Context, name, email, role string) (*domain.Staff, error) {
@@ -39,7 +61,7 @@ func (s *StaffService) Create(ctx context.Context, name, email, role string) (*d
 	return staff, nil
 }
 
-func (s *StaffService) AssignRole(ctx context.Context, id int64, role string) error {
+func (s *StaffService) AssignRole(ctx context.Context, id int64, role string, operatorID int64) error {
 	if !domain.IsValidStaffRole(role) {
 		return errors.New("invalid role")
 	}
@@ -50,8 +72,39 @@ func (s *StaffService) AssignRole(ctx context.Context, id int64, role string) er
 	if staff == nil {
 		return errors.New("staff not found")
 	}
+	oldRole := staff.Role
 	staff.Role = role
-	return s.repo.Update(ctx, staff)
+	if err := s.repo.Update(ctx, staff); err != nil {
+		return err
+	}
+
+	if s.roleSyncer != nil {
+		if err := s.roleSyncer.SyncRoleForStaff(ctx, id, role); err != nil {
+			// 回滚数据库角色变更
+			staff.Role = oldRole
+			_ = s.repo.Update(ctx, staff)
+			return fmt.Errorf("sync casbin role: %w", err)
+		}
+	}
+
+	if s.auditLogger != nil {
+		if err := s.auditLogger.LogRoleChange(ctx, StaffRoleAuditEntry{
+			OperatorID:    operatorID,
+			TargetStaffID: id,
+			OldRole:       oldRole,
+			NewRole:       role,
+		}); err != nil {
+			// 回滚 Casbin 与数据库
+			staff.Role = oldRole
+			_ = s.repo.Update(ctx, staff)
+			if s.roleSyncer != nil {
+				_ = s.roleSyncer.SyncRoleForStaff(ctx, id, oldRole)
+			}
+			return fmt.Errorf("write role change audit log: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *StaffService) List(ctx context.Context) ([]domain.Staff, error) {

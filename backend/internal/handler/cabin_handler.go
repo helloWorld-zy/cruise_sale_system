@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/pkg/errcode"
@@ -27,7 +29,8 @@ type CabinService interface {
 	AdjustInventory(ctx context.Context, skuID int64, delta int, reason string) error            // 调整库存
 	ListPrices(ctx context.Context, skuID int64) ([]domain.CabinPrice, error)                    // 查询价格列表
 	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error                                 // 新增或更新价格
-	GetCategoryTree(ctx context.Context) (interface{}, error)                                    // 获取邮轮→航线→舱型分类树
+	BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error
+	GetCategoryTree(ctx context.Context) (interface{}, error) // 获取邮轮→航线→舱型分类树
 }
 
 // CabinIndexer 定义舱位文档索引能力。
@@ -63,6 +66,17 @@ type CabinAlertThresholdRequest struct {
 type CabinAdjustInventoryRequest struct {
 	Delta  int    `json:"delta" binding:"required"`  // 调整量（正数增加，负数减少）
 	Reason string `json:"reason" binding:"required"` // 调整原因
+}
+
+// CabinBatchPriceRequest 表示按日期区间批量设置价格请求。
+type CabinBatchPriceRequest struct {
+	StartDate             string `json:"start_date" binding:"required"`
+	EndDate               string `json:"end_date" binding:"required"`
+	Occupancy             int    `json:"occupancy" binding:"required,gt=0"`
+	PriceCents            int64  `json:"price_cents" binding:"required,gte=0"`
+	ChildPriceCents       int64  `json:"child_price_cents"`
+	SingleSupplementCents int64  `json:"single_supplement_cents"`
+	PriceType             string `json:"price_type"`
 }
 
 // NewCabinHandler 创建舱房处理器实例。
@@ -153,6 +167,11 @@ func (h *CabinHandler) BatchUpdateStatus(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "ids cannot be empty")
 		return
 	}
+	if len(req.IDs) > maxBatchUpdateSize {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "batch size exceeds limit")
+		return
+	}
+	log.Printf("audit bulk update cabins count=%d status=%d", len(req.IDs), req.Status)
 	if err := h.svc.BatchUpdateStatus(c.Request.Context(), req.IDs, req.Status); err != nil {
 		response.InternalError(c, err)
 		return
@@ -437,6 +456,42 @@ func (h *CabinHandler) UpsertPrice(c *gin.Context) {
 		return
 	}
 	response.Success(c, req)
+}
+
+// BatchSetPrice 按日期区间批量设置指定舱位 SKU 的价格。
+func (h *CabinHandler) BatchSetPrice(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
+		return
+	}
+	var req CabinBatchPriceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+	start, err := time.Parse("2006-01-02", req.StartDate)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid start_date")
+		return
+	}
+	end, err := time.Parse("2006-01-02", req.EndDate)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid end_date")
+		return
+	}
+	if end.Before(start) {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "end_date must be >= start_date")
+		return
+	}
+	if req.PriceType == "" {
+		req.PriceType = "base"
+	}
+	if err := h.svc.BatchSetPrice(c.Request.Context(), id, start, end, req.Occupancy, req.PriceCents, req.ChildPriceCents, req.SingleSupplementCents, req.PriceType); err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"id": id, "start_date": req.StartDate, "end_date": req.EndDate})
 }
 
 // CategoryTree godoc

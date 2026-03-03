@@ -106,6 +106,82 @@
 
 ---
 
+## Sprint 4.2 第二轮 Code Review Prompt (审计整改复核)
+
+**Context**: 本轮为 Sprint 4.2 第一轮 Code Review 后的复审。第一轮审计于 2026-03-02 完成，发现 P0 阻塞项 7 项、P1 高优先级 7 项、P2 完整性 4 项，累计 22 个整改任务（Tasks 1-22），现已全部标记完成。本轮聚焦于**验证修复质量**——确认每项整改确实解决了根因（而非仅通过测试），且未在修复过程中引入新问题。
+
+**审计范围**: 对照 `TODO.md` 全部已勾选项，逐一验证代码实现与测试覆盖。证据文档：`docs/plans/2026-03-02-sprint42-audit-evidence.md`、`docs/plans/2026-03-03-sprint42-27tasks-mapping.md`。
+
+**Strict Checklist**:
+
+### 一、认证与授权安全（第一轮 P0 修复验证）
+
+- [ ] **支付宝签名验签实现质量**: 检查 `backend/internal/service/user_auth_service.go` 中 `AlipayLogin` 的 HMAC-SHA256 验签实现——密钥是否从配置注入而非硬编码？验签失败是否立即返回错误且不会泄露密钥信息到日志？是否存在时序攻击（timing attack）风险（应使用 `hmac.Equal` 而非 `==` 比较）？
+- [ ] **UID 防伪造闭环**: 确认 `AlipayLogin` 中 `alipay_uid` 仅来源于服务端验签后的可信数据，而非任何客户端传入字段。追踪完整调用链从 handler → service，确认无旁路。
+- [ ] **账号绑定唯一性竞态**: `BindAccount` 中的"检查目标账号未被绑定 → 执行绑定"是否在同一事务中？是否存在 TOCTOU（Time-of-Check-to-Time-of-Use）竞态条件？数据库层是否有唯一索引兜底？
+- [ ] **绑定身份确认机制**: `AuthorizeBinding` 的二次确认机制实现——确认码/验证码是否有过期时间和尝试次数限制？是否防止了绕过确认直接调用 `BindAccount` 的可能？
+
+### 二、订单事务与状态机（第一轮 P0 修复验证）
+
+- [ ] **超时关单事务完整性**: 逐行审查 `backend/internal/service/order_timeout_service.go` 中 `CloseExpiredOrders` 的事务边界——关单状态更新、库存释放、日志写入是否确实在同一个 `tx.Transaction` 内？事务隔离级别是否足够防止脏读？
+- [ ] **并发幂等锁实现**: 关单操作使用的锁机制（`SELECT ... FOR UPDATE` / Advisory Lock / Redis 分布式锁）——锁粒度是否合理（按订单级别而非全局锁）？锁超时是否设置？死锁是否有防护？
+- [ ] **状态机统一入口强制性**: 全局搜索 `backend/internal/` 中所有直接修改 `Order.Status` 或 `booking.status` 字段的代码路径——是否存在绕过 `TransitionStatus` 统一入口直接修改状态的代码？`CanTransitionTo` 白名单是否覆盖了所有合法转换且未遗漏非法路径？
+- [ ] **状态日志同事务验证**: 检查 `backend/internal/repository/booking_repo.go` 中 `TransitionStatus` 实现——`OrderStatusLog` 写入与 `Order.Status` 更新是否确实使用同一个 `*gorm.DB` 事务对象？如果日志写入失败，状态更新是否也会回滚？
+
+### 三、数据导出与注入防护（第一轮 P0 修复验证）
+
+- [ ] **CSV 注入防护完整性**: 检查 `backend/internal/service/order_export_service.go` 的注入防护逻辑——是否覆盖了所有危险前缀（`=`, `+`, `-`, `@`, `\t`, `\r`）？处理方式是前缀加单引号 `'` 还是删除？是否对 DDE（Dynamic Data Exchange）攻击向量 `=cmd|'/C calc'!A0` 有防护？
+- [ ] **导出权限与上限**: 导出接口是否通过 Casbin 中间件进行了角色校验（仅特定角色可导出）？5000 行上限是否在代码中硬性执行（不可被请求参数覆盖）？超限时是否返回明确错误而非静默截断？
+- [ ] **导出文件安全**: 生成的 CSV/Excel 文件是否设置了正确的 `Content-Type` 和 `Content-Disposition` 头？是否防止了通过文件名注入的路径穿越（如 `../../etc/passwd`）？
+
+### 四、模板渲染与通知安全（第一轮 P0 修复验证）
+
+- [ ] **text/template 使用正确性**: 检查 `backend/internal/domain/notification_template.go` 中 `Render` 方法——是否确实从 `html/template` 或字符串替换改为了 `text/template`？模板解析是否使用 `template.New("").Option("missingkey=error")` 防止未定义变量静默跳过？
+- [ ] **变量白名单强制性**: 模板渲染前是否对传入的变量映射（map）进行了白名单过滤？是否存在通过嵌套结构体访问（如 `.Config.DBPassword`）绕过白名单的可能？`FuncMap` 是否为空或仅包含安全函数？
+- [ ] **库存预警通知去重窗口**: 检查 `backend/internal/service/inventory_alert_service.go` 中 `ScanAndNotify` 的去重逻辑——去重键的组成（cabin_id + date？）是否合理？时间窗口长度是否可配置？窗口过期后是否能正确重新触发？
+
+### 五、数据看板与查询性能（第一轮 P0 修复验证）
+
+- [ ] **真实查询替换验证**: 逐一检查 `backend/internal/repository/analytics_repo.go` 中的 `Trend`、`CabinHotnessRanking`、`InventoryOverview`、`PageViewStats` 四个方法——是否全部替换为真实 SQL 查询？是否仍有返回空数组/硬编码假数据的残留？
+- [ ] **索引覆盖验证**: 对照 `backend/migrations/000012_analytics_indexes.up.sql` 中创建的索引，检查上述四个查询的 WHERE/GROUP BY/ORDER BY 子句是否能命中索引？是否存在全表扫描风险？对大数据量（10w+ 订单）是否有性能退化？
+- [ ] **SQL 注入防护**: 看板查询中的日期范围参数（7/30 天）是否使用了参数化查询（`?` 占位符）？是否存在字符串拼接 SQL 的风险？
+
+### 六、批量操作与并发安全（第一轮 P1 修复验证）
+
+- [ ] **批量数量上限执行点**: 检查 `backend/internal/handler/cruise_handler.go` 和 `cabin_handler.go` 中的 `BatchUpdateStatus` ——数量限制是否在 handler 层（请求入口）即判断？是否存在绕过 handler 直接调用 service/repo 层的风险？
+- [ ] **批量事务回滚完整性**: 批量上架/下架/删除操作中，如果第 N 条数据写入失败，前 N-1 条是否确实回滚？检查事务是否正确使用 `defer tx.Rollback()` + `tx.Commit()` 模式。
+- [ ] **审计日志与业务操作同事务**: 批量操作的审计日志写入是否与业务数据变更在同一事务中？如果审计日志写入失败，业务操作是否也回滚？
+
+### 七、其他 P1/P2 修复验证
+
+- [ ] **AvailableWithAlert 边界正确性**: 检查 `backend/internal/service/inventory_alert_service.go` 中 `AvailableWithAlert` 方法——当 `available == threshold` 时返回 alert 还是不返回？`threshold == 0` 时是否永不触发预警？是否有对应的边界测试用例精确断言？
+- [ ] **对账日报幂等机制**: `backend/internal/service/reconciliation_service.go` 中的幂等控制——重复请求是返回已存在的报告还是返回错误？并发请求是否有数据库层唯一约束兜底？
+- [ ] **员工角色 Casbin 同步原子性**: `backend/internal/service/staff_service.go` 中 `AssignRole` 操作——Casbin policy 更新与数据库角色更新是否在同一事务/原子操作中？如果 Casbin 同步失败，数据库变更是否回滚？审计日志是否记录了变更前后的完整角色信息？
+- [ ] **ShopInfo 单行约束双重防护**: 确认 `backend/migrations/000013_shop_info_singleton.up.sql` 中的 CHECK 约束存在且正确，同时 `backend/internal/service/shop_info_service.go` 在服务层也强制 `ID=1`。尝试创建第二行记录时是否同时被 DB 和 Service 拒绝？
+- [ ] **阶梯退款边界精度**: 检查 `backend/internal/service/refund_service_tiered_test.go` 中的测试用例——恰好 30 天、恰好 7 天、0 天三个边界值是否有精确断言（验证退款比例 100%/50%/0%）？金额计算是否全程使用整数（分）运算，无 float64 参与？
+
+### 八、前端修复验证
+
+- [ ] **Admin 三缺失页面联调验证**: 逐一检查 `frontend/admin/app/pages/staff/index.vue`、`frontend/admin/app/pages/settings/shop.vue`、`frontend/admin/app/pages/notifications/templates.vue`——每个页面是否有真实 API 调用（`useFetch` / `useAsyncData` / `$fetch`）？loading 状态是否展示骨架屏或加载指示器？error 状态是否展示错误信息和重试按钮？empty 状态是否展示空状态提示？
+- [ ] **Miniapp 舱位列表去硬编码验证**: 检查 `frontend/miniapp/pages/cabin/list.vue` 和 `frontend/miniapp/components/CabinCard.vue`——是否仍有任何 `const mockData = [...]` 或硬编码价格/名称残留？数据是否完全来源于 API 响应？
+- [ ] **Admin 目录迁移完整性**: 确认 `frontend/admin/pages/dashboard/` 和 `frontend/admin/pages/finance/` 原目录已删除（不存在重复路由源）。`frontend/admin/app/pages/dashboard/` 和 `frontend/admin/app/pages/finance/` 下的页面路由是否与迁移前一致？
+
+### 九、测试质量复核
+
+- [ ] **新增测试不含伪覆盖**: 抽查本轮新增的全部测试文件（`user_auth_service_test.go`、`order_timeout_service_test.go`、`booking_repo_test.go`、`order_export_service_test.go`、`notify_template_test.go`、`analytics_repo_test.go`、`inventory_alert_service_test.go`、`reconciliation_service_test.go`、`refund_service_tiered_test.go`、`task19_no_empty_impl_guard_test.go`），确认每个测试用例都有**具体的业务断言**（非 `assert.True(true)`），且不存在 `//nolint`、`istanbul ignore`、空函数体、注释掉的失败断言。
+- [ ] **回归测试无既有失败**: 执行 `cd backend && go test ./... -count=1`，确认非本轮修改导致的失败数量为 0（`internal/config` 基线问题除外，需记录并标注）。前端 `pnpm vitest run` 三端均 PASS，E2E `pnpm test:e2e` PASS。
+- [ ] **空实现守卫有效性**: 检查 `backend/internal/handler/task19_no_empty_impl_guard_test.go` 的守卫测试——扫描范围是否覆盖了所有 `handler/`、`service/`、`repository/` 目录？匹配规则是否合理（是否过度严格或过度宽松）？
+
+### 十、整体完整性
+
+- [ ] **27 Tasks 全覆盖**: 对照 `docs/plans/2026-03-03-sprint42-27tasks-mapping.md` 映射矩阵，确认 27 个 Sprint 4.2 原始需求（Part A-E）每个 Task 均有明确的"代码位置 + 测试用例 + UI 证据"三项证据。任何标记为 `partial` 或 `gap` 的条目必须标记为阻塞性问题。
+- [ ] **数据库迁移完整性**: 确认迁移文件 `000009` 至 `000013` 均有对应的 `.down.sql` 回滚脚本，且回滚脚本能正确撤销所有 DDL 变更。`migrations_sprint42_test.go` 测试是否验证了 up/down 的完整往返？
+- [ ] **无遗留 TODO/FIXME/HACK**: 全局搜索 `backend/internal/` 和 `frontend/` 中的 `TODO`、`FIXME`、`HACK`、`XXX` 标记，确认无本轮整改中引入的遗留项。如有，需说明原因或标记为下一轮待修复。
+
+**执行动作**：本轮为整改复核，对上述每一项执行**深度验证**（逐行读代码 + 运行测试 + 追踪调用链），而非仅检查文件是否存在。对每一项出具"PASS ✅"或"FAIL 🔴 + 具体问题 + 修复方案"的结论。如有任一项 FAIL，整体不予通过，要求修复后进行第三轮 Review。
+
+---
+
 ## Sprint 5 Code Review Prompt (智能发现与决策支持)
 
 **Context**: 本 Sprint 实现智能推荐权重打分、航线日历最低价查询及前端个性化展示。

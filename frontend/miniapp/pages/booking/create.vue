@@ -46,11 +46,17 @@ async function handleSubmit() {
 <template>
   <view class="page">
     <text class="title">创建预订</text>
+    <text class="subtitle">三步完成舱房锁定：航次、舱位、人数。</text>
 
     <view class="form">
-      <input v-model="voyageId" type="number" placeholder="Voyage ID" :disabled="submitting" />
-      <input v-model="cabinSkuId" type="number" placeholder="Cabin SKU ID" :disabled="submitting" />
-      <input v-model.number="guests" type="number" min="1" placeholder="Guests" :disabled="submitting" />
+      <text class="label">航次 ID</text>
+      <input v-model="voyageId" type="number" placeholder="例如 1" :disabled="submitting" />
+
+      <text class="label">舱位 SKU ID</text>
+      <input v-model="cabinSkuId" type="number" placeholder="例如 1" :disabled="submitting" />
+
+      <text class="label">乘客人数</text>
+      <input v-model.number="guests" type="number" min="1" placeholder="例如 2" :disabled="submitting" />
 
       <button class="submit-btn" :disabled="!canSubmit" @click="handleSubmit">
         {{ submitting ? 'Submitting...' : 'Submit Booking' }}
@@ -65,38 +71,55 @@ async function handleSubmit() {
 <style scoped>
 .page {
   min-height: 100vh;
-  padding: 40rpx;
-  background: linear-gradient(180deg, #fff9f2 0%, #fff 100%);
+  padding: 30rpx;
+  background:
+    radial-gradient(circle at 8% 0, #dfeaf4 0, transparent 28%),
+    linear-gradient(180deg, #f4f8fb 0%, #edf3f7 100%);
 }
 
 .title {
   display: block;
-  margin-bottom: 24rpx;
-  font-size: 42rpx;
+  margin-bottom: 8rpx;
+  font-size: 46rpx;
   font-weight: 700;
-  color: #7f3f1c;
+  color: #122b42;
+}
+
+.subtitle {
+  display: block;
+  margin-bottom: 18rpx;
+  font-size: 24rpx;
+  color: #5a7189;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
-  padding: 28rpx;
-  border-radius: 20rpx;
+  gap: 10rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
   background: #fff;
-  box-shadow: 0 14rpx 32rpx rgba(160, 90, 47, 0.14);
+  border: 1rpx solid #d4e0ea;
+  box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
+}
+
+.label {
+  font-size: 23rpx;
+  font-weight: 600;
+  color: #24435f;
 }
 
 input {
-  border: 2rpx solid #f2d7c6;
+  border: 2rpx solid #cfdde7;
   border-radius: 14rpx;
   padding: 18rpx;
-  background: #fffdfb;
+  background: #f9fcff;
 }
 
 .submit-btn {
-  border-radius: 14rpx;
-  background: #f06a29;
+  margin-top: 8rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #0f3d5c, #1f5f86);
   color: #fff;
 }
 

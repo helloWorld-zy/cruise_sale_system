@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { request } from '../../src/utils/request'
 
 // 通过 props 接收页面参数，便于运行时与测试场景复用。
-const props = defineProps<{ cabinSkuId?: number | string }>()
+const props = defineProps<{ cabinSkuId?: number | string; preview?: boolean }>()
 const loading = ref(false)
 const error = ref('')
 const detail = ref<any>(null)
@@ -17,6 +17,26 @@ function resolveSkuId() {
 }
 
 async function loadDetail() {
+  if (props.preview) {
+    detail.value = {
+      id: resolveSkuId() || 1,
+      name: '天际阳台房',
+      bed_type: '大床',
+      position: '中层甲板',
+      orientation: '海景',
+      has_window: true,
+      has_balcony: true,
+      amenities: '独立卫浴,迷你吧,高速WiFi,观景阳台',
+      price_cents: 268000,
+    }
+    prices.value = [
+      { date: '2026-03-05', price_cents: 268000 },
+      { date: '2026-03-06', price_cents: 288000 },
+      { date: '2026-03-07', price_cents: 276000 },
+    ]
+    inventory.value = { total: 12, locked: 2, sold: 6, available: 4 }
+    return
+  }
   const skuId = resolveSkuId()
   if (!skuId) {
     error.value = '缺少 cabinSkuId 参数'
@@ -147,21 +167,24 @@ onMounted(() => {
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #f6f7fb;
-  padding: 18rpx 18rpx 130rpx;
+  background:
+    radial-gradient(circle at 8% 0, #dbe9f5 0, transparent 30%),
+    linear-gradient(180deg, #f3f8fb 0%, #edf3f7 100%);
+  padding: 22rpx 20rpx 138rpx;
 }
 .panel {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
   padding: 20rpx;
-  border-radius: 18rpx;
+  border-radius: 24rpx;
   background: #fff;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid #d4e0ea;
+  box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
 }
 .hero {
   height: 420rpx;
-  border-radius: 14rpx;
+  border-radius: 18rpx;
   overflow: hidden;
 }
 .hero-img {
@@ -180,12 +203,12 @@ onMounted(() => {
   gap: 10rpx;
 }
 .price {
-  color: #ff6b6b;
+  color: #113d5c;
   font-size: 46rpx;
   font-weight: 700;
 }
 .tax {
-  color: #8a95a2;
+  color: #6b8095;
   font-size: 22rpx;
 }
 .tag-flow {
@@ -194,8 +217,8 @@ onMounted(() => {
   gap: 12rpx;
 }
 .tag {
-  background: #f0f7ff;
-  color: #4a90d9;
+  background: #eef5fb;
+  color: #2f5f85;
   border-radius: 8rpx;
   padding: 8rpx 16rpx;
   font-size: 24rpx;
@@ -206,11 +229,11 @@ onMounted(() => {
   gap: 10rpx;
 }
 .facility {
-  background: #f8f9fa;
+  background: #f5f9fc;
   border-radius: 10rpx;
   padding: 10rpx;
   font-size: 24rpx;
-  color: #405264;
+  color: #3f5569;
 }
 .date-strip {
   white-space: nowrap;
@@ -225,12 +248,13 @@ onMounted(() => {
   font-size: 22rpx;
 }
 .date-active {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
+  border-color: #113d5c;
+  background: #113d5c;
+  color: #fff;
 }
 .price-panel {
-  border-radius: 12rpx;
-  background: #f8f9fa;
+  border-radius: 14rpx;
+  background: #f4f8fb;
   padding: 12rpx;
   display: flex;
   flex-direction: column;
@@ -243,10 +267,10 @@ onMounted(() => {
   font-weight: 600;
 }
 .stock-low {
-  color: #d7415f;
+  color: #c53f57;
 }
 .stock-ok {
-  color: #1f9a56;
+  color: #0f8a60;
 }
 .action-bar {
   display: flex;
@@ -256,10 +280,10 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #fff;
+  background: #ffffff;
   padding: 14rpx 18rpx;
   padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
-  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -8rpx 26rpx rgba(16, 47, 72, 0.16);
 }
 .action-icon {
   font-size: 24rpx;
@@ -270,7 +294,7 @@ onMounted(() => {
   border-radius: 44rpx;
   height: 88rpx;
   line-height: 88rpx;
-  background: #ff6b6b;
+  background: linear-gradient(135deg, #0f3d5c, #1f5f86);
   color: #fff;
   font-size: 28rpx;
 }

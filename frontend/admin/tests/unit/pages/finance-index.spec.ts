@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Page from '../../../pages/finance/index.vue'
+import Page from '../../../app/pages/finance/index.vue'
 
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))

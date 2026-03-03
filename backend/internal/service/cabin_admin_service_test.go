@@ -82,6 +82,19 @@ func (f *fakeCabinAdminRepo) UpsertPrice(ctx context.Context, p *domain.CabinPri
 	return f.upsertPriceErr
 }
 
+func (f *fakeCabinAdminRepo) BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error {
+	_ = ctx
+	_ = skuID
+	_ = start
+	_ = end
+	_ = occupancy
+	_ = priceCents
+	_ = childPriceCents
+	_ = singleSupplementCents
+	_ = priceType
+	return nil
+}
+
 func (f *fakeCabinAdminRepo) GetCategoryTree(ctx context.Context) (interface{}, error) {
 	return []interface{}{}, nil
 }

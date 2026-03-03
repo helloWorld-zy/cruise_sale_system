@@ -7,7 +7,7 @@ import PayButton from '../../components/PayButton.vue'
 import { request } from '../../src/utils/request'
 
 // 通过 props 接收 bookingId，便于运行时和测试复用。
-const props = defineProps<{ bookingId?: number | string }>()
+const props = defineProps<{ bookingId?: number | string; preview?: boolean }>()
 const loading = ref(false)
 const error = ref('')
 const payUrl = ref('')
@@ -18,6 +18,13 @@ function resolveBookingId() {
 }
 
 async function loadBooking() {
+  if (props.preview) {
+    booking.value = {
+      id: resolveBookingId() || 2026030501,
+      total_cents: 536000,
+    }
+    return
+  }
   const id = resolveBookingId()
   if (!id) {
     error.value = '缺少 bookingId 参数'
@@ -49,11 +56,12 @@ onMounted(loadBooking)
 <template>
   <view class="page">
     <text class="title">支付订单</text>
+    <text class="subtitle">确认订单后完成支付，舱位将优先为你保留。</text>
     <text v-if="loading" class="hint">Loading...</text>
     <text v-else-if="error" class="error">{{ error }}</text>
     <view v-else-if="booking" class="panel">
-      <text>订单号：{{ booking.id }}</text>
-      <text>金额：{{ booking.total_cents }}</text>
+      <text class="meta">订单号：{{ booking.id }}</text>
+      <text class="amount">金额：¥{{ (booking.total_cents / 100).toFixed(2) }}</text>
       <PayButton :booking-id="booking.id" :amount-cents="booking.total_cents" @paid="onPaid" @error="onError" />
       <text v-if="payUrl" class="hint">支付链接：{{ payUrl }}</text>
     </view>
@@ -63,16 +71,25 @@ onMounted(loadBooking)
 <style scoped>
 .page {
   min-height: 100vh;
-  padding: 36rpx;
-  background: #f8f6ff;
+  padding: 30rpx;
+  background:
+    radial-gradient(circle at 8% 0, #dbeaf6 0, transparent 30%),
+    linear-gradient(180deg, #f3f8fb 0%, #edf3f7 100%);
 }
 
 .title {
   display: block;
-  margin-bottom: 20rpx;
-  font-size: 42rpx;
+  margin-bottom: 8rpx;
+  font-size: 46rpx;
   font-weight: 700;
-  color: #50348b;
+  color: #122b42;
+}
+
+.subtitle {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 24rpx;
+  color: #5b728a;
 }
 
 .panel {
@@ -80,9 +97,20 @@ onMounted(loadBooking)
   flex-direction: column;
   gap: 14rpx;
   background: #fff;
-  border-radius: 18rpx;
+  border-radius: 24rpx;
   padding: 26rpx;
-  box-shadow: 0 12rpx 28rpx rgba(73, 53, 133, 0.12);
+  border: 1rpx solid #d4e0ea;
+  box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
+}
+
+.meta {
+  color: #5a7189;
+}
+
+.amount {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #113d5c;
 }
 
 .hint {

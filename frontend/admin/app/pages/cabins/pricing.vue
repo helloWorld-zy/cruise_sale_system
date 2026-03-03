@@ -147,6 +147,7 @@ onMounted(loadRows)
       <h1 class="text-xl font-semibold text-slate-900">价格矩阵</h1>
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
       <p v-else-if="error" class="text-sm text-rose-500">{{ error }}</p>
+      <p v-else-if="rowsByType().length === 0" data-test="empty" class="text-sm text-slate-500">暂无价格数据</p>
       <div v-else class="space-y-4">
         <div class="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
           <div class="flex flex-wrap items-center gap-2">

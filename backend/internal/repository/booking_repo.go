@@ -2,9 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
+)
+
+var (
+	// ErrInvalidOrderStatusTransition 表示请求的订单状态流转不符合状态机约束。
+	ErrInvalidOrderStatusTransition = errors.New("invalid order status transition")
 )
 
 // BookingRepository 提供预订实体的数据持久化能力。
@@ -35,7 +41,37 @@ func (r *BookingRepository) InTx(fn func(tx *gorm.DB, create func(b *domain.Book
 
 // UpdateStatus 更新指定预订 ID 的订单状态。
 func (r *BookingRepository) UpdateStatus(ctx context.Context, id int64, status string) error {
-	return r.db.WithContext(ctx).Model(&domain.Booking{}).Where("id = ?", id).Update("status", status).Error
+	return r.TransitionStatus(ctx, id, status, 0, "")
+}
+
+// TransitionStatus 通过统一入口变更订单状态，并在同一事务写入状态日志。
+func (r *BookingRepository) TransitionStatus(ctx context.Context, id int64, status string, operatorID int64, remark string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var current domain.Booking
+		if err := tx.First(&current, id).Error; err != nil {
+			return err
+		}
+		if !current.CanTransitionTo(status) {
+			return ErrInvalidOrderStatusTransition
+		}
+		if err := tx.Model(&domain.Booking{}).Where("id = ?", id).Update("status", status).Error; err != nil {
+			return err
+		}
+		if remark == "" {
+			remark = "status transition"
+		}
+		log := &domain.OrderStatusLog{
+			OrderID:    id,
+			FromStatus: current.Status,
+			ToStatus:   status,
+			OperatorID: operatorID,
+			Remark:     remark,
+		}
+		if err := tx.Create(log).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // List 分页查询订单列表。

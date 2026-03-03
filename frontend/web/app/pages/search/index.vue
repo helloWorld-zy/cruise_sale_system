@@ -117,16 +117,21 @@ const filters = ref({
 
 async function loadOptions() {
   try {
-    const [routeRes, typeRes] = await Promise.all([
-      request('/routes'),
-      request('/cabin-types', { query: { page: 1, page_size: 100 } }),
-    ])
-    
+    const routeRes = await request('/cruises', { query: { page: 1, page_size: 100 } })
     const routePayload = routeRes?.data ?? routeRes ?? []
     routes.value = Array.isArray(routePayload) ? routePayload : routePayload?.list ?? []
-    
-    const typePayload = typeRes?.data ?? typeRes ?? {}
-    cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+
+    const selectedCruiseId = filters.value.routeId || Number(routes.value[0]?.id || 0)
+    if (selectedCruiseId > 0) {
+      const typeRes = await request('/cabin-types', { query: { cruise_id: selectedCruiseId, page: 1, page_size: 100 } })
+      const typePayload = typeRes?.data ?? typeRes ?? {}
+      cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+      if (!filters.value.routeId) {
+        filters.value.routeId = selectedCruiseId
+      }
+    } else {
+      cabinTypes.value = []
+    }
   } catch (e) {
     console.error('Failed to load options:', e)
   }
@@ -149,9 +154,40 @@ async function handleSearch() {
       query.cabin_type_id = filters.value.cabinTypeId
     }
     
-    const res = await request('/cabins', { query })
+    const cruiseId = Number(query.voyage_id || filters.value.routeId || 0)
+    if (cruiseId <= 0) {
+      results.value = []
+      return
+    }
+
+    const res = await request('/cabin-types', {
+      query: {
+        cruise_id: cruiseId,
+        page: query.page,
+        page_size: query.page_size,
+      },
+    })
     const payload = res?.data ?? res ?? {}
-    results.value = Array.isArray(payload) ? payload : payload?.list ?? []
+    const list = Array.isArray(payload) ? payload : payload?.list ?? []
+    const keyword = String(query.keyword || '').toLowerCase()
+    results.value = list
+      .filter((item: Record<string, any>) => {
+        if (!keyword) return true
+        const name = String(item.name || '').toLowerCase()
+        return name.includes(keyword)
+      })
+      .map((item: Record<string, any>) => ({
+        id: Number(item.id),
+        code: item.name || `舱型 #${item.id}`,
+        cabin_type_name: item.name || '-',
+        deck: '-',
+        area: Number(item.area_min || item.area || 0),
+        min_price_cents: Number(item.min_price_cents || item.price_cents || 0),
+        total: Number(item.inventory || 0),
+        locked: 0,
+        sold: 0,
+        images: item.images,
+      }))
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : '搜索失败'
   } finally {

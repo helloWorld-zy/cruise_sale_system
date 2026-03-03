@@ -10,10 +10,12 @@ import { useAuthStore } from '../stores/auth'
  * - 若用户已登录，自动附加 Bearer 令牌
  */
 export const useApi = () => {
-    const runtimeConfigFactory = (globalThis as any).useRuntimeConfig
+    const runtimeConfigFactory = typeof useRuntimeConfig === 'function'
+        ? useRuntimeConfig
+        : ((globalThis as any).useRuntimeConfig as any)
     const config = typeof runtimeConfigFactory === 'function'
         ? runtimeConfigFactory()
-        : { public: { apiBase: '' } }
+        : { public: { apiBase: '/api/v1' } }
     let tokenFromStore = ''
     try {
         const auth = useAuthStore()
@@ -21,10 +23,10 @@ export const useApi = () => {
     } catch {
         tokenFromStore = ''
     }
-    const fetcher = (globalThis as any).$fetch
+    const fetcher = typeof $fetch === 'function' ? $fetch : (globalThis as any).$fetch
 
-    // 后端 API 基础路径（如 http://localhost:8080/api/v1）
-    const baseUrl = config.public.apiBase
+    // 后端 API 基础路径（默认同源 /api/v1）
+    const baseUrl = config?.public?.apiBase || '/api/v1'
 
     /**
      * request 发起 HTTP 请求到后端 API。

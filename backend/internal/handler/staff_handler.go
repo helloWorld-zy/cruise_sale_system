@@ -1,22 +1,24 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
 	"github.com/cruisebooking/backend/internal/domain"
+	"github.com/cruisebooking/backend/internal/middleware"
 	"github.com/cruisebooking/backend/internal/pkg/errcode"
 	"github.com/cruisebooking/backend/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
 type StaffService interface {
-	Create(ctx interface{}, name, email, role string) (*domain.Staff, error)
-	AssignRole(ctx interface{}, id int64, role string) error
-	List(ctx interface{}) ([]domain.Staff, error)
-	GetByID(ctx interface{}, id int64) (*domain.Staff, error)
-	Update(ctx interface{}, staff *domain.Staff) error
-	Delete(ctx interface{}, id int64) error
+	Create(ctx context.Context, name, email, role string) (*domain.Staff, error)
+	AssignRole(ctx context.Context, id int64, role string, operatorID int64) error
+	List(ctx context.Context) ([]domain.Staff, error)
+	GetByID(ctx context.Context, id int64) (*domain.Staff, error)
+	Update(ctx context.Context, staff *domain.Staff) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type StaffHandler struct {
@@ -145,9 +147,25 @@ func (h *StaffHandler) AssignRole(c *gin.Context) {
 		return
 	}
 
-	if err := h.svc.AssignRole(c.Request.Context(), id, req.Role); err != nil {
+	if err := h.svc.AssignRole(c.Request.Context(), id, req.Role, parseStaffID(c)); err != nil {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
 	response.Success(c, gin.H{"id": id, "role": req.Role})
+}
+
+func parseStaffID(c *gin.Context) int64 {
+	v, ok := c.Get(middleware.ContextKeyStaffID)
+	if !ok {
+		return 0
+	}
+	switch value := v.(type) {
+	case string:
+		if id, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return id
+		}
+	case int64:
+		return value
+	}
+	return 0
 }

@@ -41,4 +41,14 @@ func TestShopInfoService_Update(t *testing.T) {
 	err := svc.Update(context.Background(), &domain.ShopInfo{Name: "New Name"})
 	assert.NoError(t, err)
 	assert.Equal(t, "New Name", repo.info.Name)
+	assert.Equal(t, int64(1), repo.info.ID)
+}
+
+func TestShopInfoService_UpdateRejectsNonSingletonID(t *testing.T) {
+	repo := &fakeShopInfoRepo{info: &domain.ShopInfo{ID: 1, Name: "Old Name"}}
+	svc := NewShopInfoService(repo)
+
+	err := svc.Update(context.Background(), &domain.ShopInfo{ID: 2, Name: "Invalid"})
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidShopInfoSingletonID)
 }

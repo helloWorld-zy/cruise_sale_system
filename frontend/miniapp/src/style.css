@@ -1,7 +1,7 @@
 :root {
-	color: #12223a;
-	font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-	background: #eef3fb;
+	color: #13293b;
+	font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+	background: #edf3f7;
 }
 
 * {
@@ -10,51 +10,62 @@
 
 body {
 	margin: 0;
-	background: radial-gradient(circle at 8% 8%, #dceaff 0, transparent 38%),
-		#eef3fb;
+	background:
+		radial-gradient(circle at 6% 5%, #dbeaf6 0, transparent 36%),
+		radial-gradient(circle at 88% 0, #d7e4f1 0, transparent 32%),
+		linear-gradient(180deg, #f4f8fb 0%, #ecf2f6 100%);
 }
 
 .preview-shell {
 	max-width: 1080px;
 	margin: 0 auto;
-	padding: 20px;
+	padding: 24px;
 }
 
 .preview-header h1 {
 	margin: 0;
-	font-size: 28px;
+	font-size: 30px;
+	font-family: "Bodoni MT", "Times New Roman", serif;
+	letter-spacing: 0.02em;
 }
 
 .preview-header p {
-	margin: 6px 0 0;
-	color: #4f6079;
+	margin: 8px 0 0;
+	color: #4f6681;
 }
 
 .preview-tabs {
 	margin-top: 16px;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 10px;
+	gap: 8px;
 }
 
 .tab-btn {
 	border: 0;
 	border-radius: 999px;
-	padding: 8px 14px;
-	background: #d9e7fb;
-	color: #25466d;
+	padding: 9px 15px;
+	background: #dfebf4;
+	color: #2a4a69;
 	cursor: pointer;
+	transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.tab-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 18px rgba(23, 61, 89, 0.16);
 }
 
 .tab-btn.active {
-	background: #1f7bd5;
+	background: linear-gradient(135deg, #0f3d5c, #1e5a7f);
 	color: #fff;
 }
 
 .preview-stage {
 	margin-top: 16px;
-	border-radius: 18px;
+	border-radius: 22px;
 	overflow: hidden;
-	border: 1px solid #d3dfee;
+	border: 1px solid #d4e0ea;
 	background: #fff;
+	box-shadow: 0 24px 55px rgba(16, 47, 72, 0.18);
 }

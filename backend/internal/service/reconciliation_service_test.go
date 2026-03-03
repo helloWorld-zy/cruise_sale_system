@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -85,4 +86,61 @@ func TestReconciliationService_GenerateDailyReport_Empty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), report.TotalPayments)
 	assert.Equal(t, int64(0), report.TotalPaymentAmount)
+}
+
+func TestReconciliationService_GenerateDailyReportRejectsDuplicateDate(t *testing.T) {
+	date := time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)
+	dateStr := date.Format("2006-01-02")
+
+	paymentRepo := newFakePaymentRepoReconc()
+	paymentRepo.payments[dateStr] = 1000
+	paymentRepo.countByDate[dateStr] = 1
+
+	svc := NewReconciliationService(paymentRepo)
+	_, err := svc.GenerateDailyReport(context.Background(), date)
+	assert.NoError(t, err)
+
+	_, err = svc.GenerateDailyReport(context.Background(), date)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrReconciliationReportAlreadyGenerated)
+}
+
+func TestReconciliationService_GenerateDailyReportConcurrentIdempotent(t *testing.T) {
+	date := time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)
+	dateStr := date.Format("2006-01-02")
+
+	paymentRepo := newFakePaymentRepoReconc()
+	paymentRepo.payments[dateStr] = 1500
+	paymentRepo.countByDate[dateStr] = 2
+
+	svc := NewReconciliationService(paymentRepo)
+
+	const callers = 8
+	var wg sync.WaitGroup
+	wg.Add(callers)
+
+	var mu sync.Mutex
+	success := 0
+	duplicate := 0
+
+	for i := 0; i < callers; i++ {
+		go func() {
+			defer wg.Done()
+			_, err := svc.GenerateDailyReport(context.Background(), date)
+
+			mu.Lock()
+			defer mu.Unlock()
+			if err == nil {
+				success++
+				return
+			}
+			if assert.ErrorIs(t, err, ErrReconciliationReportAlreadyGenerated) {
+				duplicate++
+			}
+		}()
+	}
+
+	wg.Wait()
+	assert.Equal(t, 1, success)
+	assert.Equal(t, callers-1, duplicate)
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
@@ -74,4 +75,21 @@ func (r *CruiseRepository) List(ctx context.Context, companyID int64, keyword st
 // Delete 软删除指定的邮轮记录。
 func (r *CruiseRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.Cruise{}, id).Error
+}
+
+// BatchUpdateStatus 批量更新邮轮状态，并在目标数量不匹配时回滚。
+func (r *CruiseRepository) BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&domain.Cruise{}).Where("id IN ?", ids).Update("status", status)
+		if res.Error != nil {
+			return res.Error
+		}
+		if int(res.RowsAffected) != len(ids) {
+			return fmt.Errorf("batch update cruise status affected=%d expected=%d", res.RowsAffected, len(ids))
+		}
+		return nil
+	})
 }

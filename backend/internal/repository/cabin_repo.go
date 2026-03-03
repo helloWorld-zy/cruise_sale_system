@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
@@ -83,7 +84,16 @@ func (r *CabinRepository) BatchUpdateStatus(ctx context.Context, ids []int64, st
 	if len(ids) == 0 {
 		return nil
 	}
-	return r.db.WithContext(ctx).Model(&domain.CabinSKU{}).Where("id IN ?", ids).Update("status", status).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&domain.CabinSKU{}).Where("id IN ?", ids).Update("status", status)
+		if res.Error != nil {
+			return res.Error
+		}
+		if int(res.RowsAffected) != len(ids) {
+			return fmt.Errorf("batch update cabin status affected=%d expected=%d", res.RowsAffected, len(ids))
+		}
+		return nil
+	})
 }
 
 // DeleteSKU 删除指定的舱房 SKU。
@@ -153,6 +163,27 @@ func (r *CabinRepository) UpsertPrice(ctx context.Context, p *domain.CabinPrice)
 // Create 实现 PriceRepo 接口的 Create 方法。
 func (r *CabinRepository) Create(ctx context.Context, p *domain.CabinPrice) error {
 	return r.db.WithContext(ctx).Create(p).Error
+}
+
+// BatchSetPrice 按日期区间批量设置价格。
+func (r *CabinRepository) BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+			p := &domain.CabinPrice{
+				CabinSKUID:            skuID,
+				Date:                  d,
+				Occupancy:             occupancy,
+				PriceCents:            priceCents,
+				ChildPriceCents:       childPriceCents,
+				SingleSupplementCents: singleSupplementCents,
+				PriceType:             priceType,
+			}
+			if err := tx.Save(p).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // GetCategoryTree 获取邮轮→航线→舱型三级分类树。

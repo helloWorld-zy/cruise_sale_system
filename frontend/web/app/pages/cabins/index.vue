@@ -71,7 +71,7 @@
                 <span class="font-['Playfair_Display','Georgia',serif] text-xl text-[#12263a]">¥{{ displayPrice(cabin) }}</span>
                 <span v-if="cabin.child_price_cents" class="ml-2 text-xs text-slate-500">儿童 ¥{{ Math.round(cabin.child_price_cents / 100) }}</span>
               </div>
-              <span :class="inventoryBadgeClass(cabin)">{{ inventoryLabel(cabin) }}</span>
+              <InventoryBadge :available="inventoryCount(cabin)" :total="cabin.total || 0" />
             </div>
           </div>
         </NuxtLink>
@@ -81,7 +81,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import InventoryBadge from '../../../../shared/components/InventoryBadge.vue'
 
 interface CabinItem {
   id: number
@@ -140,16 +141,21 @@ const sortedCabins = computed(() => {
 
 async function loadOptions() {
   try {
-    const [routeRes, typeRes] = await Promise.all([
-      request('/routes'),
-      request('/cabin-types', { query: { page: 1, page_size: 100 } }),
-    ])
-    
+    const routeRes = await request('/cruises', { query: { page: 1, page_size: 100 } })
     const routePayload = routeRes?.data ?? routeRes ?? []
     routes.value = Array.isArray(routePayload) ? routePayload : routePayload?.list ?? []
-    
-    const typePayload = typeRes?.data ?? typeRes ?? {}
-    cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+
+    const selectedCruiseId = filters.value.routeId || Number(routes.value[0]?.id || 0)
+    if (selectedCruiseId > 0) {
+      const typeRes = await request('/cabin-types', { query: { cruise_id: selectedCruiseId, page: 1, page_size: 100 } })
+      const typePayload = typeRes?.data ?? typeRes ?? {}
+      cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+      if (!filters.value.routeId) {
+        filters.value.routeId = selectedCruiseId
+      }
+    } else {
+      cabinTypes.value = []
+    }
   } catch (e) {
     console.error('Failed to load options:', e)
   }
@@ -163,10 +169,43 @@ async function loadCabins() {
     const query: Record<string, unknown> = { page: 1, page_size: 20 }
     if (filters.value.routeId > 0) query.voyage_id = filters.value.routeId
     if (filters.value.cabinTypeId > 0) query.cabin_type_id = filters.value.cabinTypeId
-    
-    const res = await request('/cabins', { query })
+
+    const cruiseId = Number(query.voyage_id || 0)
+    if (cruiseId <= 0) {
+      cabins.value = []
+      return
+    }
+
+    const res = await request('/cabin-types', {
+      query: {
+        cruise_id: cruiseId,
+        page: query.page,
+        page_size: query.page_size,
+      },
+    })
     const payload = res?.data ?? res ?? {}
-    cabins.value = Array.isArray(payload) ? payload : payload?.list ?? []
+    const list = Array.isArray(payload) ? payload : payload?.list ?? []
+    cabins.value = list
+      .filter((item: Record<string, any>) => {
+        if (!filters.value.cabinTypeId) return true
+        return Number(item.id) === Number(filters.value.cabinTypeId)
+      })
+      .map((item: Record<string, any>) => ({
+        id: Number(item.id),
+        code: item.name || `舱型 #${item.id}`,
+        cabin_type_name: item.name || '-',
+        deck: '-',
+        area: Number(item.area_min || item.area || 0),
+        has_window: false,
+        has_balcony: false,
+        bed_type: '-',
+        min_price_cents: Number(item.min_price_cents || item.price_cents || 0),
+        child_price_cents: 0,
+        total: Number(item.inventory || 0),
+        locked: 0,
+        sold: 0,
+        images: item.images,
+      }))
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : '加载舱位失败'
   } finally {
@@ -191,30 +230,6 @@ function inventoryCount(cabin: CabinItem): number {
   const locked = cabin.locked || 0
   const sold = cabin.sold || 0
   return Math.max(0, total - locked - sold)
-}
-
-function inventoryPercent(cabin: CabinItem): number {
-  const total = cabin.total || 0
-  if (total <= 0) return 0
-  return Math.round((inventoryCount(cabin) / total) * 100)
-}
-
-function inventoryLabel(cabin: CabinItem): string {
-  const percent = inventoryPercent(cabin)
-  const count = inventoryCount(cabin)
-  if (count === 0) return '已售罄'
-  if (percent < 20) return '即将售罄'
-  if (percent < 50) return '库存紧张'
-  return '库存充足'
-}
-
-function inventoryBadgeClass(cabin: CabinItem): string {
-  const percent = inventoryPercent(cabin)
-  const count = inventoryCount(cabin)
-  if (count === 0) return 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600'
-  if (percent < 20) return 'rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700'
-  if (percent < 50) return 'rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700'
-  return 'rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700'
 }
 
 onMounted(async () => {

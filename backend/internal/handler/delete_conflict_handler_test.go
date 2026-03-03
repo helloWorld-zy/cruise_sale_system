@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/repository"
@@ -63,7 +64,10 @@ func (s *cabinDeleteErrSvc) ListPrices(context.Context, int64) ([]domain.CabinPr
 	return nil, nil
 }
 func (s *cabinDeleteErrSvc) UpsertPrice(context.Context, *domain.CabinPrice) error { return nil }
-func (s *cabinDeleteErrSvc) GetCategoryTree(context.Context) (interface{}, error)  { return nil, nil }
+func (s *cabinDeleteErrSvc) BatchSetPrice(context.Context, int64, time.Time, time.Time, int, int64, int64, int64, string) error {
+	return nil
+}
+func (s *cabinDeleteErrSvc) GetCategoryTree(context.Context) (interface{}, error) { return nil, nil }
 
 type bookingAdminDeleteErrStore struct{ err error }
 
@@ -76,8 +80,10 @@ func (s *bookingAdminDeleteErrStore) ListWithFilter(context.Context, repository.
 func (s *bookingAdminDeleteErrStore) GetByID(context.Context, int64) (*domain.Booking, error) {
 	return &domain.Booking{}, nil
 }
-func (s *bookingAdminDeleteErrStore) UpdateStatus(context.Context, int64, string) error { return nil }
-func (s *bookingAdminDeleteErrStore) Delete(context.Context, int64) error               { return s.err }
+func (s *bookingAdminDeleteErrStore) TransitionStatus(context.Context, int64, string, int64, string) error {
+	return nil
+}
+func (s *bookingAdminDeleteErrStore) Delete(context.Context, int64) error { return s.err }
 
 func TestDeleteConflictMapping(t *testing.T) {
 	gin.SetMode(gin.TestMode)

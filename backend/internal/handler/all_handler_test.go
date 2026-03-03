@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/repository"
@@ -695,6 +696,22 @@ func (m *mockCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) er
 		return errors.New("error")
 	}
 	if p.PriceCents == 99 {
+		return errors.New("error")
+	}
+	return nil
+}
+
+func (m *mockCabinSvc) BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error {
+	_ = start
+	_ = end
+	_ = occupancy
+	_ = childPriceCents
+	_ = singleSupplementCents
+	_ = priceType
+	if isErr(ctx) {
+		return errors.New("error")
+	}
+	if skuID == 99 || priceCents == 99 {
 		return errors.New("error")
 	}
 	return nil

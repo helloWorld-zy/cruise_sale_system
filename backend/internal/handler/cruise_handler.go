@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -236,6 +237,11 @@ func (h *CruiseHandler) BatchUpdateStatus(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "ids cannot be empty")
 		return
 	}
+	if len(req.IDs) > maxBatchUpdateSize {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "batch size exceeds limit")
+		return
+	}
+	log.Printf("audit bulk update cruises count=%d status=%d", len(req.IDs), req.Status)
 	if err := h.svc.BatchUpdateStatus(c.Request.Context(), req.IDs, req.Status); err != nil {
 		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())
 		return

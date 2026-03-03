@@ -2,6 +2,8 @@
   <div class="min-h-screen bg-slate-50 p-4 md:p-6">
     <div class="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h1 class="mb-6 text-xl font-semibold text-slate-900">编辑设施</h1>
+      <p v-if="loading" class="mb-3 text-sm text-slate-600">加载中...</p>
+      <p v-else-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无设施数据</p>
       <form class="space-y-6" @submit.prevent="handleSubmit">
         <section>
           <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">基本信息</h2>
@@ -53,6 +55,7 @@ const route = useRoute()
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const empty = ref(false)
 const cruises = ref<Record<string, any>[]>([])
 const categories = ref<Record<string, any>[]>([])
 const audienceOptions = ['儿童', '家庭', '情侣', '老年', '商务']
@@ -102,9 +105,14 @@ async function loadDetail() {
   if (!id.value) return
   loading.value = true
   error.value = null
+  empty.value = false
   try {
     const res = await request(`/facilities/${id.value}`)
     const payload = res?.data ?? res ?? {}
+    if (Object.keys(payload).length === 0) {
+      empty.value = true
+      return
+    }
     form.value = {
       category_id: Number(payload.category_id || 0),
       cruise_id: Number(payload.cruise_id || 0),

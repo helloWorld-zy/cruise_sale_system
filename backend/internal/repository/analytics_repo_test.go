@@ -83,3 +83,62 @@ func TestAnalyticsRepository_WeeklyTrend(t *testing.T) {
 	}
 	assert.Equal(t, int64(450), sum)
 }
+
+func TestAnalyticsRepository_Trend(t *testing.T) {
+	repo := newAnalyticsTestRepo(t)
+	db := repo.db
+
+	require.NoError(t, db.Exec("INSERT INTO payments (order_id, provider, trade_no, amount_cents, status, created_at, updated_at) VALUES (10, 'wechat', 'TR1', 1200, 'paid', datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO bookings (user_id, voyage_id, cabin_sku_id, status, total_cents, created_at, updated_at) VALUES (1, 11, 201, 'created', 1200, datetime('now'), datetime('now'))").Error)
+
+	items, err := repo.Trend(context.Background(), 7)
+	require.NoError(t, err)
+	assert.Len(t, items, 7)
+
+	var sales int64
+	var orders int64
+	for _, item := range items {
+		sales += item.Sales
+		orders += item.Orders
+	}
+	assert.Equal(t, int64(1200), sales)
+	assert.Equal(t, int64(1), orders)
+}
+
+func TestAnalyticsRepository_CabinHotnessRanking(t *testing.T) {
+	repo := newAnalyticsTestRepo(t)
+	db := repo.db
+
+	require.NoError(t, db.AutoMigrate(&domain.CabinSKU{}))
+	require.NoError(t, db.Exec("INSERT INTO cabin_skus (id, code, voyage_id, status, created_at, updated_at) VALUES (301, 'C301', 11, 1, datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO cabin_skus (id, code, voyage_id, status, created_at, updated_at) VALUES (302, 'C302', 11, 1, datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO bookings (user_id, voyage_id, cabin_sku_id, status, total_cents, created_at, updated_at) VALUES (1, 11, 301, 'paid', 1000, datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO bookings (user_id, voyage_id, cabin_sku_id, status, total_cents, created_at, updated_at) VALUES (2, 11, 301, 'confirmed', 1000, datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO bookings (user_id, voyage_id, cabin_sku_id, status, total_cents, created_at, updated_at) VALUES (3, 11, 302, 'created', 1000, datetime('now'), datetime('now'))").Error)
+
+	ranking, err := repo.CabinHotnessRanking(context.Background(), 10)
+	require.NoError(t, err)
+	require.NotEmpty(t, ranking)
+	assert.Equal(t, int64(301), ranking[0].CabinSKUID)
+	assert.Equal(t, int64(2), ranking[0].SoldCount)
+}
+
+func TestAnalyticsRepository_InventoryOverviewAndPageViewStats(t *testing.T) {
+	repo := newAnalyticsTestRepo(t)
+	db := repo.db
+
+	require.NoError(t, db.AutoMigrate(&domain.CabinInventory{}))
+	require.NoError(t, db.Exec("INSERT INTO cabin_inventories (cabin_sku_id, total, locked, sold, alert_threshold) VALUES (401, 10, 3, 6, 2)").Error)
+	require.NoError(t, db.Exec("INSERT INTO cabin_inventories (cabin_sku_id, total, locked, sold, alert_threshold) VALUES (402, 5, 2, 3, 1)").Error)
+	require.NoError(t, db.Exec("INSERT INTO bookings (user_id, voyage_id, cabin_sku_id, status, total_cents, created_at, updated_at) VALUES (5, 15, 401, 'created', 1000, datetime('now'), datetime('now'))").Error)
+	require.NoError(t, db.Exec("INSERT INTO payments (order_id, provider, trade_no, amount_cents, status, created_at, updated_at) VALUES (99, 'wechat', 'PV1', 2000, 'paid', datetime('now'), datetime('now'))").Error)
+
+	overview, err := repo.InventoryOverview(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), overview.TotalCabins)
+	assert.Equal(t, int64(1), overview.OutOfStockCount)
+
+	stats, err := repo.PageViewStats(context.Background())
+	require.NoError(t, err)
+	assert.Len(t, stats, 3)
+}

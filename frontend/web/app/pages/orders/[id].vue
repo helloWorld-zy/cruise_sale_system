@@ -3,10 +3,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useApi } from '~/composables/useApi'
 
 // 获取路由参数中的订单 ID
 const route = useRoute()
 const orderId = route.params.id as string
+const { request } = useApi()
 
 // 订单详情接口类型
 interface OrderDetail {
@@ -23,9 +25,30 @@ const error = ref<string | null>(null)      // 错误信息
 // 页面挂载时加载订单详情数据
 onMounted(async () => {
   try {
-    const res = await fetch(`/api/v1/bookings/${orderId}`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    order.value = await res.json()
+    let token = ''
+    try {
+      token = globalThis?.sessionStorage?.getItem('auth_token') || ''
+    } catch {
+      token = ''
+    }
+
+    // C-end currently has no public booking detail API; skip remote call when unauthenticated.
+    if (!token) {
+      order.value = {
+        id: orderId,
+        status: '待登录后查看',
+        amount: 0,
+      }
+      return
+    }
+
+    const payload = await request<any>(`/admin/bookings/${orderId}`)
+    const data = payload?.data ?? payload ?? {}
+    order.value = {
+      id: String(data.id ?? orderId),
+      status: String(data.status ?? '未知'),
+      amount: Number(data.amount ?? data.amount_cents ?? 0),
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载订单失败'
   } finally {

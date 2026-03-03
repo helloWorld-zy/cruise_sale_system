@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/middleware"
 	"github.com/cruisebooking/backend/internal/pkg/errcode"
 	"github.com/cruisebooking/backend/internal/pkg/response"
 	"github.com/cruisebooking/backend/internal/repository"
+	"github.com/cruisebooking/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,14 +26,15 @@ type BookingAdminStore interface {
 	List(ctx context.Context, page, pageSize int) ([]domain.Booking, int64, error)
 	ListWithFilter(ctx context.Context, filter repository.BookingFilter, page, pageSize int) ([]domain.Booking, int64, error)
 	GetByID(ctx context.Context, id int64) (*domain.Booking, error)
-	UpdateStatus(ctx context.Context, id int64, status string) error
+	TransitionStatus(ctx context.Context, id int64, status string, operatorID int64, remark string) error
 	Delete(ctx context.Context, id int64) error
 }
 
 // BookingHandler 处理 C 端预订下单请求。
 type BookingHandler struct {
-	svc        BookingService
-	adminStore BookingAdminStore
+	svc           BookingService
+	adminStore    BookingAdminStore
+	exportService *service.OrderExportService
 }
 
 // NewBookingHandler 创建预订处理器实例。
@@ -41,6 +44,11 @@ func NewBookingHandler(svc BookingService, adminStore ...BookingAdminStore) *Boo
 		h.adminStore = adminStore[0]
 	}
 	return h
+}
+
+// SetExportService 注入订单导出服务。
+func (h *BookingHandler) SetExportService(exportSvc *service.OrderExportService) {
+	h.exportService = exportSvc
 }
 
 // CreateBookingRequest 表示创建预订请求体。
@@ -161,12 +169,21 @@ func (h *BookingHandler) AdminUpdate(c *gin.Context) {
 	}
 	var req struct {
 		Status string `json:"status" binding:"required"`
+		Remark string `json:"remark"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
-	if err := h.adminStore.UpdateStatus(c.Request.Context(), id, req.Status); err != nil {
+	operatorID := parseOperatorID(c)
+	if req.Remark == "" {
+		req.Remark = fmt.Sprintf("admin update to %s", req.Status)
+	}
+	if err := h.adminStore.TransitionStatus(c.Request.Context(), id, req.Status, operatorID, req.Remark); err != nil {
+		if err == repository.ErrInvalidOrderStatusTransition {
+			response.Error(c, http.StatusConflict, errcode.ErrConflict, err.Error())
+			return
+		}
 		response.InternalError(c, err)
 		return
 	}
@@ -191,7 +208,48 @@ func (h *BookingHandler) AdminDelete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// UpdateStatus 测试用的空实现
+// UpdateStatus 兼容旧调用，统一转发到状态机入口。
 func (h *BookingHandler) UpdateStatus(ctx context.Context, orderID int64, status string) error {
-	return nil
+	if h.adminStore == nil {
+		return fmt.Errorf("booking store unavailable")
+	}
+	return h.adminStore.TransitionStatus(ctx, orderID, status, 0, "handler forward")
+}
+
+func parseOperatorID(c *gin.Context) int64 {
+	if value, ok := c.Get(middleware.ContextKeyStaffID); ok {
+		id, err := strconv.ParseInt(fmt.Sprint(value), 10, 64)
+		if err == nil && id > 0 {
+			return id
+		}
+	}
+	return 0
+}
+
+// AdminExport 管理后台导出订单 CSV。
+func (h *BookingHandler) AdminExport(c *gin.Context) {
+	if h.exportService == nil {
+		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, "export service unavailable")
+		return
+	}
+
+	filter := service.OrderFilter{
+		Status:    c.Query("status"),
+		BookingNo: c.Query("booking_no"),
+	}
+	if voyageID, err := strconv.ParseInt(c.Query("voyage_id"), 10, 64); err == nil {
+		filter.VoyageID = voyageID
+	}
+
+	ctx := service.WithOrderExportPermission(c.Request.Context(), true)
+	data, err := h.exportService.ExportToExcel(ctx, filter)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+
+	filename := fmt.Sprintf("orders_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	c.Data(http.StatusOK, "text/csv", data)
 }

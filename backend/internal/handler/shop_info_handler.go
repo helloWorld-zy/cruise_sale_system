@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/cruisebooking/backend/internal/domain"
@@ -10,8 +11,8 @@ import (
 )
 
 type ShopInfoService interface {
-	Get(ctx interface{}) (*domain.ShopInfo, error)
-	Update(ctx interface{}, info *domain.ShopInfo) error
+	Get(ctx context.Context) (*domain.ShopInfo, error)
+	Update(ctx context.Context, info *domain.ShopInfo) error
 }
 
 type ShopInfoHandler struct {

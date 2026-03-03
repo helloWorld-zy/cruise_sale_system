@@ -14,24 +14,27 @@ import (
 
 // Dependencies 聚合了所有处理器依赖，用于路由初始化时的依赖注入。
 type Dependencies struct {
-	Auth             *handler.AuthHandler             // 认证处理器
-	Company          *handler.CompanyHandler          // 邮轮公司处理器
-	Cruise           *handler.CruiseHandler           // 邮轮处理器
-	CabinType        *handler.CabinTypeHandler        // 舱房类型处理器
-	FacilityCategory *handler.FacilityCategoryHandler // 设施分类处理器
-	Facility         *handler.FacilityHandler         // 设施处理器
-	Image            *handler.ImageHandler            // 图片处理器
-	Route            *handler.RouteHandler            // 航线处理器
-	Voyage           *handler.VoyageHandler           // 航次处理器
-	Cabin            *handler.CabinHandler            // 舱房处理器
-	Booking          *handler.BookingHandler          // 订单处理器
-	User             *handler.UserHandler             // C端用户处理器
-	Upload           *handler.UploadHandler           // 文件上传处理器
-	Payment          *handler.PaymentHandler          // 支付回调处理器
-	Refund           *handler.RefundHandler           // 退款处理器
-	Analytics        *handler.AnalyticsHandler        // 统计分析处理器
-	JWTSecret        string                           // JWT 签名密钥
-	Enforcer         *casbin.Enforcer                 // Casbin RBAC 执行器
+	Auth             *handler.AuthHandler                 // 认证处理器
+	Company          *handler.CompanyHandler              // 邮轮公司处理器
+	Cruise           *handler.CruiseHandler               // 邮轮处理器
+	CabinType        *handler.CabinTypeHandler            // 舱房类型处理器
+	FacilityCategory *handler.FacilityCategoryHandler     // 设施分类处理器
+	Facility         *handler.FacilityHandler             // 设施处理器
+	Image            *handler.ImageHandler                // 图片处理器
+	Route            *handler.RouteHandler                // 航线处理器
+	Voyage           *handler.VoyageHandler               // 航次处理器
+	Cabin            *handler.CabinHandler                // 舱房处理器
+	Booking          *handler.BookingHandler              // 订单处理器
+	User             *handler.UserHandler                 // C端用户处理器
+	Upload           *handler.UploadHandler               // 文件上传处理器
+	Payment          *handler.PaymentHandler              // 支付回调处理器
+	Refund           *handler.RefundHandler               // 退款处理器
+	Analytics        *handler.AnalyticsHandler            // 统计分析处理器
+	Staff            *handler.StaffHandler                // 员工管理处理器
+	ShopInfo         *handler.ShopInfoHandler             // 店铺信息处理器
+	NotificationTpl  *handler.NotificationTemplateHandler // 通知模板处理器
+	JWTSecret        string                               // JWT 签名密钥
+	Enforcer         *casbin.Enforcer                     // Casbin RBAC 执行器
 }
 
 // Setup 创建并配置 Gin 引擎，注册所有路由和中间件。
@@ -43,7 +46,25 @@ func Setup(deps Dependencies) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:3013", "http://localhost:3014", "http://localhost:3301", "http://localhost:3302", "http://localhost:5175", "http://localhost:8080"},
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"http://localhost:3001",
+			"http://localhost:3013",
+			"http://localhost:3014",
+			"http://localhost:3301",
+			"http://localhost:3302",
+			"http://localhost:5175",
+			"http://localhost:8080",
+			"http://127.0.0.1:3000",
+			"http://127.0.0.1:3001",
+			"http://127.0.0.1:3013",
+			"http://127.0.0.1:3014",
+			"http://127.0.0.1:3015",
+			"http://127.0.0.1:3301",
+			"http://127.0.0.1:3302",
+			"http://127.0.0.1:5175",
+			"http://127.0.0.1:8080",
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -166,11 +187,13 @@ func Setup(deps Dependencies) *gin.Engine {
 		cabins.POST("/:id/inventory/adjust", deps.Cabin.AdjustInventory) // 调整库存
 		cabins.GET("/:id/prices", deps.Cabin.ListPrices)                 // 查询价格日历
 		cabins.POST("/:id/prices", deps.Cabin.UpsertPrice)               // 设置价格
+		cabins.POST(":id/prices/batch", deps.Cabin.BatchSetPrice)        // 批量设置日期范围价格
 	}
 
 	bookingsAdmin := admin.Group("/bookings")
 	{
 		bookingsAdmin.GET("", deps.Booking.AdminList)       // 管理后台查询订单列表
+		bookingsAdmin.GET("/export", deps.Booking.AdminExport) // 管理后台导出订单 CSV
 		bookingsAdmin.GET("/:id", deps.Booking.AdminGet)    // 管理后台查询订单详情
 		bookingsAdmin.POST("", deps.Booking.Create)         // 管理后台创建订单
 		bookingsAdmin.PUT("/:id", deps.Booking.AdminUpdate) // 管理后台更新订单状态
@@ -216,6 +239,27 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	// --- 管理后台统计分析 ---
 	admin.GET("/analytics/summary", deps.Analytics.Summary)
+
+	staffs := admin.Group("/staffs")
+	{
+		staffs.GET("", deps.Staff.List)
+		staffs.GET("/:id", deps.Staff.Get)
+		staffs.POST("", deps.Staff.Create)
+		staffs.PUT("/:id", deps.Staff.Update)
+		staffs.DELETE("/:id", deps.Staff.Delete)
+		staffs.PUT("/:id/assign-role", deps.Staff.AssignRole)
+	}
+
+	admin.GET("/shop-info", deps.ShopInfo.Get)
+	admin.PUT("/shop-info", deps.ShopInfo.Update)
+
+	tpls := admin.Group("/notification-templates")
+	{
+		tpls.GET("", deps.NotificationTpl.List)
+		tpls.POST("", deps.NotificationTpl.Create)
+		tpls.PUT("/:id", deps.NotificationTpl.Update)
+		tpls.DELETE("/:id", deps.NotificationTpl.Delete)
+	}
 
 	return r
 }

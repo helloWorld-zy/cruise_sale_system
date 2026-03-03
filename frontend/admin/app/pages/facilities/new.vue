@@ -2,6 +2,7 @@
   <div class="min-h-screen bg-slate-50 p-4 md:p-6">
     <div class="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <h1 class="mb-6 text-xl font-semibold text-slate-900">新建设施</h1>
+      <p v-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无邮轮或分类数据，无法建设施</p>
       <form class="space-y-6" @submit.prevent="handleSubmit">
         <section>
           <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">基本信息</h2>
@@ -71,6 +72,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const cruises = ref<Record<string, any>[]>([])
 const categories = ref<Record<string, any>[]>([])
+const empty = ref(false)
 const audienceOptions = ['儿童', '家庭', '情侣', '老年', '商务']
 
 const form = ref({
@@ -98,11 +100,13 @@ async function loadOptions() {
     cruises.value = Array.isArray(cruisePayload) ? cruisePayload : cruisePayload?.list ?? []
     const categoryPayload = categoryRes?.data ?? categoryRes ?? []
     categories.value = Array.isArray(categoryPayload) ? categoryPayload : categoryPayload?.list ?? []
+    empty.value = cruises.value.length === 0 || categories.value.length === 0
     if (cruises.value.length > 0) form.value.cruise_id = Number(cruises.value[0].id) || 0
     if (categories.value.length > 0) form.value.category_id = Number(categories.value[0].id) || 0
   } catch {
     cruises.value = []
     categories.value = []
+    empty.value = true
   }
 }
 

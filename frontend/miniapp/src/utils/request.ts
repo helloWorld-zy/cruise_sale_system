@@ -23,10 +23,36 @@ declare const uni: any
  * @returns Promise<T> - 响应数据
  */
 export const request = <T>(path: string, options: any = {}) => {
+    const method = String(options?.method || 'GET').toUpperCase()
+    const headers = options?.header || options?.headers || {}
+    const data = options?.data
+
+    // 浏览器预览环境没有 uni 对象，降级为 fetch，避免整页崩溃。
+    if (typeof (globalThis as any).uni?.request !== 'function') {
+        const init: RequestInit = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers,
+            },
+        }
+        if (data != null && method !== 'GET') {
+            init.body = typeof data === 'string' ? data : JSON.stringify(data)
+        }
+        return fetch(buildUrl(path), init).then(async (res) => {
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`)
+            }
+            return (await res.json()) as T
+        })
+    }
+
     return new Promise<T>((resolve, reject) => {
-        uni.request({
+        ;(globalThis as any).uni.request({
             url: buildUrl(path),
-            ...options,
+            method,
+            data,
+            header: headers,
             success: (res: any) => resolve(res.data as T), // 成功时返回响应数据
             fail: reject, // 失败时拒绝 Promise
         })
