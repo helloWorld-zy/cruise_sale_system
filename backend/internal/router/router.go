@@ -20,6 +20,7 @@ type Dependencies struct {
 	CabinType        *handler.CabinTypeHandler        // 舱房类型处理器
 	FacilityCategory *handler.FacilityCategoryHandler // 设施分类处理器
 	Facility         *handler.FacilityHandler         // 设施处理器
+	Image            *handler.ImageHandler            // 图片处理器
 	Route            *handler.RouteHandler            // 航线处理器
 	Voyage           *handler.VoyageHandler           // 航次处理器
 	Cabin            *handler.CabinHandler            // 舱房处理器
@@ -83,11 +84,12 @@ func Setup(deps Dependencies) *gin.Engine {
 	// 邮轮管理
 	cruises := admin.Group("/cruises")
 	{
-		cruises.GET("", deps.Cruise.List)          // 查询邮轮列表
-		cruises.GET("/:id", deps.Cruise.Get)       // 查询邮轮详情
-		cruises.POST("", deps.Cruise.Create)       // 创建邮轮
-		cruises.PUT("/:id", deps.Cruise.Update)    // 更新邮轮
-		cruises.DELETE("/:id", deps.Cruise.Delete) // 删除邮轮
+		cruises.GET("", deps.Cruise.List)                           // 查询邮轮列表
+		cruises.GET("/:id", deps.Cruise.Get)                        // 查询邮轮详情
+		cruises.POST("", deps.Cruise.Create)                        // 创建邮轮
+		cruises.PUT("/:id", deps.Cruise.Update)                     // 更新邮轮
+		cruises.PUT("/batch-status", deps.Cruise.BatchUpdateStatus) // 批量更新邮轮状态
+		cruises.DELETE("/:id", deps.Cruise.Delete)                  // 删除邮轮
 	}
 
 	// 舱房类型管理
@@ -104,6 +106,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	{
 		facilityCategories.GET("", deps.FacilityCategory.List)          // 查询分类列表
 		facilityCategories.POST("", deps.FacilityCategory.Create)       // 创建分类
+		facilityCategories.PUT("/:id", deps.FacilityCategory.Update)    // 更新分类
 		facilityCategories.DELETE("/:id", deps.FacilityCategory.Delete) // 删除分类
 	}
 
@@ -111,8 +114,17 @@ func Setup(deps Dependencies) *gin.Engine {
 	facilities := admin.Group("/facilities")
 	{
 		facilities.GET("", deps.Facility.ListByCruise)  // 按邮轮查询设施
+		facilities.GET("/:id", deps.Facility.Get)       // 查询设施详情
 		facilities.POST("", deps.Facility.Create)       // 创建设施
+		facilities.PUT("/:id", deps.Facility.Update)    // 更新设施
 		facilities.DELETE("/:id", deps.Facility.Delete) // 删除设施
+	}
+
+	// 图片画廊管理
+	images := admin.Group("/images")
+	{
+		images.GET("", deps.Image.List)  // 查询实体图片
+		images.POST("", deps.Image.Save) // 保存实体图片
 	}
 
 	// 文件上传
@@ -142,11 +154,14 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	cabins := admin.Group("/cabins")
 	{
-		cabins.GET("", deps.Cabin.List)                                  // 查询舱房列表
+		cabins.GET("", deps.Cabin.FilteredList)                          // 按条件查询舱房列表
 		cabins.GET("/:id", deps.Cabin.Get)                               // 查询舱房详情
 		cabins.POST("", deps.Cabin.Create)                               // 创建舱房 SKU
 		cabins.PUT("/:id", deps.Cabin.Update)                            // 更新舱房 SKU
+		cabins.PUT("/batch-status", deps.Cabin.BatchUpdateStatus)        // 批量更新舱房状态
 		cabins.DELETE("/:id", deps.Cabin.Delete)                         // 删除舱房 SKU
+		cabins.GET("/alerts", deps.Cabin.GetAlerts)                      // 查询库存预警
+		cabins.PUT("/:id/alert-threshold", deps.Cabin.SetAlertThreshold) // 设置库存预警阈值
 		cabins.GET("/:id/inventory", deps.Cabin.GetInventory)            // 查询库存
 		cabins.POST("/:id/inventory/adjust", deps.Cabin.AdjustInventory) // 调整库存
 		cabins.GET("/:id/prices", deps.Cabin.ListPrices)                 // 查询价格日历
@@ -184,6 +199,13 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	// --- 支付回调（公开路由，由支付平台调用） ---
 	api.POST("/pay/callback", deps.Payment.Callback)
+
+	// --- C 端公开查询路由（无需认证，供 Web/小程序使用） ---
+	api.GET("/cruises", deps.Cruise.List)                       // 邮轮列表
+	api.GET("/cruises/:id", deps.Cruise.Get)                    // 邮轮详情
+	api.GET("/cabin-types", deps.CabinType.List)                // 舱房类型列表
+	api.GET("/facility-categories", deps.FacilityCategory.List) // 设施分类列表
+	api.GET("/facilities", deps.Facility.ListByCruise)          // 设施列表（按邮轮）
 
 	// --- 退款（需要用户认证） ---
 	refunds := api.Group("/refunds")

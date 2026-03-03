@@ -1,0 +1,156 @@
+package handler
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/cruisebooking/backend/internal/domain"
+	"github.com/cruisebooking/backend/internal/service"
+	"github.com/gin-gonic/gin"
+)
+
+type imageRepoForHandler struct {
+	items []domain.Image
+}
+
+func (m *imageRepoForHandler) Create(ctx context.Context, img *domain.Image) error {
+	_ = ctx
+	img.ID = int64(len(m.items) + 1)
+	m.items = append(m.items, *img)
+	return nil
+}
+
+func (m *imageRepoForHandler) ListByEntity(ctx context.Context, entityType string, entityID int64) ([]domain.Image, error) {
+	_ = ctx
+	out := make([]domain.Image, 0)
+	for _, it := range m.items {
+		if it.EntityType == entityType && it.EntityID == entityID {
+			out = append(out, it)
+		}
+	}
+	return out, nil
+}
+
+func (m *imageRepoForHandler) DeleteByEntity(ctx context.Context, entityType string, entityID int64) error {
+	_ = ctx
+	filtered := make([]domain.Image, 0)
+	for _, it := range m.items {
+		if !(it.EntityType == entityType && it.EntityID == entityID) {
+			filtered = append(filtered, it)
+		}
+	}
+	m.items = filtered
+	return nil
+}
+
+func (m *imageRepoForHandler) UpdateSortOrder(ctx context.Context, id int64, sortOrder int) error {
+	_ = ctx
+	for i := range m.items {
+		if m.items[i].ID == id {
+			m.items[i].SortOrder = sortOrder
+			return nil
+		}
+	}
+	return nil
+}
+func (m *imageRepoForHandler) ReplaceImages(ctx context.Context, entityType string, entityID int64, images []*domain.Image) error {
+	_ = m.DeleteByEntity(ctx, entityType, entityID)
+	for _, img := range images {
+		img.ID = int64(len(m.items) + 1)
+		m.items = append(m.items, *img)
+	}
+	return nil
+}
+
+func TestCruiseHandler_BatchUpdateStatus(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewCruiseHandler(service.NewCruiseService(&mockCruiseRepo{}, &mockCabinTypeRepo{}, &mockCompanyRepo{}))
+	r.PUT("/api/v1/admin/cruises/batch-status", h.BatchUpdateStatus)
+
+	body := bytes.NewBufferString(`{"ids":[1],"status":0}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/cruises/batch-status", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestImageHandler_SaveAndList(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	repo := &imageRepoForHandler{}
+	h := NewImageHandler(service.NewImageService(repo))
+	r.POST("/api/v1/admin/images", h.Save)
+	r.GET("/api/v1/admin/images", h.List)
+
+	postBody := map[string]any{
+		"entity_type": "cruise",
+		"entity_id":   1,
+		"images": []map[string]any{
+			{"url": "https://img/a.jpg", "sort_order": 1, "is_primary": true},
+		},
+	}
+	data, _ := json.Marshal(postBody)
+	postReq := httptest.NewRequest(http.MethodPost, "/api/v1/admin/images", bytes.NewReader(data))
+	postReq.Header.Set("Content-Type", "application/json")
+	postResp := httptest.NewRecorder()
+	r.ServeHTTP(postResp, postReq)
+	if postResp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", postResp.Code, postResp.Body.String())
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/admin/images?entity_type=cruise&entity_id=1", nil)
+	listResp := httptest.NewRecorder()
+	r.ServeHTTP(listResp, listReq)
+	if listResp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", listResp.Code, listResp.Body.String())
+	}
+}
+
+func TestFacilityHandler_GetAndUpdate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewFacilityHandler(service.NewFacilityService(&mockFacilityRepo{}))
+	r.GET("/api/v1/admin/facilities/:id", h.Get)
+	r.PUT("/api/v1/admin/facilities/:id", h.Update)
+
+	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/admin/facilities/1", nil)
+	getResp := httptest.NewRecorder()
+	r.ServeHTTP(getResp, getReq)
+	if getResp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", getResp.Code, getResp.Body.String())
+	}
+
+	putBody := bytes.NewBufferString(`{"cruise_id":1,"category_id":1,"name":"spa"}`)
+	putReq := httptest.NewRequest(http.MethodPut, "/api/v1/admin/facilities/1", putBody)
+	putReq.Header.Set("Content-Type", "application/json")
+	putResp := httptest.NewRecorder()
+	r.ServeHTTP(putResp, putReq)
+	if putResp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", putResp.Code, putResp.Body.String())
+	}
+}
+
+func TestFacilityCategoryHandler_Update(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewFacilityCategoryHandler(service.NewFacilityCategoryService(&mockFacilityCategoryRepo{}))
+	r.PUT("/api/v1/admin/facility-categories/:id", h.Update)
+
+	body := bytes.NewBufferString(`{"name":"餐饮","icon":"fork","status":1,"sort_order":1}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/facility-categories/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", resp.Code, resp.Body.String())
+	}
+}

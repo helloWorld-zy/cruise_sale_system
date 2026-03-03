@@ -5,6 +5,14 @@ import { useAuthStore } from '../../../app/stores/auth'
 describe('Auth Store', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
+        Object.defineProperty(window, 'localStorage', {
+            value: {
+                getItem: () => null,
+                setItem: () => undefined,
+                removeItem: () => undefined,
+            },
+            configurable: true,
+        })
     })
 
     it('manages token and profile', () => {

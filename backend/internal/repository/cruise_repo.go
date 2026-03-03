@@ -36,19 +36,36 @@ func (r *CruiseRepository) GetByID(ctx context.Context, id int64) (*domain.Cruis
 	return &cruise, nil
 }
 
-// List 分页查询邮轮列表，可按公司 ID 过滤。
-// 当 companyID > 0 时仅返回该公司下的邮轮。
-func (r *CruiseRepository) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+// List 分页查询邮轮列表，可按公司、关键词、状态筛选并支持排序。
+func (r *CruiseRepository) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
 	var items []domain.Cruise
 	var total int64
 	q := r.db.WithContext(ctx).Model(&domain.Cruise{})
 	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
 	}
+	if keyword != "" {
+		q = q.Where("name LIKE ? OR english_name LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+	}
+	// status 为 nil 表示不筛选；非 nil 时按值筛选（包括 0=下架）
+	if status != nil {
+		q = q.Where("status = ?", *status)
+	}
+	orderBy := "sort_order desc, id desc"
+	switch sortBy {
+	case "tonnage_asc":
+		orderBy = "tonnage asc, id desc"
+	case "tonnage_desc":
+		orderBy = "tonnage desc, id desc"
+	case "name_asc":
+		orderBy = "name asc, id desc"
+	case "name_desc":
+		orderBy = "name desc, id desc"
+	}
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := q.Offset((page - 1) * pageSize).Limit(pageSize).Order("sort_order desc, id desc").Find(&items).Error; err != nil {
+	if err := q.Offset((page - 1) * pageSize).Limit(pageSize).Order(orderBy).Find(&items).Error; err != nil {
 		return nil, 0, err
 	}
 	return items, total, nil

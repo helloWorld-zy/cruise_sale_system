@@ -71,7 +71,10 @@ func (m *allMockCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Crui
 	}
 	return nil, nil // 未找到
 }
-func (m *allMockCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+func (m *allMockCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	_ = keyword
+	_ = status
+	_ = sortBy
 	if companyID == 99 {
 		return nil, 0, errors.New("error")
 	}
@@ -134,6 +137,18 @@ func (m *allMockFacilityCategoryRepo) Create(ctx context.Context, c *domain.Faci
 	}
 	return nil
 }
+func (m *allMockFacilityCategoryRepo) Update(ctx context.Context, c *domain.FacilityCategory) error {
+	if c.Name == "error" {
+		return errors.New("error")
+	}
+	return nil
+}
+func (m *allMockFacilityCategoryRepo) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	if id == 99 {
+		return nil, errors.New("error")
+	}
+	return &domain.FacilityCategory{ID: id}, nil
+}
 func (m *allMockFacilityCategoryRepo) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	return nil, nil
 }
@@ -152,7 +167,26 @@ func (m *allMockFacilityRepo) Create(ctx context.Context, f *domain.Facility) er
 	}
 	return nil
 }
+func (m *allMockFacilityRepo) Update(ctx context.Context, f *domain.Facility) error {
+	if f.Name == "error" {
+		return errors.New("error")
+	}
+	return nil
+}
+func (m *allMockFacilityRepo) GetByID(ctx context.Context, id int64) (*domain.Facility, error) {
+	if id == 99 {
+		return nil, errors.New("error")
+	}
+	return &domain.Facility{ID: id}, nil
+}
 func (m *allMockFacilityRepo) ListByCruise(ctx context.Context, cruiseID int64) ([]domain.Facility, error) {
+	if cruiseID == 99 {
+		return nil, errors.New("error")
+	}
+	return nil, nil
+}
+func (m *allMockFacilityRepo) ListByCruiseAndCategory(ctx context.Context, cruiseID, categoryID int64) ([]domain.Facility, error) {
+	_ = categoryID
 	if cruiseID == 99 {
 		return nil, errors.New("error")
 	}
@@ -203,8 +237,8 @@ func TestCruiseServiceAll(t *testing.T) {
 	svc.GetByID(ctx, 2)
 	svc.GetByID(ctx, 99)
 
-	svc.List(ctx, 1, 1, 10)
-	svc.List(ctx, 99, 1, 10)
+	svc.List(ctx, 1, "", nil, "", 1, 10)
+	svc.List(ctx, 99, "", nil, "", 1, 10)
 
 	svc.Delete(ctx, 1)  // 成功
 	svc.Delete(ctx, 88) // 有舱房类型
@@ -293,6 +327,10 @@ func (m *mockPriceRepo) ListBySKU(ctx context.Context, id int64) ([]domain.Cabin
 		return nil, errors.New("error")
 	}
 	return []domain.CabinPrice{}, nil
+}
+
+func (m *mockPriceRepo) Create(ctx context.Context, price *domain.CabinPrice) error {
+	return nil
 }
 
 type mockHoldSvc struct{}

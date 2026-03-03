@@ -5,6 +5,6 @@ import List from '../pages/cabin/list.vue'
 describe('Cabin List', () => {
     it('shows title', () => {
         const { getByText } = render(List)
-        expect(getByText('Cabins')).toBeTruthy()
+        expect(getByText('精选舱房')).toBeTruthy()
     })
 })

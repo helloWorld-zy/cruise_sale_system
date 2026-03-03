@@ -8,6 +8,6 @@ vi.stubGlobal('useRoute', () => ({ query: { skuId: '1' } }))
 describe('Cabin Pricing Page', () => {
     it('shows pricing title', () => {
         const wrapper = mount(PricingPage)
-        expect(wrapper.text()).toContain('Pricing Matrix')
+        expect(wrapper.text()).toContain('价格矩阵')
     })
 })

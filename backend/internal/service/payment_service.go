@@ -111,31 +111,37 @@ type BookingStatusUpdater interface {
 	UpdateStatus(ctx context.Context, id int64, status string) error
 }
 
+// BookingGetter 获取订单信息接口。
+type BookingGetter interface {
+	GetByID(ctx context.Context, id int64) (*domain.Booking, error)
+}
+
 // PaymentCallbackServiceImpl 处理异步的支付提供商回调。
 type PaymentCallbackServiceImpl struct {
-	payRepo     domain.PaymentRepository
-	bookingRepo BookingStatusUpdater
-	verifiers   map[string]PaymentVerifier
+	payRepo       domain.PaymentRepository
+	bookingRepo   BookingStatusUpdater
+	bookingGetter BookingGetter
+	verifiers     map[string]PaymentVerifier
 }
 
 // NewPaymentCallbackService 创建一个 PaymentCallbackServiceImpl。
 func NewPaymentCallbackService(
 	payRepo domain.PaymentRepository,
 	bookingRepo BookingStatusUpdater,
+	bookingGetter BookingGetter,
 	verifiers map[string]PaymentVerifier,
 ) *PaymentCallbackServiceImpl {
 	return &PaymentCallbackServiceImpl{
-		payRepo:     payRepo,
-		bookingRepo: bookingRepo,
-		verifiers:   verifiers,
+		payRepo:       payRepo,
+		bookingRepo:   bookingRepo,
+		bookingGetter: bookingGetter,
+		verifiers:     verifiers,
 	}
 }
 
 // HandleCallback 处理支付提供商回调。可以针对同一个 trade_no 多次调用（幂等）。
 //
-// 流程：验证签名 → 提取 trade_no → 幂等性检查 →
-//
-//	更新支付状态 → 更新预订状态。
+// 流程：验证签名 → 提取 trade_no → 幂等性检查 → 金额校验 → 更新支付状态 → 更新预订状态。
 func (s *PaymentCallbackServiceImpl) HandleCallback(ctx context.Context, provider string, body []byte, signature string) error {
 	v, ok := s.verifiers[provider]
 	if !ok {
@@ -162,15 +168,54 @@ func (s *PaymentCallbackServiceImpl) HandleCallback(ctx context.Context, provide
 		return nil
 	}
 
-	// 步骤 4：将支付标记为已支付。
+	// 步骤 4：获取订单金额并校验支付金额必须等于订单金额。
+	order, err := s.bookingGetter.GetByID(ctx, payment.OrderID)
+	if err != nil {
+		return fmt.Errorf("get order: %w", err)
+	}
+	if payment.AmountCents != order.TotalCents {
+		return fmt.Errorf("payment amount %d does not match order amount %d", payment.AmountCents, order.TotalCents)
+	}
+
+	// 步骤 5：将支付标记为已支付。
 	if err := s.payRepo.UpdateStatus(ctx, payment.ID, PaymentStatusPaid); err != nil {
 		return fmt.Errorf("update payment status: %w", err)
 	}
 
-	// 步骤 5：确认关联的预订。
-	if err := s.bookingRepo.UpdateStatus(ctx, payment.OrderID, "paid"); err != nil {
+	// 步骤 6：确认关联的预订。
+	if err := s.bookingRepo.UpdateStatus(ctx, payment.OrderID, domain.OrderStatusPaid); err != nil {
 		return fmt.Errorf("update booking status: %w", err)
 	}
 
 	return nil
 }
+
+// PaymentCallbackData 从支付回调中提取的数据。
+type PaymentCallbackData struct {
+	TradeNo     string
+	AmountCents int64
+}
+
+// ExtractCallbackData 从回调主体中提取交易号和金额。
+type PaymentCallbackDataExtractor interface {
+	ExtractData(body []byte) (PaymentCallbackData, error)
+}
+
+// DefaultCallbackDataExtractor 默认回调数据提取器。
+type DefaultCallbackDataExtractor struct{}
+
+func (e *DefaultCallbackDataExtractor) ExtractData(body []byte) (PaymentCallbackData, error) {
+	var payload struct {
+		TradeNo     string `json:"trade_no"`
+		AmountCents int64  `json:"amount_cents"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return PaymentCallbackData{}, fmt.Errorf("parse callback body: %w", err)
+	}
+	return PaymentCallbackData{
+		TradeNo:     payload.TradeNo,
+		AmountCents: payload.AmountCents,
+	}, nil
+}
+
+// NewRefundService 创建一个退款服务实例。

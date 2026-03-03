@@ -19,6 +19,18 @@ func (m mockAnalyticsRepo) WeeklyTrend(_ context.Context) ([]int64, error) {
 	return []int64{1, 2, 3, 4, 5, 6, 7}, nil
 }
 func (m mockAnalyticsRepo) TodayOrderCount(_ context.Context) (int64, error) { return 0, nil }
+func (m mockAnalyticsRepo) Trend(_ context.Context, _ int) ([]domain.TrendDataItem, error) {
+	return nil, nil
+}
+func (m mockAnalyticsRepo) CabinHotnessRanking(_ context.Context, _ int) ([]domain.CabinRankingItem, error) {
+	return nil, nil
+}
+func (m mockAnalyticsRepo) InventoryOverview(_ context.Context) (*domain.InventoryOverviewData, error) {
+	return nil, nil
+}
+func (m mockAnalyticsRepo) PageViewStats(_ context.Context) ([]domain.PageViewData, error) {
+	return nil, nil
+}
 
 func TestAnalyticsWeeklyTrendEdge(t *testing.T) {
 	svc := NewAnalyticsService(mockAnalyticsRepo{})

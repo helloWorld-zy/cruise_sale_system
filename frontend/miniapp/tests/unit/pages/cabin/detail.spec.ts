@@ -10,10 +10,12 @@ vi.mock('../../../../src/utils/request', () => ({
 describe('Cabin Detail', () => {
         it('renders view', async () => {
                 mockRequest
-                    .mockResolvedValueOnce({ id: 8, name: 'Deluxe', price_cents: 19900, available: 3 })
-                    .mockResolvedValueOnce([{ date: '2026-05-01', price_cents: 19900 }])
+            .mockResolvedValueOnce({ id: 8, code: 'A801', bed_type: 'King', price_cents: 19900, has_window: true, has_balcony: false })
+            .mockResolvedValueOnce([{ date: '2026-05-01', price_cents: 19900 }])
+            .mockResolvedValueOnce({ total: 10, locked: 3, sold: 2, available: 5 })
                 const { getByText, findByText } = render(Page, { props: { cabinSkuId: 8 } })
-        expect(getByText('Cabin Detail')).toBeTruthy()
-                expect(await findByText('名称：Deluxe')).toBeTruthy()
+    expect(await findByText('立即预订')).toBeTruthy()
+        expect(await findByText('¥199起')).toBeTruthy()
+        expect(getByText('含税费')).toBeTruthy()
     })
 })

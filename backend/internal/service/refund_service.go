@@ -63,3 +63,12 @@ func (s *RefundService) Create(ctx context.Context, paymentID, amountCents int64
 		Status:      RefundStatusPending,
 	})
 }
+
+func (s *RefundService) CalcRefundAmount(originalCents int64, daysBeforeDeparture int, rules []domain.RefundRule) int64 {
+	for _, r := range rules {
+		if daysBeforeDeparture >= r.MinDays && daysBeforeDeparture < r.MaxDays {
+			return originalCents * int64(r.RefundRate) / 100
+		}
+	}
+	return 0
+}

@@ -14,6 +14,14 @@ vi.stubGlobal('$fetch', mockFetch)
 describe('useApi', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
+        Object.defineProperty(window, 'localStorage', {
+            value: {
+                getItem: () => null,
+                setItem: () => undefined,
+                removeItem: () => undefined,
+            },
+            configurable: true,
+        })
         mockFetch.mockClear()
     })
 
@@ -29,7 +37,7 @@ describe('useApi', () => {
         const api = useApi()
         const res = await api.request('/test', { method: 'POST' })
 
-        expect(mockFetch).toHaveBeenCalledWith('/api/v1/test', {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/test', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -43,7 +51,7 @@ describe('useApi', () => {
         const api = useApi()
         await api.request('/test')
 
-        expect(mockFetch).toHaveBeenCalledWith('/api/v1/test', {
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/test', {
             headers: {
                 'Content-Type': 'application/json'
             }

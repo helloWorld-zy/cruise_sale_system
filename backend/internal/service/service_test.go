@@ -39,7 +39,10 @@ func (m *mockCruiseRepo) Update(ctx context.Context, cruise *domain.Cruise) erro
 func (m *mockCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise, error) {
 	return nil, nil
 }
-func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	_ = keyword
+	_ = status
+	_ = sortBy
 	if companyID == 55 {
 		// 模拟公司 55 有邮轮 → 删除应失败
 		return []domain.Cruise{{ID: 1}}, 1, nil

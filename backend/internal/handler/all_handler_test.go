@@ -92,7 +92,10 @@ func (m *mockCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise,
 	}
 	return nil, errors.New("not found")
 }
-func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	_ = keyword
+	_ = status
+	_ = sortBy
 	if isErr(ctx) {
 		return nil, 0, errors.New("error")
 	}
@@ -200,6 +203,21 @@ func (m *mockFacilityCategoryRepo) List(ctx context.Context) ([]domain.FacilityC
 	}
 	return nil, nil
 }
+func (m *mockFacilityCategoryRepo) Update(ctx context.Context, c *domain.FacilityCategory) error {
+	if isErr(ctx) {
+		return errors.New("error")
+	}
+	if c.Name == "error" {
+		return errors.New("error")
+	}
+	return nil
+}
+func (m *mockFacilityCategoryRepo) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	if id == 99 {
+		return nil, errors.New("error")
+	}
+	return &domain.FacilityCategory{ID: id}, nil
+}
 func (m *mockFacilityCategoryRepo) Delete(ctx context.Context, id int64) error {
 	if isErr(ctx) {
 		return errors.New("error")
@@ -232,6 +250,25 @@ func (m *mockFacilityRepo) ListByCruise(ctx context.Context, cruiseID int64) ([]
 		return nil, errors.New("error")
 	}
 	return nil, nil
+}
+func (m *mockFacilityRepo) Update(ctx context.Context, f *domain.Facility) error {
+	if isErr(ctx) {
+		return errors.New("error")
+	}
+	if f.Name == "error" {
+		return errors.New("error")
+	}
+	return nil
+}
+func (m *mockFacilityRepo) GetByID(ctx context.Context, id int64) (*domain.Facility, error) {
+	if id == 99 {
+		return nil, errors.New("error")
+	}
+	return &domain.Facility{ID: id}, nil
+}
+func (m *mockFacilityRepo) ListByCruiseAndCategory(ctx context.Context, cruiseID, categoryID int64) ([]domain.Facility, error) {
+	_ = categoryID
+	return m.ListByCruise(ctx, cruiseID)
 }
 func (m *mockFacilityRepo) Delete(ctx context.Context, id int64) error {
 	if isErr(ctx) {
@@ -565,6 +602,28 @@ func (m *mockCabinSvc) ListByVoyage(ctx context.Context, id int64) ([]domain.Cab
 	}
 	return nil, nil
 }
+func (m *mockCabinSvc) FilteredList(ctx context.Context, f domain.CabinSKUFilter) ([]domain.CabinSKU, int64, error) {
+	if isErr(ctx) {
+		return nil, 0, errors.New("error")
+	}
+	if f.VoyageID == 99 {
+		return nil, 0, errors.New("error")
+	}
+	return []domain.CabinSKU{{ID: 1, Code: "SKU-1"}}, 1, nil
+}
+func (m *mockCabinSvc) BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error {
+	_ = status
+	if isErr(ctx) {
+		return errors.New("error")
+	}
+	if len(ids) == 0 {
+		return errors.New("empty ids")
+	}
+	if ids[0] == 99 {
+		return errors.New("error")
+	}
+	return nil
+}
 func (m *mockCabinSvc) GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error) {
 	if id == 99 {
 		return nil, errors.New("error")
@@ -604,6 +663,21 @@ func (m *mockCabinSvc) GetInventory(ctx context.Context, id int64) (domain.Cabin
 	}
 	return domain.CabinInventory{}, nil
 }
+func (m *mockCabinSvc) GetAlerts(ctx context.Context) ([]domain.InventoryAlert, error) {
+	if isErr(ctx) {
+		return nil, errors.New("error")
+	}
+	return []domain.InventoryAlert{{CabinSKUID: 1, Available: 2, AlertThreshold: 3}}, nil
+}
+func (m *mockCabinSvc) SetAlertThreshold(ctx context.Context, skuID int64, threshold int) error {
+	if isErr(ctx) {
+		return errors.New("error")
+	}
+	if skuID == 99 || threshold < 0 {
+		return errors.New("error")
+	}
+	return nil
+}
 func (m *mockCabinSvc) AdjustInventory(ctx context.Context, id int64, d int, r string) error {
 	if id == 99 {
 		return errors.New("error")
@@ -624,6 +698,13 @@ func (m *mockCabinSvc) UpsertPrice(ctx context.Context, p *domain.CabinPrice) er
 		return errors.New("error")
 	}
 	return nil
+}
+
+func (m *mockCabinSvc) GetCategoryTree(ctx context.Context) (interface{}, error) {
+	if isErr(ctx) {
+		return nil, errors.New("error")
+	}
+	return []interface{}{}, nil
 }
 
 type mockBookingSvc struct{}
@@ -668,10 +749,13 @@ func TestRestHandlers(t *testing.T) {
 	r.PUT("/voyages/:id", vH.Update)
 	r.DELETE("/voyages/:id", vH.Delete)
 
-	r.GET("/cabins", cbH.List)
+	r.GET("/cabins", cbH.FilteredList)
 	r.POST("/cabins", cbH.Create)
 	r.PUT("/cabins/:id", cbH.Update)
+	r.PUT("/cabins/batch-status", cbH.BatchUpdateStatus)
 	r.DELETE("/cabins/:id", cbH.Delete)
+	r.GET("/cabins/alerts", cbH.GetAlerts)
+	r.PUT("/cabins/:id/alert-threshold", cbH.SetAlertThreshold)
 	r.GET("/cabins/:id/inventory", cbH.GetInventory)
 	r.POST("/cabins/:id/inventory/adjust", cbH.AdjustInventory)
 	r.GET("/cabins/:id/prices", cbH.ListPrices)
@@ -714,6 +798,7 @@ func TestRestHandlers(t *testing.T) {
 
 	// 舱位
 	doReq(r, "GET", "/cabins", nil)
+	doReq(r, "GET", "/cabins?voyage_id=1&cabin_type_id=1&status=1&page=1&page_size=10", nil)
 	doReq(r, "GET", "/cabins?voyage_id=99", nil)
 	doReq(r, "POST", "/cabins", map[string]interface{}{"voyage_id": 1, "cabin_type_id": 1, "code": "test"})
 	doReq(r, "POST", "/cabins", map[string]interface{}{"voyage_id": 1, "cabin_type_id": 1, "code": "error"})
@@ -723,9 +808,15 @@ func TestRestHandlers(t *testing.T) {
 	doReq(r, "PUT", "/cabins/1", map[string]interface{}{"voyage_id": 1, "cabin_type_id": 1, "code": "error"})
 	doReq(r, "PUT", "/cabins/99", map[string]interface{}{"voyage_id": 1, "cabin_type_id": 1, "code": "test"})
 	doReq(r, "PUT", "/cabins/x", nil)
+	doReq(r, "PUT", "/cabins/batch-status", map[string]interface{}{"ids": []int64{1, 2}, "status": 0})
+	doReq(r, "PUT", "/cabins/batch-status", map[string]interface{}{"ids": []int64{}, "status": 0})
 	doReq(r, "DELETE", "/cabins/1", nil)
 	doReq(r, "DELETE", "/cabins/99", nil)
 	doReq(r, "DELETE", "/cabins/x", nil)
+	doReq(r, "GET", "/cabins/alerts", nil)
+	doReq(r, "PUT", "/cabins/1/alert-threshold", map[string]interface{}{"threshold": 3})
+	doReq(r, "PUT", "/cabins/1/alert-threshold", map[string]interface{}{"threshold": -1})
+	doReq(r, "PUT", "/cabins/x/alert-threshold", map[string]interface{}{"threshold": 1})
 	doReq(r, "GET", "/cabins/1/inventory", nil)
 	doReq(r, "GET", "/cabins/99/inventory", nil)
 	doReq(r, "GET", "/cabins/x/inventory", nil)

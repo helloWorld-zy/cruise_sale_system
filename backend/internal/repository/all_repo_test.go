@@ -65,8 +65,8 @@ func TestAllRepos(t *testing.T) {
 	cr := &domain.Cruise{Name: "cr1", CompanyID: 1}
 	_ = cruiseRepo.Create(ctx, cr)
 	_, _ = cruiseRepo.GetByID(ctx, cr.ID)
-	_, _, _ = cruiseRepo.List(ctx, 1, 1, 10)
-	_, _, _ = cruiseRepo.List(ctx, 0, 1, 10)
+	_, _, _ = cruiseRepo.List(ctx, 1, "", nil, "", 1, 10)
+	_, _, _ = cruiseRepo.List(ctx, 0, "", nil, "", 1, 10)
 	cr.Name = "cr2"
 	_ = cruiseRepo.Update(ctx, cr)
 	_ = cruiseRepo.Delete(ctx, cr.ID)
@@ -106,6 +106,9 @@ func TestAllRepos(t *testing.T) {
 	fcRepo := NewFacilityCategoryRepository(db)
 	fc := &domain.FacilityCategory{Name: "fc1"}
 	_ = fcRepo.Create(ctx, fc)
+	_, _ = fcRepo.GetByID(ctx, fc.ID)
+	fc.Name = "fc2"
+	_ = fcRepo.Update(ctx, fc)
 	_, _ = fcRepo.List(ctx)
 	_ = fcRepo.Delete(ctx, fc.ID)
 
@@ -113,7 +116,11 @@ func TestAllRepos(t *testing.T) {
 	facRepo := NewFacilityRepository(db)
 	fac := &domain.Facility{Name: "fac1", CruiseID: 1}
 	_ = facRepo.Create(ctx, fac)
+	_, _ = facRepo.GetByID(ctx, fac.ID)
+	fac.Name = "fac2"
+	_ = facRepo.Update(ctx, fac)
 	_, _ = facRepo.ListByCruise(ctx, 1)
+	_, _ = facRepo.ListByCruiseAndCategory(ctx, 1, 0)
 	_ = facRepo.Delete(ctx, fac.ID)
 
 	// 9. CabinRepo (SKU, Prices, Inventory)
@@ -143,6 +150,41 @@ func TestAllRepos(t *testing.T) {
 	bkRepo := NewBookingRepository(db)
 	bk := &domain.Booking{UserID: 1}
 	_ = bkRepo.Create(context.Background(), bk)
+	_, _, _ = bkRepo.List(ctx, 1, 10)
+	_, _, _ = bkRepo.List(ctx, 0, 0) // edge: page < 1, pageSize <= 0
+	_, _ = bkRepo.GetByID(ctx, bk.ID)
+	_, _ = bkRepo.GetByID(ctx, 999) // not found
+	_ = bkRepo.UpdateStatus(ctx, bk.ID, "paid")
+	_ = bkRepo.Delete(ctx, bk.ID)
+
+	// 11. CabinRepo — ListAllInventories & SetAlertThreshold
+	sku2 := &domain.CabinSKU{Code: "sku-inv", VoyageID: 1}
+	_ = cbRepo.CreateSKU(ctx, sku2)
+	_ = cbRepo.AdjustInventoryAtomic(ctx, sku2.ID, 5)
+	_, _ = cbRepo.ListAllInventories(ctx)
+	_ = cbRepo.SetAlertThreshold(ctx, sku2.ID, 3)
+	_ = cbRepo.DeleteSKU(ctx, sku2.ID)
+
+	// 12. ImageRepo — ReplaceImages
+	imgRepo := NewImageRepository(db)
+	db.AutoMigrate(&domain.Image{})
+	imgs := []*domain.Image{
+		{EntityType: "cruise", EntityID: 1, URL: "http://a.png", SortOrder: 1, IsPrimary: true},
+		{EntityType: "cruise", EntityID: 1, URL: "http://b.png", SortOrder: 2, IsPrimary: false},
+	}
+	_ = imgRepo.ReplaceImages(ctx, "cruise", 1, imgs)
+	list, _ := imgRepo.ListByEntity(ctx, "cruise", 1)
+	if len(list) != 2 {
+		t.Errorf("expected 2 images, got %d", len(list))
+	}
+	// Replace again with fewer
+	_ = imgRepo.ReplaceImages(ctx, "cruise", 1, []*domain.Image{
+		{EntityType: "cruise", EntityID: 1, URL: "http://c.png", SortOrder: 1, IsPrimary: true},
+	})
+	list2, _ := imgRepo.ListByEntity(ctx, "cruise", 1)
+	if len(list2) != 1 {
+		t.Errorf("expected 1 image after replace, got %d", len(list2))
+	}
 	// Add missing error paths by creating an unmigrated DB
 	badDB, _ := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{}) // unmigrated
 	ctx2 := context.Background()
@@ -160,7 +202,7 @@ func TestAllRepos(t *testing.T) {
 
 	NewCruiseRepository(badDB).Create(ctx2, &domain.Cruise{})
 	NewCruiseRepository(badDB).GetByID(ctx2, 1)
-	NewCruiseRepository(badDB).List(ctx2, 1, 1, 10)
+	NewCruiseRepository(badDB).List(ctx2, 1, "", nil, "", 1, 10)
 	NewCruiseRepository(badDB).Update(ctx2, &domain.Cruise{})
 	NewCruiseRepository(badDB).Delete(ctx2, 1)
 
@@ -171,11 +213,16 @@ func TestAllRepos(t *testing.T) {
 	NewCabinTypeRepository(badDB).Delete(ctx2, 1)
 
 	NewFacilityCategoryRepository(badDB).Create(ctx2, &domain.FacilityCategory{})
+	NewFacilityCategoryRepository(badDB).GetByID(ctx2, 1)
+	NewFacilityCategoryRepository(badDB).Update(ctx2, &domain.FacilityCategory{})
 	NewFacilityCategoryRepository(badDB).List(ctx2)
 	NewFacilityCategoryRepository(badDB).Delete(ctx2, 1)
 
 	NewFacilityRepository(badDB).Create(ctx2, &domain.Facility{})
+	NewFacilityRepository(badDB).GetByID(ctx2, 1)
+	NewFacilityRepository(badDB).Update(ctx2, &domain.Facility{})
 	NewFacilityRepository(badDB).ListByCruise(ctx2, 1)
+	NewFacilityRepository(badDB).ListByCruiseAndCategory(ctx2, 1, 1)
 	NewFacilityRepository(badDB).Delete(ctx2, 1)
 
 	cbBad := NewCabinRepository(badDB)

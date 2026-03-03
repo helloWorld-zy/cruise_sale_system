@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cruisebooking/backend/internal/domain"
+	"github.com/cruisebooking/backend/internal/repository"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,46 +16,68 @@ const fkErrMsg = "pq: update or delete on table \"x\" violates foreign key const
 
 type routeDeleteErrSvc struct{ err error }
 
-func (s *routeDeleteErrSvc) List(context.Context) ([]domain.Route, error)                { return nil, nil }
-func (s *routeDeleteErrSvc) Create(context.Context, *domain.Route) error                 { return nil }
-func (s *routeDeleteErrSvc) Update(context.Context, *domain.Route) error                 { return nil }
-func (s *routeDeleteErrSvc) GetByID(context.Context, int64) (*domain.Route, error)       { return &domain.Route{}, nil }
-func (s *routeDeleteErrSvc) Delete(context.Context, int64) error                          { return s.err }
+func (s *routeDeleteErrSvc) List(context.Context) ([]domain.Route, error) { return nil, nil }
+func (s *routeDeleteErrSvc) Create(context.Context, *domain.Route) error  { return nil }
+func (s *routeDeleteErrSvc) Update(context.Context, *domain.Route) error  { return nil }
+func (s *routeDeleteErrSvc) GetByID(context.Context, int64) (*domain.Route, error) {
+	return &domain.Route{}, nil
+}
+func (s *routeDeleteErrSvc) Delete(context.Context, int64) error { return s.err }
 
 type voyageDeleteErrSvc struct{ err error }
 
-func (s *voyageDeleteErrSvc) ListByRoute(context.Context, int64) ([]domain.Voyage, error) { return nil, nil }
-func (s *voyageDeleteErrSvc) Create(context.Context, *domain.Voyage) error                 { return nil }
-func (s *voyageDeleteErrSvc) Update(context.Context, *domain.Voyage) error                 { return nil }
-func (s *voyageDeleteErrSvc) GetByID(context.Context, int64) (*domain.Voyage, error)      { return &domain.Voyage{}, nil }
-func (s *voyageDeleteErrSvc) Delete(context.Context, int64) error                          { return s.err }
+func (s *voyageDeleteErrSvc) ListByRoute(context.Context, int64) ([]domain.Voyage, error) {
+	return nil, nil
+}
+func (s *voyageDeleteErrSvc) Create(context.Context, *domain.Voyage) error { return nil }
+func (s *voyageDeleteErrSvc) Update(context.Context, *domain.Voyage) error { return nil }
+func (s *voyageDeleteErrSvc) GetByID(context.Context, int64) (*domain.Voyage, error) {
+	return &domain.Voyage{}, nil
+}
+func (s *voyageDeleteErrSvc) Delete(context.Context, int64) error { return s.err }
 
 type cabinDeleteErrSvc struct{ err error }
 
-func (s *cabinDeleteErrSvc) ListByVoyage(context.Context, int64) ([]domain.CabinSKU, error) { return nil, nil }
-func (s *cabinDeleteErrSvc) GetByID(context.Context, int64) (*domain.CabinSKU, error)       { return &domain.CabinSKU{}, nil }
-func (s *cabinDeleteErrSvc) Create(context.Context, *domain.CabinSKU) error                  { return nil }
-func (s *cabinDeleteErrSvc) Update(context.Context, *domain.CabinSKU) error                  { return nil }
-func (s *cabinDeleteErrSvc) Delete(context.Context, int64) error                             { return s.err }
+func (s *cabinDeleteErrSvc) ListByVoyage(context.Context, int64) ([]domain.CabinSKU, error) {
+	return nil, nil
+}
+func (s *cabinDeleteErrSvc) FilteredList(context.Context, domain.CabinSKUFilter) ([]domain.CabinSKU, int64, error) {
+	return nil, 0, nil
+}
+func (s *cabinDeleteErrSvc) BatchUpdateStatus(context.Context, []int64, int16) error { return nil }
+func (s *cabinDeleteErrSvc) GetByID(context.Context, int64) (*domain.CabinSKU, error) {
+	return &domain.CabinSKU{}, nil
+}
+func (s *cabinDeleteErrSvc) Create(context.Context, *domain.CabinSKU) error { return nil }
+func (s *cabinDeleteErrSvc) Update(context.Context, *domain.CabinSKU) error { return nil }
+func (s *cabinDeleteErrSvc) Delete(context.Context, int64) error            { return s.err }
 func (s *cabinDeleteErrSvc) GetInventory(context.Context, int64) (domain.CabinInventory, error) {
 	return domain.CabinInventory{}, nil
 }
+func (s *cabinDeleteErrSvc) GetAlerts(context.Context) ([]domain.InventoryAlert, error) {
+	return nil, nil
+}
+func (s *cabinDeleteErrSvc) SetAlertThreshold(context.Context, int64, int) error       { return nil }
 func (s *cabinDeleteErrSvc) AdjustInventory(context.Context, int64, int, string) error { return nil }
 func (s *cabinDeleteErrSvc) ListPrices(context.Context, int64) ([]domain.CabinPrice, error) {
 	return nil, nil
 }
 func (s *cabinDeleteErrSvc) UpsertPrice(context.Context, *domain.CabinPrice) error { return nil }
+func (s *cabinDeleteErrSvc) GetCategoryTree(context.Context) (interface{}, error)  { return nil, nil }
 
 type bookingAdminDeleteErrStore struct{ err error }
 
 func (s *bookingAdminDeleteErrStore) List(context.Context, int, int) ([]domain.Booking, int64, error) {
 	return nil, 0, nil
 }
+func (s *bookingAdminDeleteErrStore) ListWithFilter(context.Context, repository.BookingFilter, int, int) ([]domain.Booking, int64, error) {
+	return nil, 0, nil
+}
 func (s *bookingAdminDeleteErrStore) GetByID(context.Context, int64) (*domain.Booking, error) {
 	return &domain.Booking{}, nil
 }
 func (s *bookingAdminDeleteErrStore) UpdateStatus(context.Context, int64, string) error { return nil }
-func (s *bookingAdminDeleteErrStore) Delete(context.Context, int64) error                { return s.err }
+func (s *bookingAdminDeleteErrStore) Delete(context.Context, int64) error               { return s.err }
 
 func TestDeleteConflictMapping(t *testing.T) {
 	gin.SetMode(gin.TestMode)

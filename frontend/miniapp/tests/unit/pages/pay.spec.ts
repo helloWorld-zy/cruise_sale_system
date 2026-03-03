@@ -24,4 +24,15 @@ describe('Miniapp Pay Page', () => {
     const { findByText } = render(Page, { props: { bookingId: 42 } })
     expect(await findByText('金额：19900')).toBeTruthy()
   })
+
+  it('缺少 bookingId 时提示错误', async () => {
+    const { findByText } = render(Page)
+    expect(await findByText('缺少 bookingId 参数')).toBeTruthy()
+  })
+
+  it('加载订单失败时展示错误信息', async () => {
+    mockRequest.mockRejectedValueOnce(new Error('加载失败'))
+    const { findByText } = render(Page, { props: { bookingId: 42 } })
+    expect(await findByText('加载失败')).toBeTruthy()
+  })
 })

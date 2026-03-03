@@ -67,6 +67,7 @@ func RunApp(configDir string) error {
 	cabinTypeRepo := repository.NewCabinTypeRepository(db)
 	facilityCategoryRepo := repository.NewFacilityCategoryRepository(db)
 	facilityRepo := repository.NewFacilityRepository(db)
+	imageRepo := repository.NewImageRepository(db)
 	routeRepo := repository.NewRouteRepository(db)
 	voyageRepo := repository.NewVoyageRepository(db)
 	cabinRepo := repository.NewCabinRepository(db)
@@ -79,6 +80,7 @@ func RunApp(configDir string) error {
 	cabinTypeSvc := service.NewCabinTypeService(cabinTypeRepo)
 	facilityCategorySvc := service.NewFacilityCategoryService(facilityCategoryRepo)
 	facilitySvc := service.NewFacilityService(facilityRepo)
+	imageSvc := service.NewImageService(imageRepo)
 	pricingSvc := service.NewPricingService(cabinRepo)
 	cabinAdminSvc := service.NewCabinAdminService(cabinRepo)
 	meiliIndexer := search.NewMeiliIndexer(cfg.Meilis.Host, cfg.Meilis.APIKey)
@@ -94,6 +96,7 @@ func RunApp(configDir string) error {
 	cabinTypeHandler := handler.NewCabinTypeHandler(cabinTypeSvc)
 	facilityCategoryHandler := handler.NewFacilityCategoryHandler(facilityCategorySvc)
 	facilityHandler := handler.NewFacilityHandler(facilitySvc)
+	imageHandler := handler.NewImageHandler(imageSvc)
 	uploadHandler := handler.NewUploadHandler()
 	routeHandler := handler.NewRouteHandler(routeRepo)    // L-02: 直接用 repo 满足 RouteService 接口
 	voyageHandler := handler.NewVoyageHandler(voyageRepo) // L-02: 直接用 repo 满足 VoyageService 接口
@@ -115,7 +118,7 @@ func RunApp(configDir string) error {
 		"wechat": service.NewHMACVerifier(cfg.JWT.Secret),
 		"alipay": service.NewHMACVerifier(cfg.JWT.Secret),
 	}
-	payCallbackSvc := service.NewPaymentCallbackService(paymentRepo, bookingRepo, payVerifiers)
+	payCallbackSvc := service.NewPaymentCallbackService(paymentRepo, bookingRepo, bookingRepo, payVerifiers)
 	refundSvc := service.NewRefundService(paymentRepo, refundRepo)
 	notifySvc := service.NewNotifyService(notifRepo)
 	_ = notifySvc // 通知服务供预订/支付流程调用
@@ -141,6 +144,7 @@ func RunApp(configDir string) error {
 		CabinType:        cabinTypeHandler,
 		FacilityCategory: facilityCategoryHandler,
 		Facility:         facilityHandler,
+		Image:            imageHandler,
 		Upload:           uploadHandler,
 		Route:            routeHandler,
 		Voyage:           voyageHandler,

@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import Page from '../../../app/pages/routes/new.vue'
 
-const mockRequest = vi.fn().mockResolvedValue({})
+const mockFetch = vi.fn().mockResolvedValue({})
 const mockNavigate = vi.fn().mockResolvedValue(undefined)
-vi.stubGlobal('useApi', () => ({ request: mockRequest }))
+vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: '/api/v1' } }))
+vi.stubGlobal('$fetch', mockFetch)
 vi.stubGlobal('navigateTo', mockNavigate)
 
 beforeEach(() => {
-  mockRequest.mockClear()
+  mockFetch.mockClear()
   mockNavigate.mockClear()
 })
 
@@ -21,7 +22,7 @@ describe('RoutesNewPage', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(mockRequest).toHaveBeenCalledWith('/routes', expect.objectContaining({ method: 'POST' }))
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/routes', expect.objectContaining({ method: 'POST' }))
     expect(mockNavigate).toHaveBeenCalledWith('/routes')
   })
 })

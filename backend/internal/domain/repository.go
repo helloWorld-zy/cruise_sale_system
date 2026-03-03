@@ -21,11 +21,11 @@ type CompanyRepository interface {
 
 // CruiseRepository 定义邮轮的数据持久化接口。
 type CruiseRepository interface {
-	Create(ctx context.Context, cruise *Cruise) error                                       // 创建邮轮
-	Update(ctx context.Context, cruise *Cruise) error                                       // 更新邮轮信息
-	GetByID(ctx context.Context, id int64) (*Cruise, error)                                 // 根据 ID 查询邮轮
-	List(ctx context.Context, companyID int64, page, pageSize int) ([]Cruise, int64, error) // 分页查询邮轮列表，可按公司筛选
-	Delete(ctx context.Context, id int64) error                                             // 删除邮轮（软删除）
+	Create(ctx context.Context, cruise *Cruise) error                                                                                     // 创建邮轮
+	Update(ctx context.Context, cruise *Cruise) error                                                                                     // 更新邮轮信息
+	GetByID(ctx context.Context, id int64) (*Cruise, error)                                                                               // 根据 ID 查询邮轮
+	List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]Cruise, int64, error) // 分页查询邮轮列表，可按公司/关键词/状态筛选
+	Delete(ctx context.Context, id int64) error                                                                                           // 删除邮轮（软删除）
 }
 
 // CabinTypeRepository 定义舱房类型的数据持久化接口。
@@ -39,16 +39,30 @@ type CabinTypeRepository interface {
 
 // FacilityCategoryRepository 定义设施分类的数据持久化接口。
 type FacilityCategoryRepository interface {
-	Create(ctx context.Context, category *FacilityCategory) error // 创建设施分类
-	List(ctx context.Context) ([]FacilityCategory, error)         // 查询所有设施分类
-	Delete(ctx context.Context, id int64) error                   // 删除设施分类
+	Create(ctx context.Context, category *FacilityCategory) error     // 创建设施分类
+	Update(ctx context.Context, category *FacilityCategory) error     // 更新设施分类
+	GetByID(ctx context.Context, id int64) (*FacilityCategory, error) // 根据 ID 查询设施分类
+	List(ctx context.Context) ([]FacilityCategory, error)             // 查询所有设施分类
+	Delete(ctx context.Context, id int64) error                       // 删除设施分类
 }
 
 // FacilityRepository 定义设施的数据持久化接口。
 type FacilityRepository interface {
-	Create(ctx context.Context, facility *Facility) error                 // 创建设施
-	ListByCruise(ctx context.Context, cruiseID int64) ([]Facility, error) // 查询某邮轮下的所有设施
-	Delete(ctx context.Context, id int64) error                           // 删除设施（软删除）
+	Create(ctx context.Context, facility *Facility) error                                        // 创建设施
+	Update(ctx context.Context, facility *Facility) error                                        // 更新设施
+	GetByID(ctx context.Context, id int64) (*Facility, error)                                    // 根据 ID 查询设施
+	ListByCruise(ctx context.Context, cruiseID int64) ([]Facility, error)                        // 查询某邮轮下的所有设施
+	ListByCruiseAndCategory(ctx context.Context, cruiseID, categoryID int64) ([]Facility, error) // 查询某邮轮某分类下的设施
+	Delete(ctx context.Context, id int64) error                                                  // 删除设施（软删除）
+}
+
+// ImageRepository 定义图片资源的多态存储接口。
+type ImageRepository interface {
+	Create(ctx context.Context, img *Image) error                                                // 创建图片记录
+	ListByEntity(ctx context.Context, entityType string, entityID int64) ([]Image, error)        // 查询实体关联的图片列表
+	DeleteByEntity(ctx context.Context, entityType string, entityID int64) error                 // 删除实体关联的全部图片（当前为物理删除）
+	UpdateSortOrder(ctx context.Context, id int64, sortOrder int) error                          // 更新图片排序
+	ReplaceImages(ctx context.Context, entityType string, entityID int64, images []*Image) error // 事务内替换实体图片
 }
 
 // StaffRepository 定义员工账号的数据持久化接口。
@@ -80,14 +94,26 @@ type VoyageRepository interface {
 	Delete(ctx context.Context, id int64) error                       // 删除航次
 }
 
+// CabinSKUFilter 描述舱位商品的后台筛选条件。
+type CabinSKUFilter struct {
+	VoyageID    int64  // 航次 ID
+	CabinTypeID int64  // 舱型 ID
+	Status      *int16 // 状态（nil 表示不按状态筛选）
+	Keyword     string // 舱位编号关键字
+	Page        int    // 页码
+	PageSize    int    // 每页条数
+}
+
 // CabinSKURepository 聚合了舱房产品的所有存储操作，
 // 包括 SKU 的 CRUD、原子化库存调整和价格日历管理。
 type CabinSKURepository interface {
-	CreateSKU(ctx context.Context, s *CabinSKU) error                        // 创建舱房 SKU
-	UpdateSKU(ctx context.Context, s *CabinSKU) error                        // 更新舱房 SKU
-	GetSKUByID(ctx context.Context, id int64) (*CabinSKU, error)             // 根据 ID 查询舱房 SKU
-	ListSKUByVoyage(ctx context.Context, voyageID int64) ([]CabinSKU, error) // 查询某航次下的所有舱房 SKU
-	DeleteSKU(ctx context.Context, id int64) error                           // 删除舱房 SKU
+	CreateSKU(ctx context.Context, s *CabinSKU) error                                 // 创建舱房 SKU
+	UpdateSKU(ctx context.Context, s *CabinSKU) error                                 // 更新舱房 SKU
+	GetSKUByID(ctx context.Context, id int64) (*CabinSKU, error)                      // 根据 ID 查询舱房 SKU
+	ListSKUByVoyage(ctx context.Context, voyageID int64) ([]CabinSKU, error)          // 查询某航次下的所有舱房 SKU
+	ListSKUFiltered(ctx context.Context, f CabinSKUFilter) ([]CabinSKU, int64, error) // 按条件分页查询舱房 SKU
+	BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error           // 批量更新舱房状态
+	DeleteSKU(ctx context.Context, id int64) error                                    // 删除舱房 SKU
 	// AdjustInventoryAtomic 使用单条 SQL 语句原子化更新库存总量，
 	// 防止并发请求导致超卖。当 total+delta < 0 时返回 ErrInsufficientInventory。
 	AdjustInventoryAtomic(ctx context.Context, skuID int64, delta int) error
@@ -123,11 +149,39 @@ type NotificationRepository interface {
 	MarkFailed(ctx context.Context, id int64) error
 }
 
+type TrendDataItem struct {
+	Date   string
+	Sales  int64
+	Orders int64
+}
+
+type CabinRankingItem struct {
+	CabinSKUID int64
+	CabinName  string
+	SoldCount  int64
+	ViewCount  int64
+}
+
+type InventoryOverviewData struct {
+	TotalCabins     int64
+	LowStockCount   int64
+	OutOfStockCount int64
+}
+
+type PageViewData struct {
+	Page  string
+	Views int64
+}
+
 // AnalyticsRepository 定义只读分析查询操作。
 type AnalyticsRepository interface {
 	TodaySales(ctx context.Context) (int64, error)
 	WeeklyTrend(ctx context.Context) ([]int64, error)
 	TodayOrderCount(ctx context.Context) (int64, error)
+	Trend(ctx context.Context, days int) ([]TrendDataItem, error)
+	CabinHotnessRanking(ctx context.Context, limit int) ([]CabinRankingItem, error)
+	InventoryOverview(ctx context.Context) (*InventoryOverviewData, error)
+	PageViewStats(ctx context.Context) ([]PageViewData, error)
 }
 
 // BookingStatusRepository 提供订单状态更新功能，

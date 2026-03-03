@@ -10,6 +10,7 @@ import (
 	"github.com/cruisebooking/backend/internal/middleware"
 	"github.com/cruisebooking/backend/internal/pkg/errcode"
 	"github.com/cruisebooking/backend/internal/pkg/response"
+	"github.com/cruisebooking/backend/internal/repository"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +22,7 @@ type BookingService interface {
 // BookingAdminStore 定义管理后台订单查询与管理能力。
 type BookingAdminStore interface {
 	List(ctx context.Context, page, pageSize int) ([]domain.Booking, int64, error)
+	ListWithFilter(ctx context.Context, filter repository.BookingFilter, page, pageSize int) ([]domain.Booking, int64, error)
 	GetByID(ctx context.Context, id int64) (*domain.Booking, error)
 	UpdateStatus(ctx context.Context, id int64, status string) error
 	Delete(ctx context.Context, id int64) error
@@ -100,7 +102,26 @@ func (h *BookingHandler) AdminList(c *gin.Context) {
 	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
-	items, total, err := h.adminStore.List(c.Request.Context(), page, pageSize)
+
+	filter := repository.BookingFilter{
+		Status:    c.Query("status"),
+		VoyageID:  0,
+		BookingNo: c.Query("booking_no"),
+		StartDate: nil,
+		EndDate:   nil,
+	}
+
+	if voyageID, err := strconv.ParseInt(c.Query("voyage_id"), 10, 64); err == nil {
+		filter.VoyageID = voyageID
+	}
+	if startDate := c.Query("start_date"); startDate != "" {
+		filter.StartDate = &startDate
+	}
+	if endDate := c.Query("end_date"); endDate != "" {
+		filter.EndDate = &endDate
+	}
+
+	items, total, err := h.adminStore.ListWithFilter(c.Request.Context(), filter, page, pageSize)
 	if err != nil {
 		response.InternalError(c, err)
 		return

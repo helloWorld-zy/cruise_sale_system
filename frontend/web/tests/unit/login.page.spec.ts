@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import LoginPage from '../../pages/account/login.vue'
+import LoginPage from '../../app/pages/account/login.vue'
 
 // LoginForm 使用 $fetch（Nuxt 全局），在 vitest 中需 stub
 vi.stubGlobal('$fetch', vi.fn())

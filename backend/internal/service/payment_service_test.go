@@ -12,6 +12,7 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 // --- 测试替身 ---
@@ -94,6 +95,21 @@ func newStubBookingStatusRepo() *stubBookingStatusRepo {
 func (r *stubBookingStatusRepo) UpdateStatus(_ context.Context, id int64, status string) error {
 	r.statuses[id] = status
 	return nil
+}
+
+type stubBookingGetter struct {
+	bookings map[int64]*domain.Booking
+}
+
+func newStubBookingGetter() *stubBookingGetter {
+	return &stubBookingGetter{bookings: make(map[int64]*domain.Booking)}
+}
+
+func (r *stubBookingGetter) GetByID(_ context.Context, id int64) (*domain.Booking, error) {
+	if b, ok := r.bookings[id]; ok {
+		return b, nil
+	}
+	return nil, gorm.ErrRecordNotFound
 }
 
 // fakeVerifier 用于精确控制回调验签与交易号提取分支。
@@ -199,11 +215,12 @@ func TestHMACVerifier_ExtractTradeNo_InvalidJSON(t *testing.T) {
 
 // --- PaymentCallbackServiceImpl 测试 ---
 
-func makeCallbackSvc(payRepo *stubPayRepo, bookRepo *stubBookingStatusRepo, secret string) *PaymentCallbackServiceImpl {
+func makeCallbackSvc(payRepo *stubPayRepo, bookRepo *stubBookingStatusRepo, bookGetter *stubBookingGetter, secret string) *PaymentCallbackServiceImpl {
 	v := NewHMACVerifier(secret)
 	return NewPaymentCallbackService(
 		payRepo,
 		bookRepo,
+		bookGetter,
 		map[string]PaymentVerifier{"wechat": v, "alipay": v},
 	)
 }
@@ -212,12 +229,14 @@ func TestHandleCallback_OK(t *testing.T) {
 	secret := "cb-secret"
 	payRepo := newStubPayRepo()
 	bookRepo := newStubBookingStatusRepo()
+	bookGetter := newStubBookingGetter()
+	bookGetter.bookings[42] = &domain.Booking{ID: 42, TotalCents: 9900}
 
 	p := &domain.Payment{ID: 10, OrderID: 42, TradeNo: "TX001", Status: PaymentStatusPending, AmountCents: 9900}
 	payRepo.payments["TX001"] = p
 	payRepo.byID[10] = p
 
-	svc := makeCallbackSvc(payRepo, bookRepo, secret)
+	svc := makeCallbackSvc(payRepo, bookRepo, bookGetter, secret)
 	body, _ := json.Marshal(map[string]string{"trade_no": "TX001"})
 	sig := makeHMACSig(t, secret, body)
 
@@ -232,12 +251,13 @@ func TestHandleCallback_Idempotent_AlreadyPaid(t *testing.T) {
 	secret := "cb-secret"
 	payRepo := newStubPayRepo()
 	bookRepo := newStubBookingStatusRepo()
+	bookGetter := newStubBookingGetter()
 
 	p := &domain.Payment{ID: 10, OrderID: 42, TradeNo: "TX001", Status: PaymentStatusPaid}
 	payRepo.payments["TX001"] = p
 	payRepo.byID[10] = p
 
-	svc := makeCallbackSvc(payRepo, bookRepo, secret)
+	svc := makeCallbackSvc(payRepo, bookRepo, bookGetter, secret)
 	body, _ := json.Marshal(map[string]string{"trade_no": "TX001"})
 	sig := makeHMACSig(t, secret, body)
 
@@ -250,7 +270,7 @@ func TestHandleCallback_Idempotent_AlreadyPaid(t *testing.T) {
 }
 
 func TestHandleCallback_InvalidSignature(t *testing.T) {
-	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), "secret")
+	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), newStubBookingGetter(), "secret")
 	body := []byte(`{"trade_no":"TX001"}`)
 
 	err := svc.HandleCallback(context.Background(), "wechat", body, "badsig")
@@ -259,7 +279,7 @@ func TestHandleCallback_InvalidSignature(t *testing.T) {
 }
 
 func TestHandleCallback_UnknownProvider(t *testing.T) {
-	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), "secret")
+	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), newStubBookingGetter(), "secret")
 	err := svc.HandleCallback(context.Background(), "paypal", []byte(`{}`), "sig")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown payment provider")
@@ -267,7 +287,7 @@ func TestHandleCallback_UnknownProvider(t *testing.T) {
 
 func TestHandleCallback_TradeNoNotFound(t *testing.T) {
 	secret := "secret"
-	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), secret)
+	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), newStubBookingGetter(), secret)
 	body, _ := json.Marshal(map[string]string{"trade_no": "NONEXISTENT"})
 	sig := makeHMACSig(t, secret, body)
 
@@ -277,7 +297,7 @@ func TestHandleCallback_TradeNoNotFound(t *testing.T) {
 
 func TestHandleCallback_MissingTradeNo(t *testing.T) {
 	secret := "secret"
-	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), secret)
+	svc := makeCallbackSvc(newStubPayRepo(), newStubBookingStatusRepo(), newStubBookingGetter(), secret)
 	body := []byte(`{}`)
 	sig := makeHMACSig(t, secret, body)
 
@@ -288,7 +308,8 @@ func TestHandleCallback_MissingTradeNo(t *testing.T) {
 func TestHandleCallback_ExtractTradeNoError(t *testing.T) {
 	payRepo := newStubPayRepo()
 	bookRepo := newStubBookingStatusRepo()
-	svc := NewPaymentCallbackService(payRepo, bookRepo, map[string]PaymentVerifier{
+	bookGetter := newStubBookingGetter()
+	svc := NewPaymentCallbackService(payRepo, bookRepo, bookGetter, map[string]PaymentVerifier{
 		"wechat": &fakeVerifier{tradeNo: "", extractTrade: errors.New("trade extract fail")},
 	})
 
@@ -301,7 +322,8 @@ func TestHandleCallback_FindByTradeNoError(t *testing.T) {
 	payRepo := newStubPayRepo()
 	payRepo.findErr = errors.New("query failed")
 	bookRepo := newStubBookingStatusRepo()
-	svc := NewPaymentCallbackService(payRepo, bookRepo, map[string]PaymentVerifier{
+	bookGetter := newStubBookingGetter()
+	svc := NewPaymentCallbackService(payRepo, bookRepo, bookGetter, map[string]PaymentVerifier{
 		"wechat": &fakeVerifier{tradeNo: "TX404"},
 	})
 

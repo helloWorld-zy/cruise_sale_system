@@ -2,8 +2,6 @@
 // 封装 $fetch 请求，自动注入认证 Token 和 API 基础路径
 
 import { useAuthStore } from '../stores/auth'
-import { useRuntimeConfig } from '#imports'
-import { $fetch } from 'ofetch'
 
 /**
  * useApi 提供统一的后端 API 请求方法。
@@ -12,8 +10,18 @@ import { $fetch } from 'ofetch'
  * - 若用户已登录，自动附加 Bearer 令牌
  */
 export const useApi = () => {
-    const config = useRuntimeConfig()
-    const auth = useAuthStore()
+    const runtimeConfigFactory = (globalThis as any).useRuntimeConfig
+    const config = typeof runtimeConfigFactory === 'function'
+        ? runtimeConfigFactory()
+        : { public: { apiBase: '' } }
+    let tokenFromStore = ''
+    try {
+        const auth = useAuthStore()
+        tokenFromStore = auth.token || ''
+    } catch {
+        tokenFromStore = ''
+    }
+    const fetcher = (globalThis as any).$fetch
 
     // 后端 API 基础路径（如 http://localhost:8080/api/v1）
     const baseUrl = config.public.apiBase
@@ -39,11 +47,17 @@ export const useApi = () => {
             'Content-Type': 'application/json',
         }
         // 若已登录，附加认证令牌
-        const token = auth.token || (typeof window !== 'undefined' ? window.localStorage.getItem('admin_token') || '' : '')
+        const localStorageToken = typeof window !== 'undefined' && typeof (window as any).localStorage?.getItem === 'function'
+            ? (window as any).localStorage.getItem('admin_token') || ''
+            : ''
+        const token = tokenFromStore || localStorageToken
         if (token) headers.Authorization = `Bearer ${token}`
 
         try {
-            return await $fetch<T>(`${baseUrl}${normalizedPath}`, {
+            if (typeof fetcher !== 'function') {
+                throw new Error('$fetch is not available')
+            }
+            return await fetcher(`${baseUrl}${normalizedPath}`, {
                 ...options,
                 headers: { ...headers, ...(options.headers || {}) },
             })

@@ -80,3 +80,19 @@ func TestUserAuthVerifyExpiryAndLockout(t *testing.T) {
 		t.Fatal("expected expired code to fail")
 	}
 }
+
+func TestUserAuthAlipayLogin(t *testing.T) {
+	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+	token := svc.AlipayLogin("alipay_uid_001")
+	if token == "" {
+		t.Fatal("expected alipay token")
+	}
+}
+
+func TestUserAuthBindAccount(t *testing.T) {
+	svc := NewUserAuthService(&fakeCodeStore{ok: true})
+	err := svc.BindAccount(1, "alipay", "alipay_uid_001")
+	if err != nil {
+		t.Fatal("expected bind success")
+	}
+}

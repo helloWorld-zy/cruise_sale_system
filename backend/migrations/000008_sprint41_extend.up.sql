@@ -1,0 +1,51 @@
+-- Sprint 4.1 扩展：邮轮介绍模块字段补齐（Part A）
+
+-- Cruise 扩展字段
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS code VARCHAR(50) UNIQUE;
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS crew_count INT DEFAULT 0;
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS refurbish_year INT DEFAULT 0;
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS length DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS width DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE cruises ADD COLUMN IF NOT EXISTS deck_count INT DEFAULT 0;
+
+-- CabinType 扩展字段
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS code VARCHAR(50);
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS area_min DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS area_max DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS max_capacity INT DEFAULT 0;
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS bed_type VARCHAR(200);
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS tags VARCHAR(500);
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS amenities TEXT;
+ALTER TABLE cabin_types ADD COLUMN IF NOT EXISTS floor_plan_url VARCHAR(500);
+
+-- Facility 扩展字段
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS open_hours VARCHAR(100);
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS extra_charge BOOLEAN DEFAULT FALSE;
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS charge_price_tip VARCHAR(200);
+ALTER TABLE facilities ADD COLUMN IF NOT EXISTS target_audience VARCHAR(200);
+
+-- FacilityCategory 扩展字段
+ALTER TABLE facility_categories ADD COLUMN IF NOT EXISTS status SMALLINT DEFAULT 1;
+
+-- Image 扩展字段
+ALTER TABLE images ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT FALSE;
+
+-- CabinSKU 扩展字段
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS position VARCHAR(20);
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS orientation VARCHAR(20);
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS has_window BOOLEAN DEFAULT FALSE;
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS has_balcony BOOLEAN DEFAULT FALSE;
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS bed_type VARCHAR(100);
+ALTER TABLE cabin_skus ADD COLUMN IF NOT EXISTS amenities TEXT;
+
+-- CabinInventory 扩展字段
+ALTER TABLE cabin_inventories ADD COLUMN IF NOT EXISTS alert_threshold INT DEFAULT 0;
+
+-- CabinPrice 扩展字段
+ALTER TABLE cabin_prices ADD COLUMN IF NOT EXISTS price_type VARCHAR(20) DEFAULT 'base';
+
+-- 索引
+CREATE INDEX IF NOT EXISTS idx_cruises_code ON cruises(code);
+CREATE INDEX IF NOT EXISTS idx_cruises_status ON cruises(status);
+CREATE INDEX IF NOT EXISTS idx_cabin_types_code ON cabin_types(code);
+CREATE INDEX IF NOT EXISTS idx_images_entity ON images(entity_type, entity_id);

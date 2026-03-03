@@ -21,9 +21,20 @@ describe('CabinsInventoryPage', () => {
   it('点击调整触发调整接口', async () => {
     const wrapper = mount(Page)
     await flushPromises()
-    await wrapper.find('input').setValue('2')
-    await wrapper.find('button').trigger('click')
+    const inputs = wrapper.findAll('input')
+    await inputs[1].setValue('2')
+    await wrapper.findAll('button')[1].trigger('click')
     await flushPromises()
     expect(mockRequest).toHaveBeenCalledWith('/cabins/7/inventory/adjust', expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('保存预警阈值调用接口', async () => {
+    const wrapper = mount(Page)
+    await flushPromises()
+    const inputs = wrapper.findAll('input')
+    await inputs[0].setValue('3')
+    await wrapper.findAll('button')[0].trigger('click')
+    await flushPromises()
+    expect(mockRequest).toHaveBeenCalledWith('/cabins/7/alert-threshold', expect.objectContaining({ method: 'PUT' }))
   })
 })

@@ -22,7 +22,10 @@ type myFacCatRepo struct{ *mockFacilityCategoryRepo }
 type myRouteSvc struct{ *mockRouteSvc }
 type myCabinSvc struct{ *mockCabinSvc }
 
-func (m *myCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+func (m *myCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	_ = keyword
+	_ = status
+	_ = sortBy
 	if companyID == 2 {
 		return nil, 1, nil // 强制在公司服务中触发 ErrCompanyHasCruises
 	}
@@ -71,6 +74,12 @@ type edgeFacilityCategorySvc struct{ *mockFacilityCategoryRepo }
 func (e *edgeFacilityCategorySvc) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	return nil, errors.New("unconditional list error")
 }
+func (e *edgeFacilityCategorySvc) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	return &domain.FacilityCategory{ID: id}, nil
+}
+func (e *edgeFacilityCategorySvc) Update(ctx context.Context, c *domain.FacilityCategory) error {
+	return nil
+}
 
 type edgeRouteSvc struct{ *mockRouteSvc }
 
@@ -80,7 +89,10 @@ func (e *edgeRouteSvc) List(ctx context.Context) ([]domain.Route, error) {
 
 type edgeCruiseRepo struct{ *mockCruiseRepo }
 
-func (e *edgeCruiseRepo) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
+func (e *edgeCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	_ = keyword
+	_ = status
+	_ = sortBy
 	if companyID == 2 {
 		return nil, 1, nil // 在检查计数时强制触发 ErrCompanyHasCruises
 	}
@@ -111,11 +123,27 @@ type edgeFacilityCategoryRepo2 struct{ *mockFacilityCategoryRepo }
 func (e *edgeFacilityCategoryRepo2) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	return nil, errors.New("unconditional fc list err")
 }
+func (e *edgeFacilityCategoryRepo2) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	return &domain.FacilityCategory{ID: id}, nil
+}
+func (e *edgeFacilityCategoryRepo2) Update(ctx context.Context, c *domain.FacilityCategory) error {
+	return nil
+}
 
 type edgeFacilityRepo2 struct{ *mockFacilityRepo }
 
 func (e *edgeFacilityRepo2) ListByCruise(ctx context.Context, cruiseID int64) ([]domain.Facility, error) {
 	return nil, errors.New("unconditional facility list err")
+}
+func (e *edgeFacilityRepo2) GetByID(ctx context.Context, id int64) (*domain.Facility, error) {
+	return &domain.Facility{ID: id}, nil
+}
+func (e *edgeFacilityRepo2) Update(ctx context.Context, f *domain.Facility) error {
+	return nil
+}
+func (e *edgeFacilityRepo2) ListByCruiseAndCategory(ctx context.Context, cruiseID, categoryID int64) ([]domain.Facility, error) {
+	_ = categoryID
+	return e.ListByCruise(ctx, cruiseID)
 }
 
 // 第四组：Sprint 4 的边界情况

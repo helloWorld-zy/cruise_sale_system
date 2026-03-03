@@ -15,9 +15,12 @@ func TestMain_Exit(t *testing.T) {
 	}
 	defer func() { osExit = os.Exit }()
 
-	// Provide an invalid config path to trigger run error
-	os.Setenv("PORT", "invalid-port")
-	defer os.Unsetenv("PORT")
+	wd, _ := os.Getwd()
+	_ = os.Chdir("../../")
+	defer func() { _ = os.Chdir(wd) }()
+
+	os.Setenv("CRUISE_SERVER_PORT", "invalid-port")
+	defer os.Unsetenv("CRUISE_SERVER_PORT")
 
 	main()
 	assert.True(t, exited)

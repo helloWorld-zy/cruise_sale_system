@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cruisebooking/backend/internal/domain"
+	"github.com/cruisebooking/backend/internal/pkg/errcode"
 	"github.com/cruisebooking/backend/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
@@ -13,15 +14,20 @@ import (
 // CabinService 定义舱房处理器所需的服务接口。
 // 包含 SKU 的 CRUD、库存管理和价格管理功能。
 type CabinService interface {
-	ListByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)      // 查询航次下的舱房列表
-	GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error)                  // 查询单个舱房 SKU
-	Create(ctx context.Context, s *domain.CabinSKU) error                             // 创建舱房 SKU
-	Update(ctx context.Context, s *domain.CabinSKU) error                             // 更新舱房 SKU
-	Delete(ctx context.Context, id int64) error                                       // 删除舱房 SKU
-	GetInventory(ctx context.Context, skuID int64) (domain.CabinInventory, error)     // 查询库存
-	AdjustInventory(ctx context.Context, skuID int64, delta int, reason string) error // 调整库存
-	ListPrices(ctx context.Context, skuID int64) ([]domain.CabinPrice, error)         // 查询价格列表
-	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error                      // 新增或更新价格
+	ListByVoyage(ctx context.Context, voyageID int64) ([]domain.CabinSKU, error)                 // 查询航次下的舱房列表
+	FilteredList(ctx context.Context, f domain.CabinSKUFilter) ([]domain.CabinSKU, int64, error) // 高级筛选分页查询
+	BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error                      // 批量上下架
+	GetByID(ctx context.Context, id int64) (*domain.CabinSKU, error)                             // 查询单个舱房 SKU
+	Create(ctx context.Context, s *domain.CabinSKU) error                                        // 创建舱房 SKU
+	Update(ctx context.Context, s *domain.CabinSKU) error                                        // 更新舱房 SKU
+	Delete(ctx context.Context, id int64) error                                                  // 删除舱房 SKU
+	GetInventory(ctx context.Context, skuID int64) (domain.CabinInventory, error)                // 查询库存
+	GetAlerts(ctx context.Context) ([]domain.InventoryAlert, error)                              // 查询库存预警
+	SetAlertThreshold(ctx context.Context, skuID int64, threshold int) error                     // 设置库存预警阈值
+	AdjustInventory(ctx context.Context, skuID int64, delta int, reason string) error            // 调整库存
+	ListPrices(ctx context.Context, skuID int64) ([]domain.CabinPrice, error)                    // 查询价格列表
+	UpsertPrice(ctx context.Context, p *domain.CabinPrice) error                                 // 新增或更新价格
+	GetCategoryTree(ctx context.Context) (interface{}, error)                                    // 获取邮轮→航线→舱型分类树
 }
 
 // CabinIndexer 定义舱位文档索引能力。
@@ -40,6 +46,23 @@ type CabinHandler struct {
 	svc        CabinService
 	indexer    CabinIndexer
 	retryQueue CabinIndexRetryQueue
+}
+
+// CabinBatchStatusRequest 表示批量更新舱位状态请求。
+type CabinBatchStatusRequest struct {
+	IDs    []int64 `json:"ids" binding:"required"` // 舱位 ID 列表
+	Status int16   `json:"status"`                 // 目标状态
+}
+
+// CabinAlertThresholdRequest 表示库存预警阈值请求。
+type CabinAlertThresholdRequest struct {
+	Threshold int `json:"threshold"` // 预警阈值
+}
+
+// CabinAdjustInventoryRequest 表示库存调整请求。
+type CabinAdjustInventoryRequest struct {
+	Delta  int    `json:"delta" binding:"required"`  // 调整量（正数增加，负数减少）
+	Reason string `json:"reason" binding:"required"` // 调整原因
 }
 
 // NewCabinHandler 创建舱房处理器实例。
@@ -71,26 +94,166 @@ func (h *CabinHandler) List(c *gin.Context) {
 	response.Success(c, list)
 }
 
+// FilteredList godoc
+// @Summary Filter cabin sku list
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Param voyage_id query int false "Voyage ID"
+// @Param cabin_type_id query int false "Cabin type ID"
+// @Param status query int false "Status, 0 means all"
+// @Param keyword query string false "Keyword"
+// @Param page query int false "Page" default(1)
+// @Param page_size query int false "Page size" default(10)
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins [get]
+// FilteredList 按条件分页查询舱位列表。
+func (h *CabinHandler) FilteredList(c *gin.Context) {
+	var statusPtr *int16
+	if s := c.Query("status"); s != "" {
+		v := int16(queryInt(c, "status", 0))
+		statusPtr = &v
+	}
+	filter := domain.CabinSKUFilter{
+		VoyageID:    queryInt64(c, "voyage_id", 0),
+		CabinTypeID: queryInt64(c, "cabin_type_id", 0),
+		Status:      statusPtr,
+		Keyword:     c.Query("keyword"),
+		Page:        queryInt(c, "page", 1),
+		PageSize:    queryInt(c, "page_size", 10),
+	}
+	list, total, err := h.svc.FilteredList(c.Request.Context(), filter)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"list": list, "total": total})
+}
+
+// BatchUpdateStatus godoc
+// @Summary Batch update cabin sku status
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param body body CabinBatchStatusRequest true "Batch status payload"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/batch-status [put]
+// BatchUpdateStatus 批量更新舱位状态。
+func (h *CabinHandler) BatchUpdateStatus(c *gin.Context) {
+	var req CabinBatchStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+	if len(req.IDs) == 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "ids cannot be empty")
+		return
+	}
+	if err := h.svc.BatchUpdateStatus(c.Request.Context(), req.IDs, req.Status); err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"updated": len(req.IDs)})
+}
+
+// GetAlerts godoc
+// @Summary List inventory alerts
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/alerts [get]
+// GetAlerts 查询库存预警列表。
+func (h *CabinHandler) GetAlerts(c *gin.Context) {
+	alerts, err := h.svc.GetAlerts(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, alerts)
+}
+
+// SetAlertThreshold godoc
+// @Summary Set cabin inventory alert threshold
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Param body body CabinAlertThresholdRequest true "Alert threshold payload"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id}/alert-threshold [put]
+// SetAlertThreshold 设置舱位库存预警阈值。
+func (h *CabinHandler) SetAlertThreshold(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
+		return
+	}
+	var req CabinAlertThresholdRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+	if req.Threshold < 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "threshold must be >= 0")
+		return
+	}
+	if err := h.svc.SetAlertThreshold(c.Request.Context(), id, req.Threshold); err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"id": id, "threshold": req.Threshold})
+}
+
+// Get godoc
+// @Summary Get cabin sku detail
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Router /api/v1/admin/cabins/{id} [get]
 // Get 查询单个舱房 SKU 详情。
 func (h *CabinHandler) Get(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	item, err := h.svc.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "cabin not found"})
+		response.Error(c, http.StatusNotFound, errcode.ErrNotFound, "cabin not found")
 		return
 	}
 	response.Success(c, item)
 }
 
+// Create godoc
+// @Summary Create cabin sku
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param body body domain.CabinSKU true "Cabin SKU payload"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins [post]
 // Create 创建新的舱房 SKU。
 func (h *CabinHandler) Create(c *gin.Context) {
 	var req domain.CabinSKU
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
 	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
@@ -101,16 +264,28 @@ func (h *CabinHandler) Create(c *gin.Context) {
 	response.Success(c, req)
 }
 
+// Update godoc
+// @Summary Update cabin sku
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Param body body domain.CabinSKU true "Cabin SKU payload"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id} [put]
 // Update 更新指定的舱房 SKU。
 func (h *CabinHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	var req domain.CabinSKU
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
 	req.ID = id
@@ -122,11 +297,21 @@ func (h *CabinHandler) Update(c *gin.Context) {
 	response.Success(c, req)
 }
 
+// Delete godoc
+// @Summary Delete cabin sku
+// @Tags Cabin
+// @Security BearerAuth
+// @Param id path int true "Cabin SKU ID"
+// @Success 204 {string} string "No Content"
+// @Failure 400 {object} response.Response
+// @Failure 409 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id} [delete]
 // Delete 删除指定的舱房 SKU。
 func (h *CabinHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
@@ -136,12 +321,22 @@ func (h *CabinHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// GetInventory godoc
+// @Summary Get cabin inventory
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id}/inventory [get]
 // GetInventory 查询指定舱房 SKU 的库存信息。
 // GET /admin/cabins/:id/inventory
 func (h *CabinHandler) GetInventory(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	inv, err := h.svc.GetInventory(c.Request.Context(), id)
@@ -152,21 +347,30 @@ func (h *CabinHandler) GetInventory(c *gin.Context) {
 	response.Success(c, inv)
 }
 
+// AdjustInventory godoc
+// @Summary Adjust cabin inventory
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Param body body CabinAdjustInventoryRequest true "Inventory adjustment payload"
+// @Success 204 {string} string "No Content"
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id}/inventory/adjust [post]
 // AdjustInventory 调整指定舱房 SKU 的库存数量。
 // POST /admin/cabins/:id/inventory/adjust
 func (h *CabinHandler) AdjustInventory(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	// 请求体：库存调整量和调整原因
-	var req struct {
-		Delta  int    `json:"delta" binding:"required"`  // 调整量（正数为增加，负数为减少）
-		Reason string `json:"reason" binding:"required"` // 调整原因说明
-	}
+	var req CabinAdjustInventoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
 	if err := h.svc.AdjustInventory(c.Request.Context(), id, req.Delta, req.Reason); err != nil {
@@ -176,12 +380,22 @@ func (h *CabinHandler) AdjustInventory(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// ListPrices godoc
+// @Summary List cabin price calendar
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id}/prices [get]
 // ListPrices 查询指定舱房 SKU 的价格日历。
 // GET /admin/cabins/:id/prices
 func (h *CabinHandler) ListPrices(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	prices, err := h.svc.ListPrices(c.Request.Context(), id)
@@ -192,17 +406,29 @@ func (h *CabinHandler) ListPrices(c *gin.Context) {
 	response.Success(c, prices)
 }
 
+// UpsertPrice godoc
+// @Summary Create or update cabin price
+// @Tags Cabin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Cabin SKU ID"
+// @Param body body domain.CabinPrice true "Cabin price payload"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/{id}/prices [post]
 // UpsertPrice 新增或更新指定舱房 SKU 的价格记录。
 // POST /admin/cabins/:id/prices
 func (h *CabinHandler) UpsertPrice(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
 		return
 	}
 	var req domain.CabinPrice
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
 		return
 	}
 	req.CabinSKUID = id
@@ -211,4 +437,22 @@ func (h *CabinHandler) UpsertPrice(c *gin.Context) {
 		return
 	}
 	response.Success(c, req)
+}
+
+// CategoryTree godoc
+// @Summary Get cabin category tree (cruise -> route -> cabin type)
+// @Tags Cabin
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/admin/cabins/category-tree [get]
+// CategoryTree 获取邮轮→航线→舱型三级分类树。
+func (h *CabinHandler) CategoryTree(c *gin.Context) {
+	tree, err := h.svc.GetCategoryTree(c.Request.Context())
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, tree)
 }

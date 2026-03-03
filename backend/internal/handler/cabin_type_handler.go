@@ -23,14 +23,22 @@ func NewCabinTypeHandler(svc *service.CabinTypeService) *CabinTypeHandler {
 
 // CabinTypeRequest 是创建/更新舱房类型的请求体结构。
 type CabinTypeRequest struct {
-	CruiseID    int64   `json:"cruise_id" binding:"required"` // 所属邮轮 ID
-	Name        string  `json:"name" binding:"required"`      // 舱房类型名称
-	EnglishName string  `json:"english_name"`                 // 英文名称
-	Capacity    int     `json:"capacity"`                     // 容纳人数
-	Area        float64 `json:"area"`                         // 面积（平方米）
-	Deck        string  `json:"deck"`                         // 所在甲板
-	Description string  `json:"description"`                  // 描述
-	SortOrder   int     `json:"sort_order"`                   // 排序权重
+	CruiseID     int64   `json:"cruise_id" binding:"required"` // 所属邮轮 ID
+	Name         string  `json:"name" binding:"required"`      // 舱房类型名称
+	EnglishName  string  `json:"english_name"`                 // 英文名称
+	Code         string  `json:"code"`                         // 舱房类型代码
+	AreaMin      float64 `json:"area_min"`                     // 最小面积
+	AreaMax      float64 `json:"area_max"`                     // 最大面积
+	Capacity     int     `json:"capacity"`                     // 容纳人数
+	MaxCapacity  int     `json:"max_capacity"`                 // 最大容纳人数
+	BedType      string  `json:"bed_type"`                     // 床型说明
+	Tags         string  `json:"tags"`                         // 特色标签
+	Amenities    string  `json:"amenities"`                    // 设施清单
+	FloorPlanURL string  `json:"floor_plan_url"`               // 平面图 URL
+	Area         float64 `json:"area"`                         // 面积（平方米）
+	Deck         string  `json:"deck"`                         // 所在甲板
+	Description  string  `json:"description"`                  // 描述
+	SortOrder    int     `json:"sort_order"`                   // 排序权重
 }
 
 // List godoc
@@ -78,14 +86,22 @@ func (h *CabinTypeHandler) Create(c *gin.Context) {
 		return
 	}
 	ct := &domain.CabinType{
-		CruiseID:    req.CruiseID,
-		Name:        req.Name,
-		EnglishName: req.EnglishName,
-		Capacity:    req.Capacity,
-		Area:        req.Area,
-		Deck:        req.Deck,
-		Description: req.Description,
-		SortOrder:   req.SortOrder,
+		CruiseID:     req.CruiseID,
+		Name:         req.Name,
+		EnglishName:  req.EnglishName,
+		Code:         req.Code,
+		AreaMin:      req.AreaMin,
+		AreaMax:      req.AreaMax,
+		Capacity:     req.Capacity,
+		MaxCapacity:  req.MaxCapacity,
+		BedType:      req.BedType,
+		Tags:         req.Tags,
+		Amenities:    req.Amenities,
+		FloorPlanURL: req.FloorPlanURL,
+		Area:         req.Area,
+		Deck:         req.Deck,
+		Description:  req.Description,
+		SortOrder:    req.SortOrder,
 	}
 	if err := h.svc.Create(c.Request.Context(), ct); err != nil {
 		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())
@@ -125,7 +141,15 @@ func (h *CabinTypeHandler) Update(c *gin.Context) {
 	// 更新字段
 	existing.Name = req.Name
 	existing.EnglishName = req.EnglishName
+	existing.Code = req.Code
+	existing.AreaMin = req.AreaMin
+	existing.AreaMax = req.AreaMax
 	existing.Capacity = req.Capacity
+	existing.MaxCapacity = req.MaxCapacity
+	existing.BedType = req.BedType
+	existing.Tags = req.Tags
+	existing.Amenities = req.Amenities
+	existing.FloorPlanURL = req.FloorPlanURL
 	existing.Area = req.Area
 	existing.Deck = req.Deck
 	existing.Description = req.Description

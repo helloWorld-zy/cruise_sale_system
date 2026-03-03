@@ -21,6 +21,16 @@ func (s *FacilityCategoryService) Create(ctx context.Context, cat *domain.Facili
 	return s.repo.Create(ctx, cat)
 }
 
+// Update 更新设施分类。
+func (s *FacilityCategoryService) Update(ctx context.Context, cat *domain.FacilityCategory) error {
+	return s.repo.Update(ctx, cat)
+}
+
+// GetByID 查询单个设施分类。
+func (s *FacilityCategoryService) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
 // List 查询所有设施分类，按排序权重排列。
 func (s *FacilityCategoryService) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	return s.repo.List(ctx)

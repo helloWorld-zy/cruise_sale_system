@@ -3,22 +3,16 @@ package repository
 import (
 	"context"
 
+	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
 )
 
-// AnalyticsRepository 基于 PostgreSQL 提供只读的分析查询。
-//
-// 性能提示：TodaySales 和 TodayOrderCount 查询按 created_at 过滤。
-// 建议在生产环境中为 payments 表添加 (status, created_at) 复合索引，
-// 并为 bookings 表添加 created_at 索引以优化查询性能。
 type AnalyticsRepository struct{ db *gorm.DB }
 
-// NewAnalyticsRepository 创建统计分析仓储实例。
 func NewAnalyticsRepository(db *gorm.DB) *AnalyticsRepository {
 	return &AnalyticsRepository{db: db}
 }
 
-// startOfTodayExpr 根据数据库类型返回“今日起点”的 SQL 表达式。
 func (r *AnalyticsRepository) startOfTodayExpr() string {
 	if r.db.Dialector.Name() == "sqlite" {
 		return "date('now')"
@@ -26,7 +20,6 @@ func (r *AnalyticsRepository) startOfTodayExpr() string {
 	return "CURRENT_DATE"
 }
 
-// TodaySales 返回今日已支付的总金额（单位：分）。
 func (r *AnalyticsRepository) TodaySales(ctx context.Context) (int64, error) {
 	var total int64
 	err := r.db.WithContext(ctx).Raw(
@@ -35,8 +28,6 @@ func (r *AnalyticsRepository) TodaySales(ctx context.Context) (int64, error) {
 	return total, err
 }
 
-// WeeklyTrend 返回过去 7 天（含今日）的每日销售总额。
-// 使用 PostgreSQL 的 generate_series 填充无销售数据的日期为 0。
 func (r *AnalyticsRepository) WeeklyTrend(ctx context.Context) ([]int64, error) {
 	query := `
 		SELECT COALESCE(SUM(p.amount_cents), 0)
@@ -51,7 +42,6 @@ func (r *AnalyticsRepository) WeeklyTrend(ctx context.Context) ([]int64, error) 
 		ORDER BY d.day
 	`
 	if r.db.Dialector.Name() == "sqlite" {
-		// SQLite 使用递归 CTE 生成近 7 天日期序列，保证测试环境可运行。
 		query = `
 			WITH RECURSIVE days(day) AS (
 				SELECT date('now', '-6 day')
@@ -86,11 +76,26 @@ func (r *AnalyticsRepository) WeeklyTrend(ctx context.Context) ([]int64, error) 
 	return trend, rows.Err()
 }
 
-// TodayOrderCount 返回今日创建的预订订单数量。
 func (r *AnalyticsRepository) TodayOrderCount(ctx context.Context) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Raw(
 		"SELECT COUNT(*) FROM bookings WHERE created_at >= " + r.startOfTodayExpr(),
 	).Scan(&count).Error
 	return count, err
+}
+
+func (r *AnalyticsRepository) Trend(ctx context.Context, days int) ([]domain.TrendDataItem, error) {
+	return []domain.TrendDataItem{}, nil
+}
+
+func (r *AnalyticsRepository) CabinHotnessRanking(ctx context.Context, limit int) ([]domain.CabinRankingItem, error) {
+	return []domain.CabinRankingItem{}, nil
+}
+
+func (r *AnalyticsRepository) InventoryOverview(ctx context.Context) (*domain.InventoryOverviewData, error) {
+	return &domain.InventoryOverviewData{}, nil
+}
+
+func (r *AnalyticsRepository) PageViewStats(ctx context.Context) ([]domain.PageViewData, error) {
+	return []domain.PageViewData{}, nil
 }

@@ -15,8 +15,1070 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/cruises": {
+        "/api/v1/admin/auth/login": {
             "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Admin login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_handler.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/auth/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get current staff profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabin-types": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "List cabin types by cruise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cruise ID",
+                        "name": "cruise_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "Create a cabin type",
+                "parameters": [
+                    {
+                        "description": "Cabin type data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinTypeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabin-types/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "Update a cabin type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "CabinType ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cabin type data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinTypeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "Delete a cabin type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "CabinType ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Filter cabin sku list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Voyage ID",
+                        "name": "voyage_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cabin type ID",
+                        "name": "cabin_type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Status, 0 means all",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Create cabin sku",
+                "parameters": [
+                    {
+                        "description": "Cabin SKU payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_domain.CabinSKU"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/alerts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "List inventory alerts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/batch-status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Batch update cabin sku status",
+                "parameters": [
+                    {
+                        "description": "Batch status payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinBatchStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Get cabin sku detail",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Update cabin sku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cabin SKU payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_domain.CabinSKU"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Delete cabin sku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/{id}/alert-threshold": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Set cabin inventory alert threshold",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Alert threshold payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinAlertThresholdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/{id}/inventory": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Get cabin inventory",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/{id}/inventory/adjust": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Adjust cabin inventory",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Inventory adjustment payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinAdjustInventoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/{id}/prices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "List cabin price calendar",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Create or update cabin price",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cabin SKU ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cabin price payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_domain.CabinPrice"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/companies": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Company"
+                ],
+                "summary": "List cruise companies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Create a cruise company",
+                "parameters": [
+                    {
+                        "description": "Company data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CompanyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/companies/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Update a cruise company",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Company data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CompanyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Company"
+                ],
+                "summary": "Delete a cruise company",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cruises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cruise"
+                ],
+                "summary": "List cruises",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by company",
+                        "name": "company_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Keyword on cruise name",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by status, 0 means all",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort by tonnage/name",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -33,7 +1095,53 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "required": true,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CruiseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cruises/batch-status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cruise"
+                ],
+                "summary": "Batch update cruise status",
+                "parameters": [
+                    {
+                        "description": "Batch status payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CruiseBatchStatusRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -45,18 +1153,1007 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/admin/cruises/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cruise"
+                ],
+                "summary": "Update cruise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cruise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cruise data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CruiseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Cruise"
+                ],
+                "summary": "Delete cruise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cruise ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/facilities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Facility"
+                ],
+                "summary": "List facilities by cruise",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cruise ID",
+                        "name": "cruise_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Facility"
+                ],
+                "summary": "Create a facility",
+                "parameters": [
+                    {
+                        "description": "Facility data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.FacilityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/facilities/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Facility"
+                ],
+                "summary": "Get a facility",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Facility ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Facility"
+                ],
+                "summary": "Update a facility",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Facility ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Facility data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.FacilityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Facility"
+                ],
+                "summary": "Delete a facility",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Facility ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/facility-categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FacilityCategory"
+                ],
+                "summary": "List all facility categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FacilityCategory"
+                ],
+                "summary": "Create a facility category",
+                "parameters": [
+                    {
+                        "description": "Category data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.FacilityCategoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/facility-categories/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FacilityCategory"
+                ],
+                "summary": "Update a facility category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Category data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.FacilityCategoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "FacilityCategory"
+                ],
+                "summary": "Delete a facility category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/images": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Image"
+                ],
+                "summary": "List images by entity",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entity type",
+                        "name": "entity_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Entity ID",
+                        "name": "entity_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Image"
+                ],
+                "summary": "Save images for entity",
+                "parameters": [
+                    {
+                        "description": "Image payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.SaveImagesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/upload/image": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "Upload an image",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "gin.H": {
+            "type": "object",
+            "additionalProperties": {}
+        },
+        "github_com_cruisebooking_backend_internal_domain.CabinPrice": {
+            "type": "object",
+            "properties": {
+                "cabin_sku_id": {
+                    "description": "关联的舱房 SKU ID",
+                    "type": "integer"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "date": {
+                    "description": "价格生效日期",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "主键 ID",
+                    "type": "integer"
+                },
+                "occupancy": {
+                    "description": "入住人数",
+                    "type": "integer"
+                },
+                "price_cents": {
+                    "description": "价格（单位：分）",
+                    "type": "integer"
+                },
+                "price_type": {
+                    "description": "价格类型：base/child/single_supplement/holiday/early_bird",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_cruisebooking_backend_internal_domain.CabinSKU": {
+            "type": "object",
+            "properties": {
+                "amenities": {
+                    "description": "附属设施（逗号分隔）",
+                    "type": "string"
+                },
+                "area": {
+                    "description": "舱房面积（平方米）",
+                    "type": "number"
+                },
+                "bed_type": {
+                    "description": "床型说明",
+                    "type": "string"
+                },
+                "cabin_type_id": {
+                    "description": "所属舱房类型 ID",
+                    "type": "integer"
+                },
+                "code": {
+                    "description": "舱房编号，全局唯一",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "deck": {
+                    "description": "所在甲板层",
+                    "type": "string"
+                },
+                "has_balcony": {
+                    "description": "是否有阳台",
+                    "type": "boolean"
+                },
+                "has_window": {
+                    "description": "是否有窗",
+                    "type": "boolean"
+                },
+                "id": {
+                    "description": "主键 ID",
+                    "type": "integer"
+                },
+                "max_guests": {
+                    "description": "最大入住人数",
+                    "type": "integer"
+                },
+                "orientation": {
+                    "description": "朝向：port/starboard",
+                    "type": "string"
+                },
+                "position": {
+                    "description": "位置：fore/mid/aft",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态：1=上架，0=下架",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "voyage_id": {
+                    "description": "所属航次 ID",
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_cruisebooking_backend_internal_pkg_response.Response": {
             "type": "object",
             "properties": {
                 "code": {
+                    "description": "业务状态码（0 表示成功）",
                     "type": "integer"
                 },
-                "data": {},
+                "data": {
+                    "description": "响应数据"
+                },
                 "message": {
+                    "description": "响应消息",
                     "type": "string"
+                }
+            }
+        },
+        "internal_handler.CabinAdjustInventoryRequest": {
+            "type": "object",
+            "required": [
+                "delta",
+                "reason"
+            ],
+            "properties": {
+                "delta": {
+                    "description": "调整量（正数增加，负数减少）",
+                    "type": "integer"
+                },
+                "reason": {
+                    "description": "调整原因",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.CabinAlertThresholdRequest": {
+            "type": "object",
+            "properties": {
+                "threshold": {
+                    "description": "预警阈值",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.CabinBatchStatusRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "description": "舱位 ID 列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "description": "目标状态",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.CabinTypeRequest": {
+            "type": "object",
+            "required": [
+                "cruise_id",
+                "name"
+            ],
+            "properties": {
+                "amenities": {
+                    "description": "设施清单",
+                    "type": "string"
+                },
+                "area": {
+                    "description": "面积（平方米）",
+                    "type": "number"
+                },
+                "area_max": {
+                    "description": "最大面积",
+                    "type": "number"
+                },
+                "area_min": {
+                    "description": "最小面积",
+                    "type": "number"
+                },
+                "bed_type": {
+                    "description": "床型说明",
+                    "type": "string"
+                },
+                "capacity": {
+                    "description": "容纳人数",
+                    "type": "integer"
+                },
+                "code": {
+                    "description": "舱房类型代码",
+                    "type": "string"
+                },
+                "cruise_id": {
+                    "description": "所属邮轮 ID",
+                    "type": "integer"
+                },
+                "deck": {
+                    "description": "所在甲板",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "english_name": {
+                    "description": "英文名称",
+                    "type": "string"
+                },
+                "floor_plan_url": {
+                    "description": "平面图 URL",
+                    "type": "string"
+                },
+                "max_capacity": {
+                    "description": "最大容纳人数",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "舱房类型名称",
+                    "type": "string"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                },
+                "tags": {
+                    "description": "特色标签",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.CompanyRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "description": "公司描述",
+                    "type": "string"
+                },
+                "english_name": {
+                    "description": "英文名称",
+                    "type": "string"
+                },
+                "logo_url": {
+                    "description": "Logo 图片地址",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "公司名称（必填）",
+                    "type": "string"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.CruiseBatchStatusRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "description": "需要更新状态的邮轮 ID 列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "description": "目标状态",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.CruiseRequest": {
+            "type": "object",
+            "required": [
+                "company_id",
+                "name"
+            ],
+            "properties": {
+                "build_year": {
+                    "description": "建造年份",
+                    "type": "integer"
+                },
+                "code": {
+                    "description": "邮轮代码/英文简称",
+                    "type": "string"
+                },
+                "company_id": {
+                    "description": "所属公司 ID（必填）",
+                    "type": "integer"
+                },
+                "crew_count": {
+                    "description": "船员人数",
+                    "type": "integer"
+                },
+                "deck_count": {
+                    "description": "甲板层数",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "english_name": {
+                    "description": "英文名称",
+                    "type": "string"
+                },
+                "length": {
+                    "description": "船体长度（米）",
+                    "type": "number"
+                },
+                "name": {
+                    "description": "邮轮名称（必填）",
+                    "type": "string"
+                },
+                "passenger_capacity": {
+                    "description": "最大载客量",
+                    "type": "integer"
+                },
+                "refurbish_year": {
+                    "description": "最近翻新年份",
+                    "type": "integer"
+                },
+                "room_count": {
+                    "description": "舱房总数",
+                    "type": "integer"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                },
+                "tonnage": {
+                    "description": "吨位",
+                    "type": "number"
+                },
+                "width": {
+                    "description": "船体宽度（米）",
+                    "type": "number"
+                }
+            }
+        },
+        "internal_handler.FacilityCategoryRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "icon": {
+                    "description": "分类图标",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "分类名称（必填）",
+                    "type": "string"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "分类状态",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.FacilityRequest": {
+            "type": "object",
+            "required": [
+                "category_id",
+                "cruise_id",
+                "name"
+            ],
+            "properties": {
+                "category_id": {
+                    "description": "设施分类 ID（必填）",
+                    "type": "integer"
+                },
+                "charge_price_tip": {
+                    "description": "收费提示",
+                    "type": "string"
+                },
+                "cruise_id": {
+                    "description": "所属邮轮 ID（必填）",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "设施描述",
+                    "type": "string"
+                },
+                "english_name": {
+                    "description": "英文名称",
+                    "type": "string"
+                },
+                "extra_charge": {
+                    "description": "是否额外收费",
+                    "type": "boolean"
+                },
+                "location": {
+                    "description": "设施位置",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "设施名称（必填）",
+                    "type": "string"
+                },
+                "open_hours": {
+                    "description": "开放时间",
+                    "type": "string"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "状态",
+                    "type": "integer"
+                },
+                "target_audience": {
+                    "description": "适合人群",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.ImageItemRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "is_primary": {
+                    "description": "是否主图",
+                    "type": "boolean"
+                },
+                "sort_order": {
+                    "description": "排序",
+                    "type": "integer"
+                },
+                "url": {
+                    "description": "图片地址",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "description": "登录密码",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "登录用户名",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "expire_at": {
+                    "description": "令牌过期时间",
+                    "type": "string"
+                },
+                "token": {
+                    "description": "JWT 令牌字符串",
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.SaveImagesRequest": {
+            "type": "object",
+            "required": [
+                "entity_id",
+                "entity_type"
+            ],
+            "properties": {
+                "entity_id": {
+                    "description": "实体 ID",
+                    "type": "integer"
+                },
+                "entity_type": {
+                    "description": "实体类型",
+                    "type": "string"
+                },
+                "images": {
+                    "description": "图片列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handler.ImageItemRequest"
+                    }
                 }
             }
         }

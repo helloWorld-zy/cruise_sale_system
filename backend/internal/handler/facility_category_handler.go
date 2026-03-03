@@ -25,6 +25,7 @@ func NewFacilityCategoryHandler(svc *service.FacilityCategoryService) *FacilityC
 type FacilityCategoryRequest struct {
 	Name      string `json:"name" binding:"required"` // 分类名称（必填）
 	Icon      string `json:"icon"`                    // 分类图标
+	Status    int16  `json:"status"`                  // 分类状态
 	SortOrder int    `json:"sort_order"`              // 排序权重
 }
 
@@ -64,6 +65,7 @@ func (h *FacilityCategoryHandler) Create(c *gin.Context) {
 	cat := &domain.FacilityCategory{
 		Name:      req.Name,
 		Icon:      req.Icon,
+		Status:    req.Status,
 		SortOrder: req.SortOrder,
 	}
 	if err := h.svc.Create(c.Request.Context(), cat); err != nil {
@@ -71,6 +73,45 @@ func (h *FacilityCategoryHandler) Create(c *gin.Context) {
 		return
 	}
 	response.Success(c, cat)
+}
+
+// Update godoc
+// @Summary Update a facility category
+// @Tags FacilityCategory
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param body body FacilityCategoryRequest true "Category data"
+// @Success 200 {object} response.Response
+// @Router /api/v1/admin/facility-categories/{id} [put]
+// Update 更新指定设施分类。
+func (h *FacilityCategoryHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
+		return
+	}
+	existing, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, errcode.ErrNotFound, "facility category not found")
+		return
+	}
+	var req FacilityCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+	existing.Name = req.Name
+	existing.Icon = req.Icon
+	existing.Status = req.Status
+	existing.SortOrder = req.SortOrder
+
+	if err := h.svc.Update(c.Request.Context(), existing); err != nil {
+		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())
+		return
+	}
+	response.Success(c, existing)
 }
 
 // Delete godoc

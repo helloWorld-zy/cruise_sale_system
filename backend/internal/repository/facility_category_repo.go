@@ -22,6 +22,20 @@ func (r *FacilityCategoryRepository) Create(ctx context.Context, category *domai
 	return r.db.WithContext(ctx).Create(category).Error
 }
 
+// Update 保存设施分类的字段修改。
+func (r *FacilityCategoryRepository) Update(ctx context.Context, category *domain.FacilityCategory) error {
+	return r.db.WithContext(ctx).Save(category).Error
+}
+
+// GetByID 根据主键查询设施分类。
+func (r *FacilityCategoryRepository) GetByID(ctx context.Context, id int64) (*domain.FacilityCategory, error) {
+	var item domain.FacilityCategory
+	if err := r.db.WithContext(ctx).First(&item, id).Error; err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // List 查询所有设施分类，按排序权重和 ID 降序排列。
 func (r *FacilityCategoryRepository) List(ctx context.Context) ([]domain.FacilityCategory, error) {
 	var items []domain.FacilityCategory

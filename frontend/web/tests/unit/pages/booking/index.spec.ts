@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Page from '../../../../pages/booking/index.vue'
+import Page from '../../../../app/pages/booking/index.vue'
 
 // Nuxt 自动导入 stub
 const mockPush = vi.fn()

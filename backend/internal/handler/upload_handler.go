@@ -48,7 +48,7 @@ func NewUploadHandler() *UploadHandler {
 // @Accept multipart/form-data
 // @Produce json
 // @Param file formData file true "Image file"
-// @Success 200 {object} response.Response
+// @Success 200 {object} gin.H
 // @Router /api/v1/admin/upload/image [post]
 // UploadImage 上传图片到对象存储（当前为桩实现）。
 func (h *UploadHandler) UploadImage(c *gin.Context) {

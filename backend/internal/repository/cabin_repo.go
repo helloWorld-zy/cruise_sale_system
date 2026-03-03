@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
@@ -40,6 +41,51 @@ func (r *CabinRepository) ListSKUByVoyage(ctx context.Context, voyageID int64) (
 	return out, r.db.WithContext(ctx).Where("voyage_id = ?", voyageID).Order("id desc").Find(&out).Error
 }
 
+// ListSKUFiltered 按条件分页查询舱房 SKU。
+func (r *CabinRepository) ListSKUFiltered(ctx context.Context, f domain.CabinSKUFilter) ([]domain.CabinSKU, int64, error) {
+	var out []domain.CabinSKU
+	var total int64
+
+	page := f.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := f.PageSize
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	q := r.db.WithContext(ctx).Model(&domain.CabinSKU{})
+	if f.VoyageID > 0 {
+		q = q.Where("voyage_id = ?", f.VoyageID)
+	}
+	if f.CabinTypeID > 0 {
+		q = q.Where("cabin_type_id = ?", f.CabinTypeID)
+	}
+	if f.Status != nil {
+		q = q.Where("status = ?", *f.Status)
+	}
+	if strings.TrimSpace(f.Keyword) != "" {
+		q = q.Where("code LIKE ?", "%"+strings.TrimSpace(f.Keyword)+"%")
+	}
+
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := q.Order("id desc").Offset((page - 1) * pageSize).Limit(pageSize).Find(&out).Error; err != nil {
+		return nil, 0, err
+	}
+	return out, total, nil
+}
+
+// BatchUpdateStatus 批量更新舱房 SKU 的上下架状态。
+func (r *CabinRepository) BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Model(&domain.CabinSKU{}).Where("id IN ?", ids).Update("status", status).Error
+}
+
 // DeleteSKU 删除指定的舱房 SKU。
 func (r *CabinRepository) DeleteSKU(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.CabinSKU{}, id).Error
@@ -69,6 +115,17 @@ func (r *CabinRepository) GetInventoryBySKU(ctx context.Context, skuID int64) (d
 	return out, r.db.WithContext(ctx).Where("cabin_sku_id = ?", skuID).First(&out).Error
 }
 
+// ListAllInventories 查询全部库存记录。
+func (r *CabinRepository) ListAllInventories(ctx context.Context) ([]domain.CabinInventory, error) {
+	var out []domain.CabinInventory
+	return out, r.db.WithContext(ctx).Order("cabin_sku_id asc").Find(&out).Error
+}
+
+// SetAlertThreshold 设置指定 SKU 的库存预警阈值。
+func (r *CabinRepository) SetAlertThreshold(ctx context.Context, skuID int64, threshold int) error {
+	return r.db.WithContext(ctx).Model(&domain.CabinInventory{}).Where("cabin_sku_id = ?", skuID).Update("alert_threshold", threshold).Error
+}
+
 // AppendInventoryLog 追加一条库存变动审计日志。
 func (r *CabinRepository) AppendInventoryLog(ctx context.Context, log *domain.InventoryLog) error {
 	return r.db.WithContext(ctx).Create(log).Error
@@ -91,6 +148,50 @@ func (r *CabinRepository) ListBySKU(ctx context.Context, skuID int64) ([]domain.
 func (r *CabinRepository) UpsertPrice(ctx context.Context, p *domain.CabinPrice) error {
 	err := r.db.WithContext(ctx).Save(p).Error
 	return err
+}
+
+// Create 实现 PriceRepo 接口的 Create 方法。
+func (r *CabinRepository) Create(ctx context.Context, p *domain.CabinPrice) error {
+	return r.db.WithContext(ctx).Create(p).Error
+}
+
+// GetCategoryTree 获取邮轮→航线→舱型三级分类树。
+func (r *CabinRepository) GetCategoryTree(ctx context.Context) (interface{}, error) {
+	var cruises []domain.Cruise
+	if err := r.db.WithContext(ctx).Where("status = ?", 1).Find(&cruises).Error; err != nil {
+		return nil, err
+	}
+	type routeWithVoyages struct {
+		domain.Route
+		Voyages []domain.Voyage `json:"voyages"`
+	}
+	type cruiseWithRoutes struct {
+		domain.Cruise
+		Routes []routeWithVoyages `json:"routes"`
+	}
+	result := make([]cruiseWithRoutes, 0, len(cruises))
+	for _, c := range cruises {
+		var routes []domain.Route
+		if err := r.db.WithContext(ctx).Where("status = ?", 1).Find(&routes).Error; err != nil {
+			continue
+		}
+		cruiseRoutes := make([]routeWithVoyages, 0, len(routes))
+		for _, rt := range routes {
+			var voyages []domain.Voyage
+			if err := r.db.WithContext(ctx).Where("route_id = ? AND cruise_id = ?", rt.ID, c.ID).Find(&voyages).Error; err != nil {
+				continue
+			}
+			cruiseRoutes = append(cruiseRoutes, routeWithVoyages{
+				Route:   rt,
+				Voyages: voyages,
+			})
+		}
+		result = append(result, cruiseWithRoutes{
+			Cruise: c,
+			Routes: cruiseRoutes,
+		})
+	}
+	return result, nil
 }
 
 // 编译时接口实现检查

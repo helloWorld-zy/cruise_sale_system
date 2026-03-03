@@ -45,7 +45,7 @@ func (s *CompanyService) List(ctx context.Context, keyword string, page, pageSiz
 // Delete 删除公司前检查是否仍有关联的邮轮，防止级联数据不一致。
 // HI-02 FIX：此前缺少级联检查逻辑，已修复。
 func (s *CompanyService) Delete(ctx context.Context, id int64) error {
-	_, total, err := s.cruiseRepo.List(ctx, id, 1, 1)
+	_, total, err := s.cruiseRepo.List(ctx, id, "", nil, "", 1, 1)
 	if err != nil {
 		return err
 	}

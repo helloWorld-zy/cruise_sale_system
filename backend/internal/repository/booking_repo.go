@@ -72,3 +72,53 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int64) (*domain.Book
 func (r *BookingRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.Booking{}, id).Error
 }
+
+type BookingFilter struct {
+	Status    string
+	Phone     string
+	RouteID   int64
+	VoyageID  int64
+	StartDate *string
+	EndDate   *string
+	BookingNo string
+}
+
+func (r *BookingRepository) ListWithFilter(ctx context.Context, filter BookingFilter, page, pageSize int) ([]domain.Booking, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	query := r.db.WithContext(ctx).Model(&domain.Booking{})
+
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.VoyageID > 0 {
+		query = query.Where("voyage_id = ?", filter.VoyageID)
+	}
+	if filter.BookingNo != "" {
+		query = query.Where("id LIKE ?", "%"+filter.BookingNo+"%")
+	}
+	if filter.StartDate != nil {
+		query = query.Where("created_at >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		query = query.Where("created_at <= ?", *filter.EndDate)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var items []domain.Booking
+	err := query.
+		Order("id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&items).Error
+	return items, total, err
+}

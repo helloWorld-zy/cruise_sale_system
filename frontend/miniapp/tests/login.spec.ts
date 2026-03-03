@@ -16,6 +16,6 @@ beforeEach(() => {
 describe('Miniapp Login', () => {
     it('shows login title', () => {
         const { getByText } = render(Login)
-        expect(getByText('Login')).toBeTruthy()
+        expect(getByText('用户登录')).toBeTruthy()
     })
 })

@@ -19,7 +19,7 @@ afterEach(() => {
 describe('Booking Create', () => {
     it('renders view', () => {
         const { getByText } = render(Page)
-        expect(getByText('Create Booking')).toBeTruthy()
+        expect(getByText('创建预订')).toBeTruthy()
     })
 
     it('submits booking when form is valid', async () => {

@@ -41,9 +41,29 @@ func (s *CruiseService) GetByID(ctx context.Context, id int64) (*domain.Cruise, 
 	return s.cruiseRepo.GetByID(ctx, id)
 }
 
-// List 返回分页的邮轮列表，可选按公司 ID 过滤。
-func (s *CruiseService) List(ctx context.Context, companyID int64, page, pageSize int) ([]domain.Cruise, int64, error) {
-	return s.cruiseRepo.List(ctx, companyID, page, pageSize)
+// List 返回分页的邮轮列表，支持公司、关键词、状态和排序筛选。
+func (s *CruiseService) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return s.cruiseRepo.List(ctx, companyID, keyword, status, sortBy, page, pageSize)
+}
+
+// ListWithFilters 为调用方提供显式的筛选列表入口，内部转发到仓储层。
+func (s *CruiseService) ListWithFilters(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return s.List(ctx, companyID, keyword, status, sortBy, page, pageSize)
+}
+
+// BatchUpdateStatus 批量更新邮轮状态。
+func (s *CruiseService) BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error {
+	for _, id := range ids {
+		item, err := s.cruiseRepo.GetByID(ctx, id)
+		if err != nil {
+			return err
+		}
+		item.Status = status
+		if err := s.cruiseRepo.Update(ctx, item); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete 删除邮轮前检查是否仍有关联的舱房类型，防止级联数据不一致。

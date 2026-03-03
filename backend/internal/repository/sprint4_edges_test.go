@@ -40,7 +40,8 @@ func TestRepositoryMissingEdges(t *testing.T) {
 		qty INTEGER, expires_at DATETIME, created_at DATETIME)`)
 	db.Exec(`CREATE TABLE cabin_inventories (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, cabin_sku_id INTEGER UNIQUE,
-		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0, updated_at DATETIME)`)
+		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0,
+		alert_threshold INTEGER DEFAULT 0, updated_at DATETIME)`)
 	db.Exec(`CREATE TABLE inventory_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, cabin_sku_id INTEGER,
 		"change" INTEGER, reason TEXT, created_at DATETIME)`)
@@ -103,7 +104,7 @@ func TestRepositoryMissingEdges(t *testing.T) {
 	db2.Exec("DROP TABLE cruise_companies")
 
 	cruiseRepo := NewCruiseRepository(db2)
-	_, _, _ = cruiseRepo.List(context.Background(), 1, 1, 10)
+	_, _, _ = cruiseRepo.List(context.Background(), 1, "", nil, "", 1, 10)
 
 	companyRepo := NewCompanyRepository(db2)
 	_, _, _ = companyRepo.List(context.Background(), "", 1, 10)
@@ -136,7 +137,8 @@ func TestAdjustInventoryLogCreateError(t *testing.T) {
 	// Create CabinInventory but NOT InventoryLog table
 	db.Exec(`CREATE TABLE cabin_inventories (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, cabin_sku_id INTEGER UNIQUE,
-		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0, updated_at DATETIME)`)
+		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0,
+		alert_threshold INTEGER DEFAULT 0, updated_at DATETIME)`)
 	db.Create(&domain.CabinInventory{CabinSKUID: 99, Total: 10})
 
 	repo := NewCabinHoldRepository(db)
@@ -149,7 +151,8 @@ func TestAdjustInventorySaveError(t *testing.T) {
 	db := isolatedDB()
 	db.Exec(`CREATE TABLE cabin_inventories (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, cabin_sku_id INTEGER UNIQUE,
-		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0, updated_at DATETIME)`)
+		total INTEGER, locked INTEGER DEFAULT 0, sold INTEGER DEFAULT 0,
+		alert_threshold INTEGER DEFAULT 0, updated_at DATETIME)`)
 	db.Exec(`CREATE TABLE inventory_logs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT, cabin_sku_id INTEGER,
 		"change" INTEGER, reason TEXT, created_at DATETIME)`)
@@ -206,7 +209,7 @@ func TestListFindErrorPaths(t *testing.T) {
 		})
 
 		repo := NewCruiseRepository(db)
-		_, _, err := repo.List(context.Background(), 0, 1, 10)
+		_, _, err := repo.List(context.Background(), 0, "", nil, "", 1, 10)
 		assert.Error(t, err)
 	})
 

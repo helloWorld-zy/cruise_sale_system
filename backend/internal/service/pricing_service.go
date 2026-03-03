@@ -10,6 +10,7 @@ import (
 // PriceRepo 定义价格查询的端口接口。
 type PriceRepo interface {
 	ListBySKU(ctx context.Context, skuID int64) ([]domain.CabinPrice, error) // 查询某 SKU 的所有价格记录
+	Create(ctx context.Context, price *domain.CabinPrice) error              // 创建价格记录
 }
 
 // PricingService 提供舱房定价相关的业务逻辑。
@@ -43,4 +44,37 @@ func (s *PricingService) FindPrice(ctx context.Context, skuID int64, date time.T
 		}
 	}
 	return 0, false, nil
+}
+
+// FindPriceByType 按价格类型查找价格（含儿童价和单人补差）。
+func (s *PricingService) FindPriceByType(ctx context.Context, skuID int64, date time.Time, occupancy int, priceType string) (domain.CabinPrice, bool, error) {
+	list, err := s.repo.ListBySKU(ctx, skuID)
+	if err != nil {
+		return domain.CabinPrice{}, false, err
+	}
+	for _, v := range list {
+		if sameDay(v.Date, date) && v.Occupancy == occupancy && v.PriceType == priceType {
+			return v, true, nil
+		}
+	}
+	return domain.CabinPrice{}, false, nil
+}
+
+// BatchSetPrice 按日期区间批量设置价格。
+func (s *PricingService) BatchSetPrice(ctx context.Context, skuID int64, start, end time.Time, occupancy int, priceCents, childPriceCents, singleSupplementCents int64, priceType string) error {
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		p := &domain.CabinPrice{
+			CabinSKUID:            skuID,
+			Date:                  d,
+			Occupancy:             occupancy,
+			PriceCents:            priceCents,
+			ChildPriceCents:       childPriceCents,
+			SingleSupplementCents: singleSupplementCents,
+			PriceType:             priceType,
+		}
+		if err := s.repo.Create(ctx, p); err != nil {
+			return err
+		}
+	}
+	return nil
 }

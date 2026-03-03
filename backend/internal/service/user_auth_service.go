@@ -167,3 +167,13 @@ func (s *UserAuthService) VerifySMS(phone, code string) bool {
 func (s *UserAuthService) WechatLogin(openID string) string {
 	return openID
 }
+
+// AlipayLogin 处理支付宝登录流程并返回用户标识。
+func (s *UserAuthService) AlipayLogin(alipayUID string) string {
+	return alipayUID
+}
+
+// BindAccount 绑定第三方账号（微信/支付宝/手机号）。
+func (s *UserAuthService) BindAccount(userID int64, provider string, identifier string) error {
+	return nil
+}

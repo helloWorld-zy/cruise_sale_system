@@ -72,6 +72,40 @@
 
 ---
 
+## Sprint 4.2 Code Review Prompt (功能列表 Section B-G 补齐)
+
+**Context**: 本 Sprint 补齐 Sprint 2-4 中遗漏的功能列表需求。涉及：CabinSKU 完整属性（Position/Orientation/HasWindow/HasBalcony/BedType/Grade）、多类型定价（成人/儿童/单人补差/节假日加价）、批量定价操作、库存预警阈值、Route 港口字段、批量上架/下架操作、Passenger 完整字段、支付宝登录与账号绑定、常用乘客管理、完整订单状态生命周期、状态转换日志、支付金额校验、支付超时自动关单、阶梯退款规则、财务对账报表、后台订单增强+Excel导出、员工账号管理+角色分配、店铺/品牌信息管理、通知模板配置+多渠道通知、库存预警通知、数据看板增强。
+
+**Strict Checklist**:
+- [ ] **CabinSKU 完整属性**: `CabinSKU` 是否包含 Position、Orientation、HasWindow、HasBalcony、BedType、Grade 全部字段？是否有对应的单元测试验证？
+- [ ] **多类型定价**: `CabinPrice` 是否支持 ChildPriceCents、SingleSupplementCents、PriceType（normal/earlybird/holiday/consecutive）？批量日期范围定价 API 是否存在且测试覆盖？
+- [ ] **库存预警阈值**: `CabinInventory.AlertThreshold` 字段是否存在？`AvailableWithAlert` 方法逻辑是否正确？
+- [ ] **批量操作安全**: 批量上架/下架/删除操作是否有权限校验和数量上限防止误操作？事务是否正确包裹？
+- [ ] **Route 完整性**: `Route` 是否包含 DeparturePort、ArrivalPort、Stops 字段？
+- [ ] **Passenger 完整字段**: `Passenger` 是否包含 EnglishName、Phone、Email、EmergencyContact、EmergencyPhone、SpecialNeeds、IsFavorite 全部字段？
+- [ ] **支付宝登录安全**: `AlipayLogin` 是否严格校验支付宝回调参数的签名？是否防止了伪造 alipay_uid？
+- [ ] **账号绑定安全**: `BindAccount` 是否验证了目标账号未被其他用户绑定？是否有绑定前的身份确认？
+- [ ] **常用乘客数据隔离**: `ListFavorites` 是否严格按 `user_id` 过滤，防止越权访问？
+- [ ] **订单状态机完整性**: 是否实现了完整的订单状态流转？`CanTransitionTo` 是否覆盖全部合法/非法转换路径？
+- [ ] **状态转换日志**: 每次 `Order.Status` 变更是否必定写入 `OrderStatusLog`（operator_id + remark）？是否在同一事务中？
+- [ ] **支付金额校验**: 支付回调中是否严格校验 paidAmount == orderAmount？不等时是否拒绝并记录异常？
+- [ ] **支付超时自动关单**: 定时任务 `CloseExpiredOrders` 是否使用事务锁防止并发关单？释放库存是否原子操作？
+- [ ] **阶梯退款规则**: `CalcRefundAmount` 是否覆盖边界条件（恰好 30 天、恰好 7 天、0 天）？退款金额计算是否采用整数运算避免精度丢失？
+- [ ] **财务对账**: `ReconciliationService` 生成的日报是否有防重复生成机制？
+- [ ] **Excel 导出安全**: 订单导出接口是否限制了数据量上限和导出权限？是否防止 CSV Injection？
+- [ ] **员工管理与RBAC**: 员工角色分配是否与 Casbin RBAC 策略同步更新？权限变更是否记录操作日志？
+- [ ] **店铺信息**: ShopInfo 是否为单行配置模式（只允许更新不允许创建多条）？
+- [ ] **通知模板安全**: 模板渲染是否使用安全的 text/template？是否防止 SSTI（Server-Side Template Injection）？
+- [ ] **库存预警通知**: 预警扫描是否有防重复通知机制？
+- [ ] **趋势图与排行数据**: 7/30 天趋势查询是否使用了索引，而非全表扫描？
+- [ ] **前端实联验证**: 逐页检查所有前端页面（舱位管理增强、价格日历、我的订单、员工管理、店铺设置、通知模板、数据看板增强等），确认每个页面都通过 API 调用后端获取真实数据，而非使用硬编码/静态假数据。页面必须包含 loading、error、empty 三种状态处理。发现任何"空壳页面"立即标记为阻塞性问题。
+- [ ] **测试质量审计**: 逐一检查测试用例，确认每条测试包含有意义的业务断言。发现以下"伪覆盖"手段必须标记为阻塞性问题：`istanbul ignore` / `//nolint` 跳过未测代码、空函数体替代真实逻辑、仅 import 不调用、删除/注释失败测试。
+- [ ] 本Sprint包含5个Part（A-E），27个Task，是否完成全部功能？根据@docs/plans/2026-02-22-sprint04.2.md 进行检查。
+
+**执行动作**：执行完整的全文件审计，只要有一条不符，输出红色的整改方案，并要求后续修复后重新 Review。
+
+---
+
 ## Sprint 5 Code Review Prompt (智能发现与决策支持)
 
 **Context**: 本 Sprint 实现智能推荐权重打分、航线日历最低价查询及前端个性化展示。
