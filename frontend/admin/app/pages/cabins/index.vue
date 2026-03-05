@@ -32,7 +32,8 @@
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+        <div class="cabin-table-wrap overflow-x-auto">
+          <table class="w-full min-w-[1200px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="w-10 p-3">
@@ -46,7 +47,7 @@
               <th class="p-3">价格区间</th>
               <th class="p-3">库存</th>
               <th class="p-3">状态</th>
-              <th class="p-3">操作</th>
+              <th class="p-3 whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -70,14 +71,17 @@
                 </div>
               </td>
               <td class="p-3"><span :class="statusClass(item.status)">{{ statusText(item.status) }}</span></td>
-              <td class="p-3">
-                <AdminActionLink :to="`/cabins/${item.id}`">编辑</AdminActionLink>
-                <AdminActionLink :to="`/cabins/inventory?skuId=${item.id}`" class="ml-2">库存</AdminActionLink>
-                <AdminActionLink :to="`/cabins/pricing?skuId=${item.id}`" class="ml-2">价格</AdminActionLink>
+              <td class="p-3 whitespace-nowrap">
+                <div class="cabin-actions flex items-center gap-2">
+                  <AdminActionLink :to="`/cabins/${item.id}`">编辑</AdminActionLink>
+                  <AdminActionLink :to="`/cabins/inventory?skuId=${item.id}`">库存</AdminActionLink>
+                  <AdminActionLink :to="`/cabins/pricing?skuId=${item.id}`">价格</AdminActionLink>
+                </div>
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <div v-if="selectedIds.size > 0" data-test="batch-action" class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
@@ -285,4 +289,10 @@ onMounted(async () => {
   await loadItems()
 })
 </script>
+
+<style scoped>
+.cabin-table-wrap {
+  scrollbar-gutter: stable;
+}
+</style>
 

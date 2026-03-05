@@ -7,14 +7,15 @@
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+        <div class="facility-category-table-wrap overflow-x-auto">
+          <table class="w-full min-w-[920px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-3">名称</th>
               <th class="p-3">图标</th>
               <th class="p-3">排序</th>
               <th class="p-3">状态</th>
-              <th class="p-3">操作</th>
+              <th class="p-3 whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -57,8 +58,8 @@
                   <option :value="0">停用</option>
                 </select>
               </td>
-              <td class="p-3">
-                <div class="flex items-center gap-2">
+              <td class="p-3 whitespace-nowrap">
+                <div class="facility-category-actions flex items-center gap-2">
                   <button type="button" class="rounded border border-emerald-200 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-50" @click="saveRow(row)">保存</button>
                   <NuxtLink v-if="row.id" :to="`/facility-categories/${row.id}`" class="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">编辑页</NuxtLink>
                   <button v-if="row.id" type="button" class="rounded border border-rose-200 px-2 py-1 text-xs text-rose-600 hover:bg-rose-50" @click="removeRow(row)">删除</button>
@@ -66,7 +67,8 @@
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <AdminConfirmDialog
@@ -189,3 +191,9 @@ async function confirmDelete() {
 
 onMounted(loadItems)
 </script>
+
+<style scoped>
+.facility-category-table-wrap {
+  scrollbar-gutter: stable;
+}
+</style>

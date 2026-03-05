@@ -34,14 +34,15 @@
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+        <div class="company-table-wrap overflow-x-auto">
+          <table class="w-full min-w-[900px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-3">Logo</th>
               <th class="p-3">中文名</th>
               <th class="p-3">英文名</th>
               <th class="p-3">文字介绍</th>
-              <th class="p-3">操作</th>
+              <th class="p-3 whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -61,13 +62,16 @@
               <td class="p-3 text-slate-900">{{ item.name || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.english_name || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.description || '-' }}</td>
-              <td class="p-3">
-                <AdminActionLink :to="`/companies/${item.id}`">编辑</AdminActionLink>
-                <button type="button" class="ml-3 text-rose-500 hover:text-rose-400" @click="askRemoveCompany(item)">删除</button>
+              <td class="p-3 whitespace-nowrap">
+                <div class="company-actions flex items-center gap-3">
+                  <AdminActionLink :to="`/companies/${item.id}`">编辑</AdminActionLink>
+                  <button type="button" class="text-rose-500 hover:text-rose-400" @click="askRemoveCompany(item)">删除</button>
+                </div>
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <AdminConfirmDialog
@@ -227,6 +231,10 @@ onMounted(loadItems)
 </script>
 
 <style scoped>
+.company-table-wrap {
+  scrollbar-gutter: stable;
+}
+
 .company-logo-cell {
   width: 5rem;
   height: 3rem;

@@ -40,7 +40,8 @@
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+        <div class="cruise-table-wrap overflow-x-auto">
+          <table class="w-full min-w-[960px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="w-10 p-3">
@@ -52,7 +53,7 @@
               <th class="p-3">吨位</th>
               <th class="p-3">载客量</th>
               <th class="p-3">状态</th>
-              <th class="p-3">操作</th>
+              <th class="p-3 whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -82,13 +83,16 @@
               <td class="p-3">
                 <span :class="statusClass(item.status)">{{ statusText(item.status) }}</span>
               </td>
-              <td class="p-3">
-                <AdminActionLink :to="`/cruises/${item.id}`">编辑</AdminActionLink>
-                <button type="button" class="ml-2 text-rose-500 hover:text-rose-400" @click="handleDelete(item.id)">删除</button>
+              <td class="p-3 whitespace-nowrap">
+                <div class="cruise-actions flex items-center gap-2">
+                  <AdminActionLink :to="`/cruises/${item.id}`">编辑</AdminActionLink>
+                  <button type="button" class="text-rose-500 hover:text-rose-400" @click="handleDelete(item.id)">删除</button>
+                </div>
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 p-3 text-sm text-slate-600">
           <button type="button" class="rounded border border-slate-200 px-3 py-1.5 hover:bg-slate-50" :disabled="filters.page <= 1" @click="changePage(filters.page - 1)">上一页</button>
@@ -297,4 +301,10 @@ onMounted(async () => {
   await Promise.all([loadItems(), loadCompanies()])
 })
 </script>
+
+<style scoped>
+.cruise-table-wrap {
+  scrollbar-gutter: stable;
+}
+</style>
 

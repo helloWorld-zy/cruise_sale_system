@@ -125,35 +125,39 @@ onMounted(loadItems)
     <p v-if="loading">Loading...</p>
     <p v-else-if="error" class="text-red-500">{{ error }}</p>
     <p v-else-if="filteredItems.length === 0">No data</p>
-    <table v-else>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Code</th>
-          <th>简介</th>
-          <th>首站港口</th>
-          <th>行程天数</th>
-          <th>出发</th>
-          <th>结束</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="r in filteredItems" :key="r.id">
-          <td>{{ r.id }}</td>
-          <td>{{ r.code }}</td>
-          <td>{{ r.brief_info || '-' }}</td>
-          <td>{{ r.first_stop_city || '-' }}</td>
-          <td>{{ r.itinerary_days || '-' }}</td>
-          <td>{{ dateOnly(r.depart_date) }}</td>
-          <td>{{ dateOnly(r.return_date) }}</td>
-          <td>
-            <AdminActionLink :to="`/voyages/${r.id}`">编辑</AdminActionLink>
-            <button type="button" style="margin-left:8px" @click="handleDelete(r.id)">删除</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="voyage-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>简介</th>
+            <th>首站港口</th>
+            <th>行程天数</th>
+            <th class="voyage-date-col">出发</th>
+            <th class="voyage-date-col">结束</th>
+            <th class="voyage-action-col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in filteredItems" :key="r.id">
+            <td>{{ r.id }}</td>
+            <td>{{ r.code }}</td>
+            <td>{{ r.brief_info || '-' }}</td>
+            <td>{{ r.first_stop_city || '-' }}</td>
+            <td>{{ r.itinerary_days || '-' }}</td>
+            <td class="voyage-date-cell">{{ dateOnly(r.depart_date) }}</td>
+            <td class="voyage-date-cell">{{ dateOnly(r.return_date) }}</td>
+            <td class="voyage-actions-cell">
+              <div class="voyage-actions">
+                <AdminActionLink :to="`/voyages/${r.id}`">编辑</AdminActionLink>
+                <button type="button" @click="handleDelete(r.id)">删除</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <AdminConfirmDialog
       :visible="deleteDialogVisible"
@@ -166,4 +170,31 @@ onMounted(loadItems)
     />
   </div>
 </template>
+
+<style scoped>
+.voyage-table-wrap {
+  overflow-x: auto;
+}
+
+.voyage-table-wrap table {
+  min-width: 860px;
+}
+
+.voyage-date-col,
+.voyage-date-cell {
+  white-space: nowrap;
+}
+
+.voyage-action-col,
+.voyage-actions-cell {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.voyage-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+</style>
 
