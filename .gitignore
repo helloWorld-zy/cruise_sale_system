@@ -42,5 +42,14 @@ pnpm-debug.log*
 tmp/
 coverage.out
 
+# Test and coverage artifacts
+**/coverage/
+**/test-results/
+**/playwright-report/
+**/.playwright-artifacts/
+**/.nyc_output/
+**/.pytest_cache/
+**/.vitest/
+
 # Local execution plan (do not commit)
 plan.md
