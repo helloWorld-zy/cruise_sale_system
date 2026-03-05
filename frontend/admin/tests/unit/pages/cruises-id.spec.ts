@@ -5,21 +5,20 @@ import Page from '../../../app/pages/cruises/[id].vue'
 const mockRequest = vi.fn()
 const mockNavigateTo = vi.fn().mockResolvedValue(undefined)
 const routeMock = { params: { id: '5' } }
-const confirmMock = vi.fn(() => true)
 
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 vi.stubGlobal('navigateTo', mockNavigateTo)
 vi.stubGlobal('useRoute', () => routeMock)
-vi.stubGlobal('confirm', confirmMock)
 
 describe('Cruise edit page', () => {
   beforeEach(() => {
     mockRequest.mockReset()
     mockNavigateTo.mockClear()
-    confirmMock.mockClear()
-    confirmMock.mockReturnValue(true)
 
     mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies' && !options) {
+        return Promise.resolve({ data: { list: [{ id: 1, name: '皇家加勒比' }] } })
+      }
       if (url === '/cruises/5' && !options) {
         return Promise.resolve({
           data: {
@@ -54,6 +53,7 @@ describe('Cruise edit page', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('编辑邮轮 #5')
+    expect(wrapper.text()).toContain('所属公司')
     expect(mockRequest).toHaveBeenCalledWith('/cruises/5')
     expect((wrapper.find('input').element as HTMLInputElement).value).toContain('Ocean Nova')
   })
@@ -71,28 +71,42 @@ describe('Cruise edit page', () => {
   })
 
   it('deletes after confirm then navigates', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { attachTo: document.body })
     await flushPromises()
 
     const deleteButton = wrapper.findAll('button').find((btn) => btn.text().includes('删除'))
     await deleteButton!.trigger('click')
     await flushPromises()
 
-    expect(confirmMock).toHaveBeenCalled()
+    const confirmBtn = Array.from(document.body.querySelectorAll('button')).find((btn) =>
+      (btn.textContent || '').includes('确认删除'),
+    )
+    expect(confirmBtn).toBeTruthy()
+    ;(confirmBtn as HTMLButtonElement).click()
+    await flushPromises()
+
     expect(mockRequest).toHaveBeenCalledWith('/cruises/5', { method: 'DELETE' })
     expect(mockNavigateTo).toHaveBeenCalledWith('/cruises')
+    wrapper.unmount()
   })
 
   it('does not delete when confirm is cancelled', async () => {
-    confirmMock.mockReturnValueOnce(false)
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { attachTo: document.body })
     await flushPromises()
 
     const deleteButton = wrapper.findAll('button').find((btn) => btn.text().includes('删除'))
     await deleteButton!.trigger('click')
     await flushPromises()
 
+    const cancelBtn = Array.from(document.body.querySelectorAll('button')).find((btn) =>
+      (btn.textContent || '').includes('取消'),
+    )
+    expect(cancelBtn).toBeTruthy()
+    ;(cancelBtn as HTMLButtonElement).click()
+    await flushPromises()
+
     expect(mockRequest).not.toHaveBeenCalledWith('/cruises/5', { method: 'DELETE' })
+    wrapper.unmount()
   })
 
   it('shows save error when update request fails', async () => {

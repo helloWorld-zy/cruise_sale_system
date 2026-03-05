@@ -12,11 +12,10 @@
         <nav class="admin-nav">
           <NuxtLink class="admin-link" to="/dashboard">数据看板</NuxtLink>
           <NuxtLink class="admin-link" to="/cruises">邮轮管理</NuxtLink>
-          <NuxtLink class="admin-link" to="/routes">航线管理</NuxtLink>
+          <NuxtLink class="admin-link" to="/companies">邮轮公司管理</NuxtLink>
           <NuxtLink class="admin-link" to="/voyages">航次管理</NuxtLink>
           <NuxtLink class="admin-link" to="/cabin-types">舱型管理</NuxtLink>
-          <NuxtLink class="admin-link" to="/cabins">舱房管理</NuxtLink>
-          <NuxtLink class="admin-link" to="/cabins/alerts">库存预警</NuxtLink>
+          <NuxtLink class="admin-link" to="/cabin-types/pricing">舱型价格管理</NuxtLink>
           <NuxtLink class="admin-link" to="/facility-categories">设施分类</NuxtLink>
           <NuxtLink class="admin-link" to="/facilities">设施管理</NuxtLink>
           <NuxtLink class="admin-link" to="/bookings">订单管理</NuxtLink>

@@ -22,7 +22,7 @@ describe('Miniapp Pay Page', () => {
 
   it('渲染订单金额', async () => {
     const { findByText } = render(Page, { props: { bookingId: 42 } })
-    expect(await findByText('金额：19900')).toBeTruthy()
+    expect(await findByText('金额：¥199.00')).toBeTruthy()
   })
 
   it('缺少 bookingId 时提示错误', async () => {

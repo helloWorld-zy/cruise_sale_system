@@ -55,7 +55,7 @@
         </section>
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-          <NuxtLink to="/facilities" class="rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">取消</NuxtLink>
+          <AdminActionLink to="/facilities">取消</AdminActionLink>
           <button type="submit" :disabled="loading" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">{{ loading ? '提交中...' : '保存' }}</button>
         </div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>

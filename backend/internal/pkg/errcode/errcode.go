@@ -20,6 +20,7 @@ const (
 	ErrCruiseHasCabins   = 42201 // 邮轮下仍有舱房类型，无法删除
 	ErrCompanyHasCruises = 42202 // 公司下仍有邮轮，无法删除
 	ErrPasswordMismatch  = 42203 // 密码不匹配
+	ErrCruiseHasVoyages  = 42204 // 邮轮下仍有航次，无法删除
 
 	// 服务器内部错误（5xx 范围）
 	ErrInternal = 50000 // 服务器内部错误

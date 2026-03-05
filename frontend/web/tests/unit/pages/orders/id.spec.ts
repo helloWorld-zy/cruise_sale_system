@@ -9,19 +9,22 @@ vi.mock('vue-router', () => ({
   useRoute: () => routeMock,
 }))
 
+const mockRequest = vi.fn()
+vi.stubGlobal('useApi', () => ({ request: mockRequest }))
+vi.stubGlobal('sessionStorage', { getItem: () => 'fake-token' })
+
 import Page from '../../../../app/pages/orders/[id].vue'
 
 describe('Order Detail Page', () => {
   beforeEach(() => {
-    vi.unstubAllGlobals()
+    mockRequest.mockReset()
     routeMock.params.id = '88'
   })
 
   it('renders order detail on successful fetch', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: '88', status: 'PAID', amount: 12345 }),
-    }))
+    mockRequest.mockResolvedValueOnce({
+      data: { id: '88', status: 'PAID', amount: 12345 },
+    })
 
     const wrapper = mount(Page)
     await flushPromises()
@@ -31,17 +34,8 @@ describe('Order Detail Page', () => {
     expect(wrapper.text()).toContain('金额: ¥123.45')
   })
 
-  it('shows http error message on non-ok response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
-
-    const wrapper = mount(Page)
-    await flushPromises()
-
-    expect(wrapper.find('.error').text()).toContain('HTTP 500')
-  })
-
   it('shows generic error message on unknown exception', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue('network-down'))
+    mockRequest.mockRejectedValueOnce(new Error('加载订单失败'))
 
     const wrapper = mount(Page)
     await flushPromises()
@@ -50,10 +44,7 @@ describe('Order Detail Page', () => {
   })
 
   it('renders not found state when api returns null', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => null,
-    }))
+    mockRequest.mockResolvedValueOnce(null)
 
     const wrapper = mount(Page)
     await flushPromises()

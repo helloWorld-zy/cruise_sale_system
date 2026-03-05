@@ -16,15 +16,22 @@ describe('Cruises create page', () => {
   })
 
   it('creates cruise and navigates back to list', async () => {
-    mockFetch.mockResolvedValue({ data: { id: 5 } })
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/companies')) {
+        return Promise.resolve({ data: { list: [{ id: 2, name: '皇家加勒比' }] } })
+      }
+      return Promise.resolve({ data: { id: 5 } })
+    })
     const wrapper = mount(Page)
+    await flushPromises()
 
     const inputs = wrapper.findAll('input')
     await inputs[0]!.setValue('Ocean Star')
     await inputs[1]!.setValue('Ocean Star EN')
     await inputs[2]!.setValue('OS-01')
-    await inputs[3]!.setValue('2')
-    await inputs[4]!.setValue('90000')
+    await wrapper.get('[data-test="company-select-trigger"]').trigger('click')
+    await wrapper.get('[data-test="company-option-2"]').trigger('click')
+    await inputs[3]!.setValue('90000')
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
@@ -40,8 +47,17 @@ describe('Cruises create page', () => {
   })
 
   it('shows create error message when request fails', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('create cruise failed'))
+    mockFetch.mockImplementation((url: string, options?: any) => {
+      if (url.includes('/companies')) {
+        return Promise.resolve({ data: { list: [] } })
+      }
+      if (options?.method === 'POST') {
+        return Promise.reject(new Error('create cruise failed'))
+      }
+      return Promise.resolve({ data: {} })
+    })
     const wrapper = mount(Page)
+    await flushPromises()
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()

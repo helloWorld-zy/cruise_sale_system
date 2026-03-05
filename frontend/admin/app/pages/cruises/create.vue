@@ -1,11 +1,13 @@
 <!-- admin/app/pages/cruises/create.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useApi } from '../../composables/useApi'
+import AdminCompanySelect from '../../components/AdminCompanySelect.vue'
 
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const companies = ref<Array<{ id: number; name: string; english_name?: string; logo_url?: string }>>([])
 
 const form = ref({
   name: '',
@@ -54,6 +56,23 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+
+async function loadCompanies() {
+  try {
+    const res = await request('/companies')
+    const payload = res?.data ?? res ?? {}
+    companies.value = (Array.isArray(payload) ? payload : payload?.list ?? []).map((item: any) => ({
+      id: Number(item.id),
+      name: item.name || '',
+      english_name: item.english_name || '',
+      logo_url: item.logo_url || '',
+    }))
+  } catch {
+    companies.value = []
+  }
+}
+
+onMounted(loadCompanies)
 </script>
 
 <template>
@@ -65,7 +84,11 @@ async function handleSubmit() {
           <label class="text-sm text-slate-600">名称<input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
           <label class="text-sm text-slate-600">英文名<input v-model="form.english_name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
           <label class="text-sm text-slate-600">代码<input v-model="form.code" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">公司 ID<input v-model.number="form.company_id" type="number" min="1" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
+          <label class="text-sm text-slate-600">所属公司
+            <div class="mt-1">
+              <AdminCompanySelect v-model="form.company_id" :options="companies" :disabled="loading" placeholder="请选择公司" />
+            </div>
+          </label>
           <label class="text-sm text-slate-600">吨位<input v-model.number="form.tonnage" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
           <label class="text-sm text-slate-600">载客量<input v-model.number="form.passenger_capacity" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
           <label class="text-sm text-slate-600">船员数<input v-model.number="form.crew_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>

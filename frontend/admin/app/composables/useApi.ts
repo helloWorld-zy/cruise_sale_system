@@ -44,10 +44,13 @@ export const useApi = () => {
                 ? path
                 : `/admin${path}`
 
-        // 构建请求头，默认 JSON 格式
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        }
+        const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData
+        // 构建请求头：JSON 请求默认附加 Content-Type；FormData 交给浏览器自动生成 boundary。
+        const headers: Record<string, string> = isFormData
+            ? {}
+            : {
+                'Content-Type': 'application/json',
+            }
         // 若已登录，附加认证令牌
         const localStorageToken = typeof window !== 'undefined' && typeof (window as any).localStorage?.getItem === 'function'
             ? (window as any).localStorage.getItem('admin_token') || ''
@@ -64,12 +67,18 @@ export const useApi = () => {
                 headers: { ...headers, ...(options.headers || {}) },
             })
         } catch (err: any) {
+            const code = Number(err?.data?.code ?? err?.response?._data?.code ?? 0)
+            const status = Number(err?.status ?? err?.response?.status ?? 0)
             const message =
                 err?.data?.message ||
                 err?.response?._data?.message ||
                 err?.message ||
                 'request failed'
-            throw new Error(message)
+            const wrappedError = new Error(message) as Error & { code?: number; status?: number; raw?: unknown }
+            if (Number.isFinite(code) && code > 0) wrappedError.code = code
+            if (Number.isFinite(status) && status > 0) wrappedError.status = status
+            wrappedError.raw = err
+            throw wrappedError
         }
     }
 

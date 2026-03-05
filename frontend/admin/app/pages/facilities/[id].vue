@@ -39,21 +39,33 @@
 
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
           <button type="button" class="rounded-md border border-rose-200 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50" :disabled="loading" @click="handleDelete">删除</button>
-          <NuxtLink to="/facilities" class="rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">取消</NuxtLink>
+          <AdminActionLink to="/facilities">取消</AdminActionLink>
           <button type="submit" :disabled="loading" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">{{ loading ? '提交中...' : '保存' }}</button>
         </div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
+
+      <AdminConfirmDialog
+        :visible="deleteDialogVisible"
+        title="确认删除设施"
+        :message="`确认删除设施 #${id} 吗？删除后不可恢复。`"
+        :loading="loading"
+        loading-text="删除中..."
+        @close="closeDeleteDialog"
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 const route = useRoute()
 const { request } = useApi()
 const loading = ref(false)
+const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
 const cruises = ref<Record<string, any>[]>([])
@@ -173,14 +185,24 @@ async function handleSubmit() {
 
 async function handleDelete() {
   if (!id.value || loading.value) return
-  if (!confirm(`确认删除设施 #${id.value} 吗？`)) return
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (loading.value) return
+  deleteDialogVisible.value = false
+}
+
+async function confirmDelete() {
+  if (!id.value || loading.value) return
   loading.value = true
   error.value = null
   try {
     await request(`/facilities/${id.value}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await navigateTo('/facilities')
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete facility'
+    error.value = e?.message ?? '删除设施失败，请稍后重试。'
   } finally {
     loading.value = false
   }
@@ -191,3 +213,4 @@ onMounted(async () => {
   await loadDetail()
 })
 </script>
+

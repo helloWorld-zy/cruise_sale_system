@@ -42,3 +42,7 @@ log:
   maxbackups: 3
   maxage: 7
   compress: true
+upload:
+  storagedir: "uploads"
+  publicpath: "/uploads"
+  maxfilesize: 10485760

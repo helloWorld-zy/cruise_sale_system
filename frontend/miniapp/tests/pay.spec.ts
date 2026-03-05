@@ -4,7 +4,7 @@ import Pay from '../pages/pay/pay.vue'
 
 const mockRequest = vi.fn().mockResolvedValue({ id: 42, total_cents: 19900 })
 vi.mock('../src/utils/request', () => ({
-  request: (...args: any[]) => mockRequest(...args),
+    request: (...args: any[]) => mockRequest(...args),
 }))
 
 beforeEach(() => {
@@ -14,6 +14,6 @@ beforeEach(() => {
 describe('Miniapp Pay', () => {
     it('shows pay amount', async () => {
         const { findByText } = render(Pay, { props: { bookingId: 42 } })
-        expect(await findByText('金额：19900')).toBeTruthy()
+        expect(await findByText('金额：¥199.00')).toBeTruthy()
     })
 })

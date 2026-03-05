@@ -89,39 +89,40 @@ const stockClass = computed(() => {
 
 <style scoped>
 .card {
-  border-radius: 22rpx;
+  border-radius: 32rpx;
   overflow: hidden;
   background: #fff;
-  border: 1rpx solid #d5e1ea;
-  box-shadow: 0 14rpx 32rpx rgba(20, 56, 84, 0.14);
+  border: none;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
 }
 
 .cover {
   width: 100%;
-  height: 220rpx;
+  height: 280rpx;
 }
 
 .body {
   display: flex;
   flex-direction: column;
   gap: 12rpx;
-  padding: 20rpx;
+  padding: 30rpx;
 }
 
 .name {
-  font-size: 34rpx;
+  font-size: 36rpx;
   font-weight: 700;
-  color: #15324b;
+  color: #222;
 }
 
 .desc {
-  color: #5a7188;
+  font-size: 26rpx;
+  color: #888;
 }
 
 .price {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #0f3d5c;
+  font-size: 38rpx;
+  font-weight: 800;
+  color: #ff6b6b;
 }
 
 .meta-row {
@@ -129,26 +130,33 @@ const stockClass = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12rpx;
+  margin-top: 12rpx;
 }
 
 .stock {
   font-size: 22rpx;
   font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
 }
 
 .stock-ok {
-  color: #0f8a60;
+  background: #ecfdf3;
+  color: #027a48;
 }
 
 .stock-warning {
-  color: #b27722;
+  background: #fff7ed;
+  color: #c4320a;
 }
 
 .stock-danger {
-  color: #c53f57;
+  background: #fef3f2;
+  color: #b42318;
 }
 
 .stock-soldout {
+  background: #f1f5f9;
   color: #64748b;
 }
 </style>

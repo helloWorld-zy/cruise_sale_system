@@ -3,7 +3,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useApi } from '~/composables/useApi'
+
+declare const useApi: any
 
 // 获取路由参数中的订单 ID
 const route = useRoute()
@@ -42,12 +43,16 @@ onMounted(async () => {
       return
     }
 
-    const payload = await request<any>(`/admin/bookings/${orderId}`)
-    const data = payload?.data ?? payload ?? {}
-    order.value = {
-      id: String(data.id ?? orderId),
-      status: String(data.status ?? '未知'),
-      amount: Number(data.amount ?? data.amount_cents ?? 0),
+    const payload = await request(`/admin/bookings/${orderId}`)
+    const data = payload?.data ?? payload
+    if (!data) {
+      order.value = null
+    } else {
+      order.value = {
+        id: String(data.id ?? orderId),
+        status: String(data.status ?? '未知'),
+        amount: Number(data.amount ?? data.amount_cents ?? 0),
+      }
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载订单失败'

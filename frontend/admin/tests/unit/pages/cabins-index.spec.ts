@@ -8,9 +8,9 @@ vi.stubGlobal('confirm', () => true)
 
 beforeEach(() => {
   mockRequest.mockReset()
-  mockRequest.mockImplementation((url: string) => {
-    if (url === '/cruises') return Promise.resolve({ data: [{ id: 1, name: 'Ocean Nova' }] })
-    if (url === '/routes') return Promise.resolve({ data: [{ id: 2, name: '地中海航线', cruise_id: 1 }] })
+  mockRequest.mockImplementation((url: string, options?: any) => {
+    if (url === '/cruises') return Promise.resolve({ data: [{ id: 1, name: 'Ocean Nova' }, { id: 2, name: 'Ocean Star' }] })
+    if (url === '/voyages') return Promise.resolve({ data: [{ id: 2, code: 'VY-001', cruise_id: 1 }, { id: 3, code: 'VY-002', cruise_id: 2 }] })
     if (url === '/cabin-types') return Promise.resolve({ data: { list: [{ id: 3, name: '阳台房' }] } })
     if (url === '/cabins') return Promise.resolve({ data: { list: [{ id: 10, code: 'A101', area: 24, total: 10, available: 8, status: 1 }], total: 1 } })
     return Promise.resolve({ data: [] })
@@ -19,19 +19,31 @@ beforeEach(() => {
 
 describe('CabinsIndexPage', () => {
   it('renders triple filters and table', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
     expect(wrapper.find('[data-test="filter-cruise"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test="filter-route"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="filter-voyage"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="filter-cabin-type"]').exists()).toBe(true)
     expect(wrapper.find('table').exists()).toBe(true)
   })
 
   it('shows batch action after row selection', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
     const checkbox = wrapper.find('tbody input[type="checkbox"]')
     await checkbox.setValue(true)
     expect(wrapper.find('[data-test="batch-action"]').exists()).toBe(true)
+  })
+
+  it('reloads cabin type options when cruise filter changes', async () => {
+    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
+    await flushPromises()
+
+    const cruiseFilter = wrapper.find('[data-test="filter-cruise"]')
+    await cruiseFilter.setValue('2')
+    await flushPromises()
+
+    const calls = mockRequest.mock.calls.filter((call) => call[0] === '/cabin-types')
+    expect(calls.some((call) => Number(call[1]?.query?.cruise_id) === 2)).toBe(true)
   })
 })

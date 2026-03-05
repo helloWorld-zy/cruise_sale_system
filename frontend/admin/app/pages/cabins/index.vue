@@ -3,18 +3,18 @@
     <div class="mx-auto max-w-7xl">
       <div class="mb-4 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-slate-900">舱位商品管理</h1>
-        <NuxtLink to="/cabins/new" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">新建舱位</NuxtLink>
+        <AdminActionLink to="/cabins/new" variant="primary" size="md">新建舱位</AdminActionLink>
       </div>
 
       <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <div class="flex flex-wrap items-center gap-3">
-          <select v-model.number="filters.cruiseId" data-test="filter-cruise" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2" @change="syncRouteOptions">
+          <select v-model.number="filters.cruiseId" data-test="filter-cruise" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2" @change="handleCruiseChange">
             <option :value="0">邮轮</option>
             <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
           </select>
-          <select v-model.number="filters.routeId" data-test="filter-route" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2">
-            <option :value="0">航线</option>
-            <option v-for="route in routeOptions" :key="route.id" :value="Number(route.id)">{{ route.name || `航线 #${route.id}` }}</option>
+          <select v-model.number="filters.voyageId" data-test="filter-voyage" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2">
+            <option :value="0">航次</option>
+            <option v-for="voyage in voyageOptions" :key="voyage.id" :value="Number(voyage.id)">{{ voyage.code || `航次 #${voyage.id}` }}</option>
           </select>
           <select v-model.number="filters.cabinTypeId" data-test="filter-cabin-type" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2">
             <option :value="0">舱型</option>
@@ -40,7 +40,7 @@
               </th>
               <th class="p-3">编号</th>
               <th class="p-3">邮轮</th>
-              <th class="p-3">航线</th>
+              <th class="p-3">航次</th>
               <th class="p-3">舱型</th>
               <th class="p-3">面积</th>
               <th class="p-3">价格区间</th>
@@ -57,7 +57,7 @@
               <td class="p-3"><input type="checkbox" :checked="selectedIds.has(Number(item.id))" @change="toggleSingle(Number(item.id), ($event.target as HTMLInputElement).checked)" /></td>
               <td class="p-3 font-medium text-slate-900">{{ item.code || `CABIN-${item.id}` }}</td>
               <td class="p-3 text-slate-600">{{ item.cruise_name || '-' }}</td>
-              <td class="p-3 text-slate-600">{{ item.route_name || '-' }}</td>
+              <td class="p-3 text-slate-600">{{ item.voyage_code || item.voyage_id || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.cabin_type_name || '-' }}</td>
               <td class="p-3 text-slate-600">{{ Number(item.area || 0) > 0 ? `${item.area} m2` : '-' }}</td>
               <td class="p-3 font-mono text-slate-700">{{ priceRangeText(item) }}</td>
@@ -71,9 +71,9 @@
               </td>
               <td class="p-3"><span :class="statusClass(item.status)">{{ statusText(item.status) }}</span></td>
               <td class="p-3">
-                <NuxtLink :to="`/cabins/${item.id}`" class="text-indigo-600 hover:text-indigo-500">编辑</NuxtLink>
-                <NuxtLink :to="`/cabins/inventory?skuId=${item.id}`" class="ml-2 text-slate-600 hover:text-slate-500">库存</NuxtLink>
-                <NuxtLink :to="`/cabins/pricing?skuId=${item.id}`" class="ml-2 text-slate-600 hover:text-slate-500">价格</NuxtLink>
+                <AdminActionLink :to="`/cabins/${item.id}`">编辑</AdminActionLink>
+                <AdminActionLink :to="`/cabins/inventory?skuId=${item.id}`" class="ml-2">库存</AdminActionLink>
+                <AdminActionLink :to="`/cabins/pricing?skuId=${item.id}`" class="ml-2">价格</AdminActionLink>
               </td>
             </tr>
           </tbody>
@@ -97,49 +97,95 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const items = ref<Record<string, any>[]>([])
 const cruises = ref<Record<string, any>[]>([])
-const routes = ref<Record<string, any>[]>([])
+const voyages = ref<Record<string, any>[]>([])
 const cabinTypes = ref<Record<string, any>[]>([])
 const selectedIds = ref<Set<number>>(new Set())
 
 const filters = ref({
   cruiseId: 0,
-  routeId: 0,
+  voyageId: 0,
   cabinTypeId: 0,
   keyword: '',
   status: 0,
 })
 
-const routeOptions = computed(() => {
-  if (!filters.value.cruiseId) return routes.value
-  return routes.value.filter((item) => Number(item.cruise_id) === Number(filters.value.cruiseId))
+const voyageOptions = computed(() => {
+  if (!filters.value.cruiseId) return voyages.value
+  return voyages.value.filter((item) => Number(item.cruise_id) === Number(filters.value.cruiseId))
 })
 
 const allChecked = computed(() => items.value.length > 0 && items.value.every((it) => selectedIds.value.has(Number(it.id))))
 
 async function loadOptions() {
   try {
-    const [cruiseRes, routeRes, typeRes] = await Promise.all([
+    const [cruiseRes, voyageRes] = await Promise.all([
       request('/cruises', { query: { page: 1, page_size: 100 } }),
-      request('/routes'),
-      request('/cabin-types', { query: { cruise_id: 1, page: 1, page_size: 200 } }),
+      request('/voyages'),
     ])
     const cruisePayload = cruiseRes?.data ?? cruiseRes ?? {}
     cruises.value = Array.isArray(cruisePayload) ? cruisePayload : cruisePayload?.list ?? []
-    const routePayload = routeRes?.data ?? routeRes ?? []
-    routes.value = Array.isArray(routePayload) ? routePayload : routePayload?.list ?? []
-    const typePayload = typeRes?.data ?? typeRes ?? {}
-    cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+    const voyagePayload = voyageRes?.data ?? voyageRes ?? []
+    voyages.value = Array.isArray(voyagePayload) ? voyagePayload : voyagePayload?.list ?? []
+    await loadCabinTypes(filters.value.cruiseId)
   } catch {
     cruises.value = []
-    routes.value = []
+    voyages.value = []
     cabinTypes.value = []
   }
 }
 
-function syncRouteOptions() {
-  if (filters.value.routeId && !routeOptions.value.some((item) => Number(item.id) === Number(filters.value.routeId))) {
-    filters.value.routeId = 0
+async function loadCabinTypes(cruiseId: number) {
+  if (cruiseId > 0) {
+    try {
+      const typeRes = await request('/cabin-types', { query: { cruise_id: cruiseId, page: 1, page_size: 200 } })
+      const typePayload = typeRes?.data ?? typeRes ?? {}
+      cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+      if (filters.value.cabinTypeId > 0 && !cabinTypes.value.some((item) => Number(item.id) === Number(filters.value.cabinTypeId))) {
+        filters.value.cabinTypeId = 0
+      }
+      return
+    } catch {
+      cabinTypes.value = []
+      filters.value.cabinTypeId = 0
+      return
+    }
   }
+
+  // No cruise selected: aggregate cabin types from all cruises for generic filtering.
+  const all = new Map<number, Record<string, any>>()
+  for (const cruise of cruises.value) {
+    const id = Number(cruise.id)
+    if (!Number.isFinite(id) || id <= 0) continue
+    try {
+      const typeRes = await request('/cabin-types', { query: { cruise_id: id, page: 1, page_size: 200 } })
+      const typePayload = typeRes?.data ?? typeRes ?? {}
+      const list = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
+      for (const item of list) {
+        const itemID = Number(item?.id)
+        if (Number.isFinite(itemID) && itemID > 0 && !all.has(itemID)) {
+          all.set(itemID, item)
+        }
+      }
+    } catch {
+      // Ignore per-cruise cabin type query failures and keep best-effort options.
+    }
+  }
+
+  cabinTypes.value = Array.from(all.values())
+  if (filters.value.cabinTypeId > 0 && !cabinTypes.value.some((item) => Number(item.id) === Number(filters.value.cabinTypeId))) {
+    filters.value.cabinTypeId = 0
+  }
+}
+
+function syncVoyageOptions() {
+  if (filters.value.voyageId && !voyageOptions.value.some((item) => Number(item.id) === Number(filters.value.voyageId))) {
+    filters.value.voyageId = 0
+  }
+}
+
+async function handleCruiseChange() {
+  syncVoyageOptions()
+  await loadCabinTypes(filters.value.cruiseId)
 }
 
 async function loadItems() {
@@ -147,7 +193,7 @@ async function loadItems() {
   error.value = null
   try {
     const query: Record<string, any> = { page: 1, page_size: 50 }
-    if (filters.value.routeId > 0) query.voyage_id = filters.value.routeId
+    if (filters.value.voyageId > 0) query.voyage_id = filters.value.voyageId
     if (filters.value.cabinTypeId > 0) query.cabin_type_id = filters.value.cabinTypeId
     if (filters.value.keyword.trim()) query.keyword = filters.value.keyword.trim()
     if (filters.value.status !== 0) query.status = filters.value.status === -1 ? 0 : filters.value.status

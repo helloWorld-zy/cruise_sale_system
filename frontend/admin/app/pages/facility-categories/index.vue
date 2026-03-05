@@ -68,12 +68,23 @@
           </tbody>
         </table>
       </div>
+
+      <AdminConfirmDialog
+        :visible="deleteDialogVisible"
+        title="确认删除设施分类"
+        :message="`确认删除分类「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
+        :loading="deleteSubmitting"
+        loading-text="删除中..."
+        @close="closeDeleteDialog"
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 const { request } = useApi()
 const loading = ref(false)
@@ -90,6 +101,9 @@ type Row = {
 }
 
 const rows = ref<Row[]>([])
+const deleteDialogVisible = ref(false)
+const deleteSubmitting = ref(false)
+const deleteTarget = ref<Row | null>(null)
 
 async function loadItems() {
   loading.value = true
@@ -143,12 +157,33 @@ async function saveRow(row: Row) {
 
 async function removeRow(row: Row) {
   if (!row.id) return
-  if (!confirm(`确认删除分类 #${row.id} 吗？`)) return
+  deleteTarget.value = row
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleteSubmitting.value) return
+  deleteDialogVisible.value = false
+  deleteTarget.value = null
+}
+
+async function confirmDelete() {
+  const id = Number(deleteTarget.value?.id ?? 0)
+  if (!Number.isFinite(id) || id <= 0) {
+    error.value = '无效记录 ID，无法删除'
+    closeDeleteDialog()
+    return
+  }
+  deleteSubmitting.value = true
+  error.value = null
   try {
-    await request(`/facility-categories/${row.id}`, { method: 'DELETE' })
+    await request(`/facility-categories/${id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await loadItems()
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete facility category'
+    error.value = e?.message ?? '删除设施分类失败，请稍后重试。'
+  } finally {
+    deleteSubmitting.value = false
   }
 }
 

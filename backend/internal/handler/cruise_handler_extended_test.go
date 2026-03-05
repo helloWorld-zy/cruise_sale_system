@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -200,5 +201,78 @@ func TestFacilityCategoryHandler_Update(t *testing.T) {
 	r.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d, body=%s", resp.Code, resp.Body.String())
+	}
+}
+
+type captureCruiseRepo struct {
+	updated *domain.Cruise
+}
+
+func (m *captureCruiseRepo) Create(ctx context.Context, cruise *domain.Cruise) error { return nil }
+func (m *captureCruiseRepo) Update(ctx context.Context, cruise *domain.Cruise) error {
+	m.updated = &domain.Cruise{ID: cruise.ID, CompanyID: cruise.CompanyID, Name: cruise.Name}
+	return nil
+}
+func (m *captureCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise, error) {
+	if id != 1 {
+		return nil, errors.New("not found")
+	}
+	return &domain.Cruise{ID: 1, CompanyID: 1, Name: "old"}, nil
+}
+func (m *captureCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return nil, 0, nil
+}
+func (m *captureCruiseRepo) Delete(ctx context.Context, id int64) error { return nil }
+
+type passCabinTypeRepo struct{}
+
+func (m *passCabinTypeRepo) Create(ctx context.Context, c *domain.CabinType) error { return nil }
+func (m *passCabinTypeRepo) Update(ctx context.Context, c *domain.CabinType) error { return nil }
+func (m *passCabinTypeRepo) GetByID(ctx context.Context, id int64) (*domain.CabinType, error) {
+	return &domain.CabinType{ID: id}, nil
+}
+func (m *passCabinTypeRepo) ListByCruise(ctx context.Context, cruiseID int64, page, pageSize int) ([]domain.CabinType, int64, error) {
+	return nil, 0, nil
+}
+func (m *passCabinTypeRepo) Delete(ctx context.Context, id int64) error { return nil }
+
+type passCompanyRepo struct{}
+
+func (m *passCompanyRepo) Create(ctx context.Context, company *domain.CruiseCompany) error {
+	return nil
+}
+func (m *passCompanyRepo) Update(ctx context.Context, company *domain.CruiseCompany) error {
+	return nil
+}
+func (m *passCompanyRepo) GetByID(ctx context.Context, id int64) (*domain.CruiseCompany, error) {
+	return &domain.CruiseCompany{ID: id}, nil
+}
+func (m *passCompanyRepo) List(ctx context.Context, keyword string, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	return nil, 0, nil
+}
+func (m *passCompanyRepo) Delete(ctx context.Context, id int64) error { return nil }
+
+func TestCruiseHandler_Update_ChangesCompanyID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	cruiseRepo := &captureCruiseRepo{}
+	svc := service.NewCruiseService(cruiseRepo, &passCabinTypeRepo{}, &passCompanyRepo{})
+	h := NewCruiseHandler(svc)
+	r.PUT("/api/v1/admin/cruises/:id", h.Update)
+
+	body := bytes.NewBufferString(`{"company_id":2,"name":"new-name"}`)
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/cruises/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+	if cruiseRepo.updated == nil {
+		t.Fatal("expected cruise update to be called")
+	}
+	if cruiseRepo.updated.CompanyID != 2 {
+		t.Fatalf("expected updated company_id=2, got %d", cruiseRepo.updated.CompanyID)
 	}
 }

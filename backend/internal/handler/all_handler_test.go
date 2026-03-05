@@ -5,9 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -484,7 +487,82 @@ func TestFacilityHandler(t *testing.T) {
 func TestUploadHandler(t *testing.T) {
 	r, _, _, _, _, _, _, upH, _ := setupRouter()
 	r.POST("/upload", upH.UploadImage)
-	doReq(r, "POST", "/upload", nil)
+
+	t.Run("missing file", func(t *testing.T) {
+		w := doReq(r, "POST", "/upload", nil)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("upload success", func(t *testing.T) {
+		tmp := t.TempDir()
+		h := NewUploadHandlerWithConfig(tmp, "/uploads", 2*1024*1024)
+		r2 := gin.New()
+		r2.POST("/upload", h.UploadImage)
+
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		part, err := writer.CreateFormFile("file", "logo.png")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := part.Write([]byte("\x89PNG\r\n\x1a\nmockpngcontent")); err != nil {
+			t.Fatal(err)
+		}
+		_ = writer.Close()
+
+		req := httptest.NewRequest(http.MethodPost, "/upload", &body)
+		req.Host = "127.0.0.1:8080"
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		w := httptest.NewRecorder()
+		r2.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "http://127.0.0.1:8080/uploads/") {
+			t.Fatalf("expected public upload url in response, body=%s", w.Body.String())
+		}
+
+		entries, err := os.ReadDir(tmp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 {
+			t.Fatalf("expected 1 uploaded file, got %d", len(entries))
+		}
+		if filepath.Ext(entries[0].Name()) == "" {
+			t.Fatalf("expected uploaded file to have extension, got %s", entries[0].Name())
+		}
+	})
+
+	t.Run("reject non-image", func(t *testing.T) {
+		tmp := t.TempDir()
+		h := NewUploadHandlerWithConfig(tmp, "/uploads", 2*1024*1024)
+		r2 := gin.New()
+		r2.POST("/upload", h.UploadImage)
+
+		var body bytes.Buffer
+		writer := multipart.NewWriter(&body)
+		part, err := writer.CreateFormFile("file", "note.txt")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := part.Write([]byte("plain-text")); err != nil {
+			t.Fatal(err)
+		}
+		_ = writer.Close()
+
+		req := httptest.NewRequest(http.MethodPost, "/upload", &body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		w := httptest.NewRecorder()
+		r2.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d, body=%s", w.Code, w.Body.String())
+		}
+	})
 }
 
 // TestUserHandler 测试用户处理器
@@ -573,11 +651,8 @@ func (m *mockVoyageSvc) GetByID(ctx context.Context, id int64) (*domain.Voyage, 
 	}
 	return nil, errors.New("not found")
 }
-func (m *mockVoyageSvc) ListByRoute(ctx context.Context, rid int64) ([]domain.Voyage, error) {
+func (m *mockVoyageSvc) List(ctx context.Context) ([]domain.Voyage, error) {
 	if isErr(ctx) {
-		return nil, errors.New("error")
-	}
-	if rid == 99 {
 		return nil, errors.New("error")
 	}
 	return nil, nil

@@ -1,6 +1,8 @@
 <!-- admin/app/pages/cruises/[id].vue -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import AdminCompanySelect from '../../components/AdminCompanySelect.vue'
 
 declare const useApi: any
 declare const navigateTo: any
@@ -11,8 +13,10 @@ const { request } = useApi()
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
+const companies = ref<Array<{ id: number; name: string; english_name?: string; logo_url?: string }>>([])
 const form = ref({
   id: 0,
   name: '',
@@ -70,6 +74,21 @@ async function loadDetail() {
   }
 }
 
+async function loadCompanies() {
+  try {
+    const res = await request('/companies')
+    const payload = res?.data ?? res ?? {}
+    companies.value = (Array.isArray(payload) ? payload : payload?.list ?? []).map((item: any) => ({
+      id: Number(item.id),
+      name: item.name || '',
+      english_name: item.english_name || '',
+      logo_url: item.logo_url || '',
+    }))
+  } catch {
+    companies.value = []
+  }
+}
+
 async function handleSave() {
   if (saving.value) return
   saving.value = true
@@ -102,20 +121,41 @@ async function handleSave() {
 
 async function handleDelete() {
   if (deleting.value) return
-  if (!confirm(`确认删除邮轮 #${id} 吗？`)) return
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleting.value) return
+  deleteDialogVisible.value = false
+}
+
+async function confirmDelete() {
+  if (deleting.value) return
   deleting.value = true
   error.value = null
   try {
     await request(`/cruises/${id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await navigateTo('/cruises')
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete cruise'
+    const code = Number(e?.code ?? 0)
+    const status = Number(e?.status ?? 0)
+    const message = String(e?.message ?? '')
+    if (code === 42204 || (status === 409 && message.includes('cruise has voyages'))) {
+      error.value = '删除失败：该邮轮下存在航次，请先处理关联航次后再删除。'
+    } else if (code === 42201 || (status === 409 && message.includes('cruise has cabins'))) {
+      error.value = '删除失败：该邮轮下存在舱房类型，请先处理关联舱房后再删除。'
+    } else {
+      error.value = e?.message ?? '删除邮轮失败，请稍后重试。'
+    }
   } finally {
     deleting.value = false
   }
 }
 
-onMounted(loadDetail)
+onMounted(async () => {
+  await Promise.all([loadDetail(), loadCompanies()])
+})
 </script>
 
 <template>
@@ -129,7 +169,11 @@ onMounted(loadDetail)
           <label class="text-sm text-slate-600">名称<input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
           <label class="text-sm text-slate-600">英文名<input v-model="form.english_name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
           <label class="text-sm text-slate-600">代码<input v-model="form.code" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">公司 ID<input v-model.number="form.company_id" type="number" min="1" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
+          <label class="text-sm text-slate-600">所属公司
+            <div class="mt-1">
+              <AdminCompanySelect v-model="form.company_id" :options="companies" :disabled="saving || deleting" placeholder="请选择公司" />
+            </div>
+          </label>
           <label class="text-sm text-slate-600">吨位<input v-model.number="form.tonnage" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
           <label class="text-sm text-slate-600">载客量<input v-model.number="form.passenger_capacity" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
           <label class="text-sm text-slate-600">船员数<input v-model.number="form.crew_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
@@ -155,6 +199,16 @@ onMounted(loadDetail)
           <button type="button" class="rounded-md bg-rose-500 px-4 py-2 text-sm font-medium text-white hover:bg-rose-400" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
         </div>
       </form>
+
+      <AdminConfirmDialog
+        :visible="deleteDialogVisible"
+        title="确认删除邮轮"
+        :message="`确认删除邮轮 #${id} 吗？删除后不可恢复。`"
+        :loading="deleting"
+        loading-text="删除中..."
+        @close="closeDeleteDialog"
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>

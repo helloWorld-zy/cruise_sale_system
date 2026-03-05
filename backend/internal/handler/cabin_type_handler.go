@@ -24,11 +24,13 @@ func NewCabinTypeHandler(svc *service.CabinTypeService) *CabinTypeHandler {
 // CabinTypeRequest 是创建/更新舱房类型的请求体结构。
 type CabinTypeRequest struct {
 	CruiseID     int64   `json:"cruise_id" binding:"required"` // 所属邮轮 ID
+	CategoryID   int64   `json:"category_id"`                  // 舱型大类 ID
 	Name         string  `json:"name" binding:"required"`      // 舱房类型名称
 	EnglishName  string  `json:"english_name"`                 // 英文名称
 	Code         string  `json:"code"`                         // 舱房类型代码
 	AreaMin      float64 `json:"area_min"`                     // 最小面积
 	AreaMax      float64 `json:"area_max"`                     // 最大面积
+	Occupancy    int     `json:"occupancy"`                    // 默认入住人数
 	Capacity     int     `json:"capacity"`                     // 容纳人数
 	MaxCapacity  int     `json:"max_capacity"`                 // 最大容纳人数
 	BedType      string  `json:"bed_type"`                     // 床型说明
@@ -37,8 +39,15 @@ type CabinTypeRequest struct {
 	FloorPlanURL string  `json:"floor_plan_url"`               // 平面图 URL
 	Area         float64 `json:"area"`                         // 面积（平方米）
 	Deck         string  `json:"deck"`                         // 所在甲板
+	Intro        string  `json:"intro"`                        // 简介
 	Description  string  `json:"description"`                  // 描述
 	SortOrder    int     `json:"sort_order"`                   // 排序权重
+}
+
+// CabinTypeBatchCreateRequest 表示按多邮轮批量创建舱型的请求体。
+type CabinTypeBatchCreateRequest struct {
+	CruiseIDs []int64 `json:"cruise_ids" binding:"required"`
+	CabinTypeRequest
 }
 
 // List godoc
@@ -87,11 +96,13 @@ func (h *CabinTypeHandler) Create(c *gin.Context) {
 	}
 	ct := &domain.CabinType{
 		CruiseID:     req.CruiseID,
+		CategoryID:   req.CategoryID,
 		Name:         req.Name,
 		EnglishName:  req.EnglishName,
 		Code:         req.Code,
 		AreaMin:      req.AreaMin,
 		AreaMax:      req.AreaMax,
+		Occupancy:    req.Occupancy,
 		Capacity:     req.Capacity,
 		MaxCapacity:  req.MaxCapacity,
 		BedType:      req.BedType,
@@ -100,6 +111,7 @@ func (h *CabinTypeHandler) Create(c *gin.Context) {
 		FloorPlanURL: req.FloorPlanURL,
 		Area:         req.Area,
 		Deck:         req.Deck,
+		Intro:        req.Intro,
 		Description:  req.Description,
 		SortOrder:    req.SortOrder,
 	}
@@ -144,6 +156,8 @@ func (h *CabinTypeHandler) Update(c *gin.Context) {
 	existing.Code = req.Code
 	existing.AreaMin = req.AreaMin
 	existing.AreaMax = req.AreaMax
+	existing.CategoryID = req.CategoryID
+	existing.Occupancy = req.Occupancy
 	existing.Capacity = req.Capacity
 	existing.MaxCapacity = req.MaxCapacity
 	existing.BedType = req.BedType
@@ -152,6 +166,7 @@ func (h *CabinTypeHandler) Update(c *gin.Context) {
 	existing.FloorPlanURL = req.FloorPlanURL
 	existing.Area = req.Area
 	existing.Deck = req.Deck
+	existing.Intro = req.Intro
 	existing.Description = req.Description
 	existing.SortOrder = req.SortOrder
 
@@ -181,4 +196,51 @@ func (h *CabinTypeHandler) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c, nil)
+}
+
+// BatchCreate godoc
+// @Summary Batch create cabin types by cruises
+// @Tags CabinType
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param body body CabinTypeBatchCreateRequest true "Batch create cabin type payload"
+// @Success 200 {object} response.Response
+// @Router /api/v1/admin/cabin-types/batch-create [post]
+func (h *CabinTypeHandler) BatchCreate(c *gin.Context) {
+	var req CabinTypeBatchCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, err.Error())
+		return
+	}
+	if len(req.CruiseIDs) == 0 {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "cruise_ids cannot be empty")
+		return
+	}
+	base := &domain.CabinType{
+		CategoryID:   req.CategoryID,
+		Name:         req.Name,
+		EnglishName:  req.EnglishName,
+		Code:         req.Code,
+		AreaMin:      req.AreaMin,
+		AreaMax:      req.AreaMax,
+		Occupancy:    req.Occupancy,
+		Capacity:     req.Capacity,
+		MaxCapacity:  req.MaxCapacity,
+		BedType:      req.BedType,
+		Tags:         req.Tags,
+		Amenities:    req.Amenities,
+		FloorPlanURL: req.FloorPlanURL,
+		Area:         req.Area,
+		Deck:         req.Deck,
+		Intro:        req.Intro,
+		Description:  req.Description,
+		SortOrder:    req.SortOrder,
+	}
+	items, err := h.svc.CreateBatchByCruises(c.Request.Context(), base, req.CruiseIDs)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": items, "total": len(items)})
 }

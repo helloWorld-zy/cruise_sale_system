@@ -4,20 +4,25 @@ import EditPage from '../../../app/pages/facilities/[id].vue'
 
 const mockRequest = vi.fn()
 const mockNavigateTo = vi.fn().mockResolvedValue(undefined)
-const confirmMock = vi.fn(() => true)
 const routeMock = { params: { id: '9' } }
 
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 vi.stubGlobal('navigateTo', mockNavigateTo)
-vi.stubGlobal('confirm', confirmMock)
 vi.stubGlobal('useRoute', () => routeMock)
+
+const mountOptions = {
+  global: {
+    stubs: {
+      AdminActionLink: { template: '<a><slot /></a>' },
+      NuxtLink: { template: '<a><slot /></a>' },
+    },
+  },
+}
 
 describe('Facilities edit page', () => {
   beforeEach(() => {
     mockRequest.mockReset()
     mockNavigateTo.mockClear()
-    confirmMock.mockClear()
-    confirmMock.mockReturnValue(true)
 
     mockRequest.mockImplementation((url: string, options?: any) => {
       if (url === '/cruises') return Promise.resolve({ data: [{ id: 1, name: 'Ocean Nova' }] })
@@ -43,9 +48,7 @@ describe('Facilities edit page', () => {
   })
 
   it('loads detail and renders extra charge section', async () => {
-    const wrapper = mount(EditPage, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
-    })
+    const wrapper = mount(EditPage, mountOptions)
     await flushPromises()
 
     expect(wrapper.text()).toContain('编辑设施')
@@ -53,9 +56,7 @@ describe('Facilities edit page', () => {
   })
 
   it('submits update and navigates', async () => {
-    const wrapper = mount(EditPage, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
-    })
+    const wrapper = mount(EditPage, mountOptions)
     await flushPromises()
 
     await wrapper.find('form').trigger('submit.prevent')
@@ -66,17 +67,22 @@ describe('Facilities edit page', () => {
   })
 
   it('deletes when confirmed', async () => {
-    const wrapper = mount(EditPage, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
-    })
+    const wrapper = mount(EditPage, { ...mountOptions, attachTo: document.body })
     await flushPromises()
 
     const deleteBtn = wrapper.findAll('button').find((b) => b.text().includes('删除'))
     await deleteBtn!.trigger('click')
     await flushPromises()
 
-    expect(confirmMock).toHaveBeenCalled()
+    const confirmBtn = Array.from(document.body.querySelectorAll('button')).find((btn) =>
+      (btn.textContent || '').includes('确认删除'),
+    )
+    expect(confirmBtn).toBeTruthy()
+    ;(confirmBtn as HTMLButtonElement).click()
+    await flushPromises()
+
     expect(mockRequest).toHaveBeenCalledWith('/facilities/9', { method: 'DELETE' })
     expect(mockNavigateTo).toHaveBeenCalledWith('/facilities')
+    wrapper.unmount()
   })
 })

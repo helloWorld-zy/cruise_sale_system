@@ -1,112 +1,95 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Page from '../../../app/pages/cabins/pricing.vue'
+import Page from '../../../app/pages/cabin-types/pricing.vue'
 
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 
-beforeEach(() => {
-  vi.stubGlobal('useRoute', () => ({ query: { skuId: '9' } }))
-  mockRequest.mockReset()
-  mockRequest.mockResolvedValue({ data: [{ date: '2026-05-01', occupancy: 2, price_cents: 19900, price_type: 'base' }] })
-})
+const globalConfig = {
+  stubs: {
+    AdminActionLink: {
+      props: ['to'],
+      template: '<a :href="String(to)"><slot /></a>',
+    },
+    NuxtLink: {
+      props: ['to'],
+      template: '<a :href="String(to)"><slot /></a>',
+    },
+  },
+}
 
-describe('CabinsPricingPage', () => {
-  it('挂载时加载价格列表', async () => {
-    mount(Page)
-    await flushPromises()
-    expect(mockRequest).toHaveBeenCalledWith('/cabins/9/prices')
-  })
-
-  it('渲染价格类型与日历价格', async () => {
-    const wrapper = mount(Page)
-    await flushPromises()
-    expect(wrapper.text()).toContain('基础')
-    expect(wrapper.text()).toContain('批量设价')
-    expect(wrapper.text()).toContain('保存单日价格')
-  })
-
-  it('skuId 缺失时显示错误', async () => {
-    vi.stubGlobal('useRoute', () => ({ query: {} }))
-    const wrapper = mount(Page)
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('缺少 skuId 参数')
-    expect(mockRequest).not.toHaveBeenCalled()
-  })
-
-  it('保存单日价格会调用 POST 并刷新', async () => {
-    const wrapper = mount(Page)
-    await flushPromises()
-
+describe('CabinTypesPricingPage', () => {
+  beforeEach(() => {
+    mockRequest.mockReset()
     mockRequest.mockImplementation((url: string, options?: any) => {
-      if (url === '/cabins/9/prices' && options?.method === 'POST') return Promise.resolve({ data: { ok: true } })
-      return Promise.resolve({ data: [{ date: '2026-05-02', occupancy: 2, price_cents: 28800, price_type: 'base' }] })
+      if (url === '/companies') {
+        return Promise.resolve({ data: { list: [{ id: 1, name: 'Oceanic' }] } })
+      }
+      if (url === '/cruises') {
+        return Promise.resolve({ data: { list: [{ id: 2, name: 'Ocean Nova' }] } })
+      }
+      if (url === '/cabin-pricing/voyages') {
+        return Promise.resolve({ data: { list: [{ id: 10, cruise_id: 2, name: 'VN001', depart_date: '2026-05-01' }] } })
+      }
+      if (url === '/cabin-types' && options?.query?.cruise_id === 2) {
+        return Promise.resolve({ data: { list: [{ id: 99, name: '豪华阳台房', code: 'BAL' }] } })
+      }
+      if (url === '/cabin-pricing/history') {
+        return Promise.resolve({ data: { list: [] } })
+      }
+      if (url === '/cabin-pricing/batch-apply' && options?.method === 'POST') {
+        return Promise.resolve({ data: { applied: 1, failed: 0, errors: [] } })
+      }
+      return Promise.resolve({ data: {} })
     })
+  })
 
-    const inputs = wrapper.findAll('input')
-    await inputs[0]!.setValue('2026-05-02')
-    await inputs[1]!.setValue('28800')
-
-    const saveBtn = wrapper.findAll('button').find((btn) => btn.text().includes('保存单日价格'))
-    await saveBtn!.trigger('click')
+  it('挂载时加载公司、邮轮和航次数据', async () => {
+    mount(Page, { global: globalConfig })
     await flushPromises()
 
-    expect(mockRequest).toHaveBeenCalledWith('/cabins/9/prices', {
+    expect(mockRequest).toHaveBeenCalledWith('/companies', expect.any(Object))
+    expect(mockRequest).toHaveBeenCalledWith('/cruises', expect.any(Object))
+    expect(mockRequest).toHaveBeenCalledWith('/cabin-pricing/voyages', expect.any(Object))
+  })
+
+  it('渲染批量应用价格入口', async () => {
+    const wrapper = mount(Page, { global: globalConfig })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('舱型价格管理')
+    expect(wrapper.text()).toContain('批量应用价格')
+  })
+
+  it('选择航次和舱型后提交 batch apply', async () => {
+    const wrapper = mount(Page, { global: globalConfig })
+    await flushPromises()
+
+    const checkbox = wrapper.find('input[type="checkbox"]')
+    await checkbox.setValue(true)
+
+    const selects = wrapper.findAll('select')
+    await selects[2]!.setValue('99')
+
+    const numbers = wrapper.findAll('input[type="number"]')
+    await numbers[0]!.setValue('20')
+    await numbers[1]!.setValue('120000')
+    await numbers[2]!.setValue('150000')
+
+    const applyBtn = wrapper.findAll('button').find((btn) => btn.text().includes('批量应用价格'))
+    await applyBtn!.trigger('click')
+    await flushPromises()
+
+    expect(mockRequest).toHaveBeenCalledWith('/cabin-pricing/batch-apply', {
       method: 'POST',
       body: {
-        date: '2026-05-02',
-        price_cents: 28800,
-        price_type: 'base',
+        voyage_ids: [10],
+        cabin_type_id: 99,
+        inventory_total: 20,
+        settlement_price_cents: 120000,
+        sale_price_cents: 150000,
+        effective_at: undefined,
       },
     })
-  })
-
-  it('批量设价日期非法时给出错误', async () => {
-    const wrapper = mount(Page)
-    await flushPromises()
-
-    const openBatchBtn = wrapper.findAll('button').find((btn) => btn.text().includes('批量设价'))
-    await openBatchBtn!.trigger('click')
-    await flushPromises()
-
-    const dateInputs = wrapper.findAll('input[type="date"]')
-    const numberInputs = wrapper.findAll('input[type="number"]')
-    await dateInputs[1]!.setValue('2026-05-10')
-    await dateInputs[2]!.setValue('2026-05-01')
-    await numberInputs[1]!.setValue('20000')
-
-    const submitBtn = wrapper.findAll('button').find((btn) => btn.text() === '提交')
-    await submitBtn!.trigger('click')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('无效日期范围')
-  })
-
-  it('批量设价会按天循环提交', async () => {
-    const wrapper = mount(Page)
-    await flushPromises()
-
-    mockRequest.mockImplementation((url: string, options?: any) => {
-      if (url === '/cabins/9/prices' && options?.method === 'POST') return Promise.resolve({ data: { ok: true } })
-      return Promise.resolve({ data: [] })
-    })
-
-    const openBatchBtn = wrapper.findAll('button').find((btn) => btn.text().includes('批量设价'))
-    await openBatchBtn!.trigger('click')
-    await flushPromises()
-
-    const dateInputs = wrapper.findAll('input[type="date"]')
-    const numberInputs = wrapper.findAll('input[type="number"]')
-    await dateInputs[1]!.setValue('2026-05-01')
-    await dateInputs[2]!.setValue('2026-05-03')
-    await numberInputs[1]!.setValue('30000')
-
-    const submitBtn = wrapper.findAll('button').find((btn) => btn.text() === '提交')
-    await submitBtn!.trigger('click')
-    await flushPromises()
-
-    const postCalls = mockRequest.mock.calls.filter((call) => call[0] === '/cabins/9/prices' && call[1]?.method === 'POST')
-    expect(postCalls.length).toBe(3)
   })
 })

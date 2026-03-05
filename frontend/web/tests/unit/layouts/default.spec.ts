@@ -21,11 +21,11 @@ describe('Default layout', () => {
             }
         })
 
-        expect(wrapper.text()).toContain('CruiseBooking')
+        expect(wrapper.text()).toContain('Azure Deck')
         expect(wrapper.text()).toContain('搜索')
         expect(wrapper.text()).toContain('预订')
         expect(wrapper.text()).toContain('登录')
         expect(wrapper.find('[data-test="slot-content"]').exists()).toBe(true)
-        expect(wrapper.text()).toContain('© 2026 CruiseBooking')
+        expect(wrapper.text()).toContain('© 2026 Azure Deck')
     })
 })

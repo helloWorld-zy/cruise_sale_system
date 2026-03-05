@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -18,6 +20,14 @@ type Config struct {
 	NATS     NATSConfig     // NATS 消息队列配置
 	JWT      JWTConfig      // JWT 认证配置
 	Log      LogConfig      // 日志配置
+	Upload   UploadConfig   // 本地上传配置
+}
+
+// UploadConfig 定义本地文件上传配置。
+type UploadConfig struct {
+	StorageDir  string // 上传文件保存目录
+	PublicPath  string // 上传文件静态访问前缀
+	MaxFileSize int64  // 单文件最大大小（字节）
 }
 
 // ServerConfig 定义 HTTP 服务器的启动参数。
@@ -108,5 +118,60 @@ func Load(root string) Config {
 		panic(fmt.Errorf("配置反序列化失败: %w", err))
 	}
 
+	applyDatabaseEnvFallbacks(&cfg)
+	applyUploadDefaults(&cfg)
+
 	return cfg
+}
+
+// applyDatabaseEnvFallbacks 在 CRUISE_DATABASE_* 未提供时回退到 POSTGRES_*，
+// 避免仅配置 Docker 变量时后端因空密码无法连接数据库。
+func applyDatabaseEnvFallbacks(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+
+	if cfg.Database.Host == "" {
+		cfg.Database.Host = firstNonEmptyEnv("CRUISE_DATABASE_HOST", "POSTGRES_HOST")
+	}
+	if cfg.Database.User == "" {
+		cfg.Database.User = firstNonEmptyEnv("CRUISE_DATABASE_USER", "POSTGRES_USER")
+	}
+	if cfg.Database.Password == "" {
+		cfg.Database.Password = firstNonEmptyEnv("CRUISE_DATABASE_PASSWORD", "POSTGRES_PASSWORD")
+	}
+	if cfg.Database.DBName == "" {
+		cfg.Database.DBName = firstNonEmptyEnv("CRUISE_DATABASE_DBNAME", "POSTGRES_DB")
+	}
+	if cfg.Database.Port == 0 {
+		if portText := firstNonEmptyEnv("CRUISE_DATABASE_PORT", "POSTGRES_PORT"); portText != "" {
+			if port, err := strconv.Atoi(portText); err == nil {
+				cfg.Database.Port = port
+			}
+		}
+	}
+}
+
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func applyUploadDefaults(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	if strings.TrimSpace(cfg.Upload.StorageDir) == "" {
+		cfg.Upload.StorageDir = "uploads"
+	}
+	if strings.TrimSpace(cfg.Upload.PublicPath) == "" {
+		cfg.Upload.PublicPath = "/uploads"
+	}
+	if cfg.Upload.MaxFileSize <= 0 {
+		cfg.Upload.MaxFileSize = 10 * 1024 * 1024
+	}
 }

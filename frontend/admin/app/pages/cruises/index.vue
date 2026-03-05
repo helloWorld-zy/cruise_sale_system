@@ -3,7 +3,7 @@
     <div class="mx-auto max-w-7xl">
       <div class="mb-4 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-slate-900">邮轮管理</h1>
-        <NuxtLink to="/cruises/create" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">新建邮轮</NuxtLink>
+        <AdminActionLink to="/cruises/create" variant="primary" size="md">新建邮轮</AdminActionLink>
       </div>
 
       <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -48,7 +48,7 @@
               </th>
               <th class="p-3">名称</th>
               <th class="p-3">代码</th>
-              <th class="p-3">公司ID</th>
+              <th class="p-3">所属公司</th>
               <th class="p-3">吨位</th>
               <th class="p-3">载客量</th>
               <th class="p-3">状态</th>
@@ -76,14 +76,14 @@
               </td>
               <td class="p-3 font-medium text-slate-900">{{ item.name || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.code || '-' }}</td>
-              <td class="p-3 text-slate-600">{{ item.company_id || '-' }}</td>
+              <td class="p-3 text-slate-600">{{ companyName(item) }}</td>
               <td class="p-3 text-slate-600">{{ item.tonnage || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.passenger_capacity || '-' }}</td>
               <td class="p-3">
                 <span :class="statusClass(item.status)">{{ statusText(item.status) }}</span>
               </td>
               <td class="p-3">
-                <NuxtLink :to="`/cruises/${item.id}`" class="text-indigo-600 hover:text-indigo-500">编辑</NuxtLink>
+                <AdminActionLink :to="`/cruises/${item.id}`">编辑</AdminActionLink>
                 <button type="button" class="ml-2 text-rose-500 hover:text-rose-400" @click="handleDelete(item.id)">删除</button>
               </td>
             </tr>
@@ -106,19 +106,34 @@
         <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(1)">批量上架</button>
         <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(-1)">批量下架</button>
       </div>
+
+      <AdminConfirmDialog
+        :visible="deleteDialogVisible"
+        title="确认删除邮轮"
+        :message="`确认删除邮轮「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
+        :loading="deleteSubmitting"
+        loading-text="删除中..."
+        @close="closeDeleteDialog"
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 const { request } = useApi()
 const items = ref<Record<string, any>[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const deleteDialogVisible = ref(false)
+const deleteSubmitting = ref(false)
+const deleteTarget = ref<{ id: number; name: string } | null>(null)
 const selectedIds = ref<Set<number>>(new Set())
 const total = ref(0)
+const companyMap = ref<Record<number, string>>({})
 
 const filters = ref({
   keyword: '',
@@ -153,6 +168,23 @@ async function loadItems() {
   }
 }
 
+async function loadCompanies() {
+  try {
+    const res = await request('/companies')
+    const payload = res?.data ?? res ?? {}
+    const list = Array.isArray(payload) ? payload : payload?.list ?? []
+    const nextMap: Record<number, string> = {}
+    list.forEach((item: any) => {
+      const id = Number(item.id)
+      if (!Number.isFinite(id) || id <= 0) return
+      nextMap[id] = item.name || item.english_name || `#${id}`
+    })
+    companyMap.value = nextMap
+  } catch {
+    companyMap.value = {}
+  }
+}
+
 function toggleSingle(idRaw: unknown, checked: boolean) {
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) return
@@ -182,6 +214,10 @@ function statusClass(statusRaw: unknown) {
   if (status === 1) return 'rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700'
   if (status === 2) return 'rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700'
   return 'rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700'
+}
+
+function companyName(item: Record<string, any>) {
+  return item.company?.name || companyMap.value[Number(item.company_id)] || (item.company_id ? `#${item.company_id}` : '-')
 }
 
 async function batchUpdateStatus(status: number) {
@@ -217,15 +253,48 @@ async function handleDelete(rawId: unknown) {
     error.value = '无效记录 ID，无法删除'
     return
   }
-  if (!confirm(`确认删除邮轮 #${id} 吗？`)) return
+  const item = items.value.find((it) => resolveId(it?.id) === id)
+  deleteTarget.value = { id, name: String(item?.name ?? '') }
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleteSubmitting.value) return
+  deleteDialogVisible.value = false
+  deleteTarget.value = null
+}
+
+async function confirmDelete() {
+  const id = resolveId(deleteTarget.value?.id)
+  if (!id) {
+    error.value = '无效记录 ID，无法删除'
+    closeDeleteDialog()
+    return
+  }
+  error.value = null
+  deleteSubmitting.value = true
   try {
     await request(`/cruises/${id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await loadItems()
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete cruise'
+    const code = Number(e?.code ?? 0)
+    const status = Number(e?.status ?? 0)
+    const message = String(e?.message ?? '')
+    if (code === 42204 || (status === 409 && message.includes('cruise has voyages'))) {
+      error.value = '删除失败：该邮轮下存在航次，请先处理关联航次后再删除。'
+    } else if (code === 42201 || (status === 409 && message.includes('cruise has cabins'))) {
+      error.value = '删除失败：该邮轮下存在舱房类型，请先处理关联舱房后再删除。'
+    } else {
+      error.value = e?.message ?? '删除邮轮失败，请稍后重试。'
+    }
+  } finally {
+    deleteSubmitting.value = false
   }
 }
 
-onMounted(loadItems)
+onMounted(async () => {
+  await Promise.all([loadItems(), loadCompanies()])
+})
 </script>
 

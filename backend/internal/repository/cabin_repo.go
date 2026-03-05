@@ -186,40 +186,25 @@ func (r *CabinRepository) BatchSetPrice(ctx context.Context, skuID int64, start,
 	})
 }
 
-// GetCategoryTree 获取邮轮→航线→舱型三级分类树。
+// GetCategoryTree 获取邮轮→航次分类树。
 func (r *CabinRepository) GetCategoryTree(ctx context.Context) (interface{}, error) {
 	var cruises []domain.Cruise
 	if err := r.db.WithContext(ctx).Where("status = ?", 1).Find(&cruises).Error; err != nil {
 		return nil, err
 	}
-	type routeWithVoyages struct {
-		domain.Route
+	type cruiseWithVoyages struct {
+		domain.Cruise
 		Voyages []domain.Voyage `json:"voyages"`
 	}
-	type cruiseWithRoutes struct {
-		domain.Cruise
-		Routes []routeWithVoyages `json:"routes"`
-	}
-	result := make([]cruiseWithRoutes, 0, len(cruises))
+	result := make([]cruiseWithVoyages, 0, len(cruises))
 	for _, c := range cruises {
-		var routes []domain.Route
-		if err := r.db.WithContext(ctx).Where("status = ?", 1).Find(&routes).Error; err != nil {
+		var voyages []domain.Voyage
+		if err := r.db.WithContext(ctx).Where("cruise_id = ?", c.ID).Order("depart_date asc").Find(&voyages).Error; err != nil {
 			continue
 		}
-		cruiseRoutes := make([]routeWithVoyages, 0, len(routes))
-		for _, rt := range routes {
-			var voyages []domain.Voyage
-			if err := r.db.WithContext(ctx).Where("route_id = ? AND cruise_id = ?", rt.ID, c.ID).Find(&voyages).Error; err != nil {
-				continue
-			}
-			cruiseRoutes = append(cruiseRoutes, routeWithVoyages{
-				Route:   rt,
-				Voyages: voyages,
-			})
-		}
-		result = append(result, cruiseWithRoutes{
-			Cruise: c,
-			Routes: cruiseRoutes,
+		result = append(result, cruiseWithVoyages{
+			Cruise:  c,
+			Voyages: voyages,
 		})
 	}
 	return result, nil

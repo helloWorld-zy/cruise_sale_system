@@ -24,6 +24,7 @@ func TestAllRepos(t *testing.T) {
 		&domain.Cruise{},
 		&domain.Route{},
 		&domain.Voyage{},
+		&domain.VoyageItinerary{},
 		&domain.CabinType{},
 		&domain.FacilityCategory{},
 		&domain.Facility{},
@@ -83,10 +84,10 @@ func TestAllRepos(t *testing.T) {
 
 	// 5. VoyageRepo
 	vRepo := NewVoyageRepository(db)
-	v := &domain.Voyage{Code: "v1", RouteID: 1}
+	v := &domain.Voyage{Code: "v1", CruiseID: 1, BriefInfo: "demo"}
 	_ = vRepo.Create(ctx, v)
 	_, _ = vRepo.GetByID(ctx, v.ID)
-	_, _ = vRepo.ListByRoute(ctx, 1)
+	_, _ = vRepo.List(ctx)
 	v.Code = "v2"
 	_ = vRepo.Update(ctx, v)
 	_ = vRepo.Delete(ctx, v.ID)
@@ -240,7 +241,7 @@ func TestAllRepos(t *testing.T) {
 	NewVoyageRepository(badDB).Create(ctx2, &domain.Voyage{})
 	NewVoyageRepository(badDB).Update(ctx2, &domain.Voyage{})
 	NewVoyageRepository(badDB).GetByID(ctx2, 1)
-	NewVoyageRepository(badDB).ListByRoute(ctx2, 1)
+	NewVoyageRepository(badDB).List(ctx2)
 	NewVoyageRepository(badDB).Delete(ctx2, 1)
 
 	NewRouteRepository(badDB).Create(ctx2, &domain.Route{})

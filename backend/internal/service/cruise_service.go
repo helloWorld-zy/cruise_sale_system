@@ -3,12 +3,16 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
 // ErrCruiseHasCabins 当删除邮轮时仍有关联的舱房类型时返回此错误。
 var ErrCruiseHasCabins = errors.New("cruise has cabins")
+
+// ErrCruiseHasVoyages 当删除邮轮时仍有关联的航次时返回此错误。
+var ErrCruiseHasVoyages = errors.New("cruise has voyages")
 
 // CruiseService 实现邮轮相关的业务逻辑。
 // 提供邮轮的创建、更新、查询、删除等操作，并包含级联删除保护。
@@ -20,6 +24,10 @@ type CruiseService struct {
 
 type cruiseBatchStatusWriter interface {
 	BatchUpdateStatus(ctx context.Context, ids []int64, status int16) error
+}
+
+type cruiseCabinBindingChecker interface {
+	HasCabinTypesByCruise(ctx context.Context, cruiseID int64) (bool, error)
 }
 
 // NewCruiseService 创建邮轮服务实例，通过依赖注入传入所需的仓储。
@@ -37,6 +45,9 @@ func (s *CruiseService) Create(ctx context.Context, cruise *domain.Cruise) error
 
 // Update 保存对已有邮轮的修改。
 func (s *CruiseService) Update(ctx context.Context, cruise *domain.Cruise) error {
+	if _, err := s.companyRepo.GetByID(ctx, cruise.CompanyID); err != nil {
+		return err
+	}
 	return s.cruiseRepo.Update(ctx, cruise)
 }
 
@@ -75,12 +86,31 @@ func (s *CruiseService) BatchUpdateStatus(ctx context.Context, ids []int64, stat
 
 // Delete 删除邮轮前检查是否仍有关联的舱房类型，防止级联数据不一致。
 func (s *CruiseService) Delete(ctx context.Context, id int64) error {
-	cabins, total, err := s.cabinRepo.ListByCruise(ctx, id, 1, 1)
-	if err != nil {
+	if checker, ok := s.cabinRepo.(cruiseCabinBindingChecker); ok {
+		has, err := checker.HasCabinTypesByCruise(ctx, id)
+		if err != nil {
+			return err
+		}
+		if has {
+			return ErrCruiseHasCabins
+		}
+	} else {
+		cabins, total, err := s.cabinRepo.ListByCruise(ctx, id, 1, 1)
+		if err != nil {
+			return err
+		}
+		if total > 0 || len(cabins) > 0 {
+			return ErrCruiseHasCabins
+		}
+	}
+	if err := s.cruiseRepo.Delete(ctx, id); err != nil {
+		// PostgreSQL FK: voyages.cruise_id -> cruises.id
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "voyages_cruise_id_fkey") ||
+			(strings.Contains(msg, "sqlstate 23503") && strings.Contains(msg, "voyages")) {
+			return ErrCruiseHasVoyages
+		}
 		return err
 	}
-	if total > 0 || len(cabins) > 0 {
-		return ErrCruiseHasCabins
-	}
-	return s.cruiseRepo.Delete(ctx, id)
+	return nil
 }

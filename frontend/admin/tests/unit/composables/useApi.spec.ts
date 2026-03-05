@@ -57,4 +57,21 @@ describe('useApi', () => {
             }
         })
     })
+
+    test('does not force JSON content-type for FormData body', async () => {
+        const api = useApi()
+        const form = new FormData()
+        form.append('file', new Blob(['x'], { type: 'image/png' }), 'logo.png')
+
+        await api.request('/upload/image', {
+            method: 'POST',
+            body: form,
+        })
+
+        expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/upload/image', {
+            method: 'POST',
+            body: form,
+            headers: {},
+        })
+    })
 })

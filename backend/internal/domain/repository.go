@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 // ErrInsufficientInventory 当库存调整会导致总量为负时返回此错误。
@@ -35,6 +36,45 @@ type CabinTypeRepository interface {
 	GetByID(ctx context.Context, id int64) (*CabinType, error)                                        // 根据 ID 查询舱房类型
 	ListByCruise(ctx context.Context, cruiseID int64, page, pageSize int) ([]CabinType, int64, error) // 分页查询某邮轮下的舱房类型
 	Delete(ctx context.Context, id int64) error                                                       // 删除舱房类型（软删除）
+}
+
+// CabinTypeCategoryRepository 定义舱型大类字典的数据持久化接口。
+type CabinTypeCategoryRepository interface {
+	Create(ctx context.Context, category *CabinTypeCategory) error     // 创建舱型大类
+	Update(ctx context.Context, category *CabinTypeCategory) error     // 更新舱型大类
+	GetByID(ctx context.Context, id int64) (*CabinTypeCategory, error) // 根据 ID 查询舱型大类
+	List(ctx context.Context) ([]CabinTypeCategory, error)             // 查询舱型大类列表
+	Delete(ctx context.Context, id int64) error                        // 删除舱型大类
+}
+
+// CabinTypeBindingRepository 定义舱型与邮轮绑定关系的数据持久化接口。
+type CabinTypeBindingRepository interface {
+	ReplaceCruiseBindings(ctx context.Context, cabinTypeID int64, cruiseIDs []int64) error // 覆盖写入舱型绑定的邮轮集合
+	ListCruiseIDsByCabinType(ctx context.Context, cabinTypeID int64) ([]int64, error)      // 查询舱型绑定的邮轮 ID 列表
+	ListCabinTypeIDsByCruise(ctx context.Context, cruiseID int64) ([]int64, error)         // 查询邮轮下绑定的舱型 ID 列表
+	HasCabinTypesByCruise(ctx context.Context, cruiseID int64) (bool, error)               // 判断邮轮是否仍有关联舱型
+}
+
+// CabinTypeMediaRepository 定义舱型媒体资源的数据持久化接口。
+type CabinTypeMediaRepository interface {
+	Create(ctx context.Context, media *CabinTypeMedia) error                                  // 创建舱型媒体
+	Update(ctx context.Context, media *CabinTypeMedia) error                                  // 更新舱型媒体
+	GetByID(ctx context.Context, id int64) (*CabinTypeMedia, error)                           // 根据 ID 查询舱型媒体
+	ListByCabinType(ctx context.Context, cabinTypeID int64) ([]CabinTypeMedia, error)         // 查询舱型媒体列表
+	Delete(ctx context.Context, id int64) error                                               // 删除舱型媒体
+	SetPrimary(ctx context.Context, cabinTypeID int64, mediaType string, mediaID int64) error // 设置主媒体并清除同类型其他主媒体
+}
+
+// VoyageCabinTypePriceRepository 定义航次舱型价格版本与当前态的数据持久化接口。
+type VoyageCabinTypePriceRepository interface {
+	CreateVersion(ctx context.Context, version *VoyageCabinTypePriceVersion) error                                                   // 创建价格版本
+	UpsertCurrent(ctx context.Context, current *VoyageCabinTypeCurrent) error                                                        // 写入当前生效价格
+	GetCurrent(ctx context.Context, voyageID, cabinTypeID int64) (*VoyageCabinTypeCurrent, error)                                    // 查询单个当前价
+	GetCurrentAt(ctx context.Context, voyageID, cabinTypeID int64, at time.Time) (*VoyageCabinTypeCurrent, error)                    // 按生效时点查询单个当前价
+	ListCurrentByVoyages(ctx context.Context, voyageIDs []int64) ([]VoyageCabinTypeCurrent, error)                                   // 查询多个航次的当前价
+	ListCurrentByVoyagesAt(ctx context.Context, voyageIDs []int64, at time.Time) ([]VoyageCabinTypeCurrent, error)                   // 按生效时点查询多个航次当前价
+	GetLatestVersionAt(ctx context.Context, voyageID, cabinTypeID int64, at time.Time) (*VoyageCabinTypePriceVersion, error)         // 按生效时点查询最新历史版本
+	ListVersions(ctx context.Context, voyageID, cabinTypeID int64, page, pageSize int) ([]VoyageCabinTypePriceVersion, int64, error) // 查询历史版本
 }
 
 // FacilityCategoryRepository 定义设施分类的数据持久化接口。
@@ -87,11 +127,11 @@ type RouteRepository interface {
 
 // VoyageRepository 定义航次的数据持久化接口。
 type VoyageRepository interface {
-	Create(ctx context.Context, v *Voyage) error                      // 创建航次
-	Update(ctx context.Context, v *Voyage) error                      // 更新航次信息
-	GetByID(ctx context.Context, id int64) (*Voyage, error)           // 根据 ID 查询航次
-	ListByRoute(ctx context.Context, routeID int64) ([]Voyage, error) // 查询某航线下的所有航次
-	Delete(ctx context.Context, id int64) error                       // 删除航次
+	Create(ctx context.Context, v *Voyage) error            // 创建航次
+	Update(ctx context.Context, v *Voyage) error            // 更新航次信息
+	GetByID(ctx context.Context, id int64) (*Voyage, error) // 根据 ID 查询航次
+	List(ctx context.Context) ([]Voyage, error)             // 查询航次列表
+	Delete(ctx context.Context, id int64) error             // 删除航次
 }
 
 // CabinSKUFilter 描述舱位商品的后台筛选条件。

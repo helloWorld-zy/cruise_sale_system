@@ -91,101 +91,146 @@ onMounted(loadOrders)
 <style scoped>
 .page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 8% 0, #dceaf6 0, transparent 30%),
-    linear-gradient(180deg, #f3f8fb 0%, #edf3f7 100%);
-  padding: 28rpx;
+  background: #f5f7fa;
+  padding: 40rpx;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 380rpx;
+  background: linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%);
+  border-bottom-left-radius: 40rpx;
+  border-bottom-right-radius: 40rpx;
+  z-index: 0;
 }
 
 .title {
-  font-size: 46rpx;
-  font-weight: 700;
-  color: #122b42;
+  position: relative;
+  z-index: 1;
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #fff;
+  display: block;
+  margin-bottom: 8rpx;
 }
 
 .subtitle {
+  position: relative;
+  z-index: 1;
   display: block;
   margin-top: 8rpx;
-  font-size: 24rpx;
-  color: #5b728a;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .tabs {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 12rpx;
-  margin: 18rpx 0 20rpx;
+  gap: 16rpx;
+  margin: 32rpx 0 24rpx;
   flex-wrap: wrap;
 }
 
 .tab {
   border-radius: 999rpx;
-  border: 1rpx solid #c7d1dd;
-  padding: 8rpx 18rpx;
-  color: #566a80;
-  font-size: 24rpx;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 10rpx 28rpx;
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
 }
 
 .tab-active {
-  border-color: #113d5c;
-  background: #113d5c;
-  color: #fff;
+  background: #fff;
+  color: #0cebeb;
 }
 
 .list {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 14rpx;
+  gap: 24rpx;
+  padding-bottom: 40rpx;
 }
 
 .card {
-  border-radius: 20rpx;
+  border-radius: 32rpx;
   background: #fff;
-  border: 1rpx solid #d4e0ea;
-  box-shadow: 0 12rpx 30rpx rgba(16, 47, 72, 0.1);
-  padding: 18rpx;
+  border: none;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+  padding: 32rpx;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 12rpx;
 }
 
 .order-no,
 .status,
 .amount {
-  color: #334a62;
-  font-size: 24rpx;
+  color: #666;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.order-no {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #222;
 }
 
 .amount {
-  color: #113d5c;
-  font-weight: 700;
+  color: #ff6b6b;
+  font-weight: 800;
+  font-size: 36rpx;
+  margin: 8rpx 0;
 }
 
 .actions {
-  margin-top: 8rpx;
+  margin-top: 16rpx;
   display: flex;
-  gap: 10rpx;
+  gap: 16rpx;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn {
   border-radius: 999rpx;
-  border: 1rpx solid #c7d1dd;
-  padding: 6rpx 14rpx;
-  font-size: 22rpx;
-  color: #2d4560;
+  border: none;
+  background: #f5f7fa;
+  padding: 12rpx 32rpx;
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 600;
 }
 
 .primary {
-  border-color: #113d5c;
-  background: #113d5c;
+  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
   color: #fff;
 }
 
 .hint {
-  color: #5a7190;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  text-align: center;
+  display: block;
+  margin-top: 60rpx;
 }
 
 .error {
-  color: #d13e5b;
+  position: relative;
+  z-index: 1;
+  color: #ffcccc;
+  text-align: center;
+  display: block;
+  margin-top: 60rpx;
 }
 </style>

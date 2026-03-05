@@ -76,4 +76,4 @@ CREATE INDEX IF NOT EXISTS idx_operation_logs_staff ON operation_logs(staff_id);
 CREATE INDEX IF NOT EXISTS idx_operation_logs_created ON operation_logs(created_at);
 
 -- 员工角色
-ALTER TABLE staff ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'operator';
+ALTER TABLE staffs ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'operator';

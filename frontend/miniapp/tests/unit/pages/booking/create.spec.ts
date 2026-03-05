@@ -25,9 +25,9 @@ describe('Booking Create', () => {
     it('submits booking when form is valid', async () => {
         const { getByPlaceholderText, getByText } = render(Page)
 
-        await fireEvent.update(getByPlaceholderText('Voyage ID'), '1001')
-        await fireEvent.update(getByPlaceholderText('Cabin SKU ID'), '2002')
-        await fireEvent.update(getByPlaceholderText('Guests'), '2')
+        await fireEvent.update(getByPlaceholderText('输入航次 ID'), '1001')
+        await fireEvent.update(getByPlaceholderText('输入舱位 SKU ID'), '2002')
+        await fireEvent.update(getByPlaceholderText('输入乘客人数'), '2')
         await fireEvent.click(getByText('Submit Booking'))
 
         expect(mockRequest).toHaveBeenCalledWith('/bookings', expect.objectContaining({
@@ -46,9 +46,9 @@ describe('Booking Create', () => {
         mockRequest.mockRejectedValueOnce(new Error('network failed'))
         const { getByPlaceholderText, getByText, findByText } = render(Page)
 
-        await fireEvent.update(getByPlaceholderText('Voyage ID'), '1001')
-        await fireEvent.update(getByPlaceholderText('Cabin SKU ID'), '2002')
-        await fireEvent.update(getByPlaceholderText('Guests'), '2')
+        await fireEvent.update(getByPlaceholderText('输入航次 ID'), '1001')
+        await fireEvent.update(getByPlaceholderText('输入舱位 SKU ID'), '2002')
+        await fireEvent.update(getByPlaceholderText('输入乘客人数'), '2')
         await fireEvent.click(getByText('Submit Booking'))
 
         expect(await findByText('network failed')).toBeTruthy()

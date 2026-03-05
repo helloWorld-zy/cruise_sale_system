@@ -152,77 +152,113 @@ onMounted(() => {
 <style scoped>
 .page {
   min-height: 100vh;
-  padding: 28rpx;
-  background:
-    radial-gradient(circle at 10% 0, #dbeaf6 0, transparent 30%),
-    linear-gradient(180deg, #f3f8fb 0%, #edf3f7 100%);
+  padding: 32rpx;
+  background: #f5f7fa;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 400rpx;
+  background: linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%);
+  border-bottom-left-radius: 40rpx;
+  border-bottom-right-radius: 40rpx;
+  z-index: 0;
 }
 
 .title {
+  position: relative;
+  z-index: 1;
   display: block;
   margin-bottom: 8rpx;
-  font-size: 46rpx;
-  font-weight: 700;
-  color: #122b42;
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #fff;
 }
 
 .subtitle {
+  position: relative;
+  z-index: 1;
   display: block;
-  margin-bottom: 16rpx;
-  font-size: 24rpx;
-  color: #5b728a;
+  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .filters {
-  margin-bottom: 18rpx;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 24rpx;
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
-  padding: 18rpx;
-  border-radius: 20rpx;
+  gap: 16rpx;
+  padding: 24rpx;
+  border-radius: 32rpx;
   background: #fff;
-  border: 1rpx solid #d3dfE8;
-  box-shadow: 0 12rpx 30rpx rgba(17, 50, 75, 0.08);
+  border: none;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.05);
 }
 
 .filter-input {
-  border: 1rpx solid #ccdbe6;
-  border-radius: 12rpx;
-  padding: 10rpx 14rpx;
-  background: #f9fcff;
+  border: none;
+  background: #f5f7fa;
+  border-radius: 20rpx;
+  padding: 16rpx 24rpx;
+  font-size: 26rpx;
 }
 
 .sort-row {
   display: flex;
-  gap: 8rpx;
+  gap: 12rpx;
   flex-wrap: wrap;
+  margin-top: 8rpx;
 }
 
 .sort-item {
   border-radius: 999rpx;
-  border: 1rpx solid #c5d4e8;
-  padding: 6rpx 12rpx;
-  font-size: 22rpx;
-  color: #4d6482;
+  border: none;
+  background: #f5f7fa;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  font-weight: 600;
 }
 
 .sort-active {
-  border-color: #113d5c;
-  background: #113d5c;
+  background: #0cebeb;
   color: #fff;
 }
 
 .list {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
+  gap: 24rpx;
+  padding-bottom: 40rpx;
 }
 
 .hint {
-  color: #5a7190;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 28rpx;
+  text-align: center;
+  display: block;
+  margin-top: 40rpx;
 }
 
 .error {
-  color: #d13e5b;
+  position: relative;
+  z-index: 1;
+  color: #ffeeee;
+  font-size: 28rpx;
+  text-align: center;
+  display: block;
+  margin-top: 40rpx;
 }
 </style>

@@ -54,7 +54,7 @@ func TestRouteDeleteHandler(t *testing.T) {
 // fakeVoyageService 实现了用于测试的 VoyageService。
 type fakeVoyageService struct{}
 
-func (f *fakeVoyageService) ListByRoute(_ context.Context, routeID int64) ([]domain.Voyage, error) {
+func (f *fakeVoyageService) List(_ context.Context) ([]domain.Voyage, error) {
 	return []domain.Voyage{}, nil
 }
 func (f *fakeVoyageService) Create(_ context.Context, v *domain.Voyage) error { return nil }

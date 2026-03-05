@@ -5,6 +5,7 @@ import Page from '../../app/pages/pay/[id].vue'
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 vi.stubGlobal('useRoute', () => ({ params: { id: '42' } }))
+vi.stubGlobal('sessionStorage', { getItem: () => 'fake-token' })
 
 beforeEach(() => {
     mockRequest.mockReset()
@@ -15,7 +16,7 @@ describe('Pay Page', () => {
     it('加载订单信息', async () => {
         mount(Page)
         await flushPromises()
-        expect(mockRequest).toHaveBeenCalledWith('/bookings/42')
+        expect(mockRequest).toHaveBeenCalledWith('/admin/bookings/42')
     })
 
     it('显示订单金额', async () => {

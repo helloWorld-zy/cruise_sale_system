@@ -27,7 +27,7 @@ func (s *routeDeleteErrSvc) Delete(context.Context, int64) error { return s.err 
 
 type voyageDeleteErrSvc struct{ err error }
 
-func (s *voyageDeleteErrSvc) ListByRoute(context.Context, int64) ([]domain.Voyage, error) {
+func (s *voyageDeleteErrSvc) List(context.Context) ([]domain.Voyage, error) {
 	return nil, nil
 }
 func (s *voyageDeleteErrSvc) Create(context.Context, *domain.Voyage) error { return nil }

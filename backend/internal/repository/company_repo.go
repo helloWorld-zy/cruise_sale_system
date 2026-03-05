@@ -43,7 +43,8 @@ func (r *CompanyRepository) List(ctx context.Context, keyword string, page, page
 	var total int64
 	q := r.db.WithContext(ctx).Model(&domain.CruiseCompany{})
 	if keyword != "" {
-		q = q.Where("name LIKE ?", "%"+keyword+"%")
+		kw := "%" + keyword + "%"
+		q = q.Where("name LIKE ? OR english_name LIKE ?", kw, kw)
 	}
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err

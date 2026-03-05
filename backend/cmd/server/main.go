@@ -65,10 +65,13 @@ func RunApp(configDir string) error {
 	companyRepo := repository.NewCompanyRepository(db)
 	cruiseRepo := repository.NewCruiseRepository(db)
 	cabinTypeRepo := repository.NewCabinTypeRepository(db)
+	cabinTypeBindingRepo := repository.NewCabinTypeBindingRepository(db)
+	cabinTypeCategoryRepo := repository.NewCabinTypeCategoryRepository(db)
+	cabinTypeMediaRepo := repository.NewCabinTypeMediaRepository(db)
+	voyageCabinTypePriceRepo := repository.NewVoyageCabinTypePriceRepository(db)
 	facilityCategoryRepo := repository.NewFacilityCategoryRepository(db)
 	facilityRepo := repository.NewFacilityRepository(db)
 	imageRepo := repository.NewImageRepository(db)
-	routeRepo := repository.NewRouteRepository(db)
 	voyageRepo := repository.NewVoyageRepository(db)
 	cabinRepo := repository.NewCabinRepository(db)
 	userRepo := repository.NewUserRepository(db)
@@ -79,7 +82,10 @@ func RunApp(configDir string) error {
 	authSvc := service.NewAuthService(staffRepo, cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	companySvc := service.NewCompanyService(companyRepo, cruiseRepo)
 	cruiseSvc := service.NewCruiseService(cruiseRepo, cabinTypeRepo, companyRepo)
-	cabinTypeSvc := service.NewCabinTypeService(cabinTypeRepo)
+	cabinTypeSvc := service.NewCabinTypeService(cabinTypeRepo, cabinTypeBindingRepo)
+	cabinTypeCategorySvc := service.NewCabinTypeCategoryService(cabinTypeCategoryRepo)
+	cabinTypeMediaSvc := service.NewCabinTypeMediaService(cabinTypeMediaRepo)
+	voyageCabinTypePriceSvc := service.NewVoyageCabinTypePriceService(voyageCabinTypePriceRepo)
 	facilityCategorySvc := service.NewFacilityCategoryService(facilityCategoryRepo)
 	facilitySvc := service.NewFacilityService(facilityRepo)
 	imageSvc := service.NewImageService(imageRepo)
@@ -105,11 +111,17 @@ func RunApp(configDir string) error {
 	companyHandler := handler.NewCompanyHandler(companySvc)
 	cruiseHandler := handler.NewCruiseHandler(cruiseSvc)
 	cabinTypeHandler := handler.NewCabinTypeHandler(cabinTypeSvc)
+	cabinPricingHandler := handler.NewCabinPricingHandler(voyageCabinTypePriceSvc, voyageRepo, cruiseRepo)
+	cabinTypeCategoryHandler := handler.NewCabinTypeCategoryHandler(cabinTypeCategorySvc)
+	cabinTypeMediaHandler := handler.NewCabinTypeMediaHandler(cabinTypeMediaSvc, cfg.Upload.StorageDir, cfg.Upload.PublicPath, cfg.Upload.MaxFileSize)
 	facilityCategoryHandler := handler.NewFacilityCategoryHandler(facilityCategorySvc)
 	facilityHandler := handler.NewFacilityHandler(facilitySvc)
 	imageHandler := handler.NewImageHandler(imageSvc)
-	uploadHandler := handler.NewUploadHandler()
-	routeHandler := handler.NewRouteHandler(routeRepo)    // L-02: 直接用 repo 满足 RouteService 接口
+	uploadHandler := handler.NewUploadHandlerWithConfig(
+		cfg.Upload.StorageDir,
+		cfg.Upload.PublicPath,
+		cfg.Upload.MaxFileSize,
+	)
 	voyageHandler := handler.NewVoyageHandler(voyageRepo) // L-02: 直接用 repo 满足 VoyageService 接口
 	cabinHandler := handler.NewCabinHandlerWithIndexing(cabinAdminSvc, meiliIndexer, searchRetryQueue)
 
@@ -149,27 +161,29 @@ func RunApp(configDir string) error {
 
 	// 8. 配置路由并启动 HTTP 服务器
 	r := router.Setup(router.Dependencies{
-		Auth:             authHandler,
-		Company:          companyHandler,
-		Cruise:           cruiseHandler,
-		CabinType:        cabinTypeHandler,
-		FacilityCategory: facilityCategoryHandler,
-		Facility:         facilityHandler,
-		Image:            imageHandler,
-		Upload:           uploadHandler,
-		Route:            routeHandler,
-		Voyage:           voyageHandler,
-		Cabin:            cabinHandler,
-		Booking:          bookingHandler,
-		User:             userHandler,
-		Payment:          paymentHandler,
-		Refund:           refundHandler,
-		Analytics:        analyticsHandler,
-		Staff:            staffHandler,
-		ShopInfo:         shopInfoHandler,
-		NotificationTpl:  notifyTplHandler,
-		JWTSecret:        cfg.JWT.Secret,
-		Enforcer:         enforcer,
+		Auth:              authHandler,
+		Company:           companyHandler,
+		Cruise:            cruiseHandler,
+		CabinType:         cabinTypeHandler,
+		CabinPricing:      cabinPricingHandler,
+		CabinTypeCategory: cabinTypeCategoryHandler,
+		CabinTypeMedia:    cabinTypeMediaHandler,
+		FacilityCategory:  facilityCategoryHandler,
+		Facility:          facilityHandler,
+		Image:             imageHandler,
+		Upload:            uploadHandler,
+		Voyage:            voyageHandler,
+		Cabin:             cabinHandler,
+		Booking:           bookingHandler,
+		User:              userHandler,
+		Payment:           paymentHandler,
+		Refund:            refundHandler,
+		Analytics:         analyticsHandler,
+		Staff:             staffHandler,
+		ShopInfo:          shopInfoHandler,
+		NotificationTpl:   notifyTplHandler,
+		JWTSecret:         cfg.JWT.Secret,
+		Enforcer:          enforcer,
 	})
 
 	log.Printf("服务启动于 %s（模式: %s）", cfg.Server.Port, cfg.Server.Mode)

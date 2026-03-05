@@ -145,7 +145,7 @@ button {
   font: inherit;
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   width: 100%;
@@ -155,7 +155,7 @@ textarea {
   padding: 10px 12px;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
@@ -163,7 +163,19 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(14, 142, 127, 0.16);
 }
 
-button {
+input[type="checkbox"],
+input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--admin-primary);
+}
+
+button,
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
   border: 0;
   border-radius: 10px;
@@ -171,16 +183,32 @@ button {
   background: linear-gradient(135deg, var(--admin-primary), #14a792);
   color: #fff;
   font-weight: 600;
+  text-decoration: none;
+  line-height: 1;
   cursor: pointer;
 }
 
-button:hover {
+button:hover,
+.admin-btn:hover {
   background: linear-gradient(135deg, var(--admin-primary-dark), #0f8c7a);
 }
 
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.admin-btn--danger {
+  background: linear-gradient(135deg, var(--admin-danger), #e06776);
+}
+
+.admin-btn--danger:hover {
+  background: linear-gradient(135deg, #c43f51, #d95d6d);
+}
+
+/* Keep size token for compatibility; use same sizing to ensure uniformity. */
+.admin-btn--sm {
+  padding: 10px 16px;
 }
 
 .booking-row {

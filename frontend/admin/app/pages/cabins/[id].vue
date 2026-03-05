@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 const route = useRoute()
 const { request } = useApi()
@@ -8,6 +9,7 @@ const id = Number(route.params.id)
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
 const amenityOptions = ['浴缸', '迷你吧', '智能电视', '胶囊咖啡机', '沙发床', '独立衣帽间']
@@ -106,14 +108,24 @@ function toggleAmenity(item: string, checked: boolean) {
 
 async function handleDelete() {
   if (deleting.value) return
-  if (!confirm(`确认删除舱房 #${id} 吗？`)) return
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleting.value) return
+  deleteDialogVisible.value = false
+}
+
+async function confirmDelete() {
+  if (deleting.value) return
   deleting.value = true
   error.value = null
   try {
     await request(`/cabins/${id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await navigateTo('/cabins')
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete cabin'
+    error.value = e?.message ?? '删除舱房失败，请稍后重试。'
   } finally {
     deleting.value = false
   }
@@ -182,6 +194,16 @@ onMounted(loadDetail)
         </div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
+
+      <AdminConfirmDialog
+        :visible="deleteDialogVisible"
+        title="确认删除舱房"
+        :message="`确认删除舱房 #${id} 吗？删除后不可恢复。`"
+        :loading="deleting"
+        loading-text="删除中..."
+        @close="closeDeleteDialog"
+        @confirm="confirmDelete"
+      />
     </div>
   </div>
 </template>

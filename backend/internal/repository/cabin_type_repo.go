@@ -54,3 +54,20 @@ func (r *CabinTypeRepository) ListByCruise(ctx context.Context, cruiseID int64, 
 func (r *CabinTypeRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.CabinType{}, id).Error
 }
+
+// HasCabinTypesByCruise 判断指定邮轮是否仍有关联舱型。
+// 优先使用 cabin_type_cruise_bindings；若旧环境尚未建表则回退到 cabin_types.cruise_id。
+func (r *CabinTypeRepository) HasCabinTypesByCruise(ctx context.Context, cruiseID int64) (bool, error) {
+	var count int64
+	db := r.db.WithContext(ctx)
+	if db.Migrator().HasTable(&domain.CabinTypeCruiseBinding{}) {
+		if err := db.Model(&domain.CabinTypeCruiseBinding{}).Where("cruise_id = ?", cruiseID).Count(&count).Error; err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	}
+	if err := db.Model(&domain.CabinType{}).Where("cruise_id = ?", cruiseID).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

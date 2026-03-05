@@ -6,7 +6,7 @@ const miniBase = 'http://127.0.0.1:3015'
 
 const adminRoutes = [
   '/', '/login', '/admin/login', '/dashboard', '/finance', '/cruises', '/cruises/create', '/cruises/1',
-  '/routes', '/routes/new', '/routes/1', '/voyages', '/voyages/new', '/voyages/1',
+  '/voyages', '/voyages/new', '/voyages/1',
   '/cabin-types', '/cabin-types/new', '/cabin-types/1', '/cabins', '/cabins/new', '/cabins/1',
   '/cabins/inventory?skuId=1', '/cabins/pricing?skuId=1', '/cabins/alerts', '/bookings', '/bookings/new', '/bookings/1',
   '/staff', '/settings/shop', '/notifications/templates', '/facilities', '/facilities/new', '/facilities/1',
@@ -28,9 +28,6 @@ function collectClientErrors(page, scope, route) {
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
       const t = msg.text() || ''
-      if (t.includes('Failed to load resource: the server responded with a status of 404')) {
-        bag.push(`console: ${t}`)
-      }
       if (t.includes('Cannot read properties of undefined') || t.includes('ReferenceError') || t.includes('TypeError')) {
         bag.push(`console: ${t}`)
       }

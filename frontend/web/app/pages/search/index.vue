@@ -1,69 +1,78 @@
 <template>
-  <div class="min-h-screen bg-[#f8f4ed] pb-24 text-slate-900">
-    <main class="mx-auto max-w-6xl px-6 py-8">
-      <h1 class="mb-6 font-['Playfair_Display','Georgia',serif] text-3xl text-[#12263a]">搜索舱位</h1>
+  <div class="min-h-screen bg-[#fcfbf9] pb-24 text-slate-900 font-sans">
+    <div class="bg-[#0f3d5c] text-[#fcfbf9] py-16 px-6 mb-10 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+      <div class="max-w-6xl mx-auto relative z-10">
+        <p class="text-[10px] tracking-[0.3em] font-bold uppercase mb-4 text-[#c9a96e]">Cabin Selection</p>
+        <h1 class="font-['Playfair_Display','Georgia',serif] text-4xl md:text-5xl text-white">搜索舱位</h1>
+      </div>
+    </div>
 
-      <div class="mb-6 flex flex-wrap gap-4 rounded-lg border border-[#eadfcb] bg-white p-4 shadow-sm">
+    <main class="mx-auto max-w-6xl px-6">
+      <div class="mb-12 flex flex-wrap gap-4 -mt-24 relative z-20 bg-white/90 backdrop-blur-md p-6 border border-[#eadfcb]/50 shadow-2xl">
         <input 
           v-model="filters.keyword"
           type="text"
           placeholder="搜索舱位编号"
-          class="h-10 flex-1 min-w-48 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2"
+          class="h-12 flex-1 min-w-48 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none"
           @keyup.enter="handleSearch"
         />
         
-        <select v-model.number="filters.routeId" class="h-10 min-w-40 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2">
+        <select v-model.number="filters.routeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none appearance-none">
           <option :value="0">选择航线</option>
           <option v-for="route in routes" :key="route.id" :value="Number(route.id)">{{ route.name || `航线 #${route.id}` }}</option>
         </select>
         
-        <select v-model.number="filters.cabinTypeId" class="h-10 min-w-40 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2">
+        <select v-model.number="filters.cabinTypeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none appearance-none">
           <option :value="0">选择舱型</option>
           <option v-for="ct in cabinTypes" :key="ct.id" :value="Number(ct.id)">{{ ct.name || `舱型 #${ct.id}` }}</option>
         </select>
 
-        <button type="button" class="rounded-md bg-[#12263a] px-4 py-2 text-sm text-white hover:bg-[#1a3a5c]" @click="handleSearch">
+        <button type="button" class="h-12 bg-[#0f3d5c] px-8 text-xs tracking-widest text-white hover:bg-[#1a3a5c] transition-colors uppercase font-serif" @click="handleSearch">
           搜索
         </button>
       </div>
 
-      <div v-if="loading" class="py-12 text-center text-slate-600">
+      <div v-if="loading" class="py-12 text-center text-slate-500 font-serif italic">
         加载中...
       </div>
 
-      <div v-else-if="error" class="py-12 text-center text-rose-600">
+      <div v-else-if="error" class="py-12 text-center text-rose-800">
         {{ error }}
       </div>
 
-      <div v-else-if="results.length === 0" class="py-12 text-center text-slate-600">
+      <div v-else-if="results.length === 0" class="py-12 text-center text-slate-500 font-serif italic">
         暂无搜索结果
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         <NuxtLink
           v-for="cabin in results"
           :key="cabin.id"
           :to="`/cabins/${cabin.id}`"
-          class="group overflow-hidden rounded-2xl border border-[#eadfcb] bg-white shadow-sm transition-shadow hover:shadow-md"
+          class="group overflow-hidden bg-white shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl border border-transparent hover:border-[#eadfcb]"
         >
-          <div class="aspect-[16/10] overflow-hidden">
+          <div class="relative aspect-[16/10] overflow-hidden bg-slate-100">
             <img 
               :src="cabinImage(cabin)" 
               :alt="cabin.code || '舱位'"
-              class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </div>
-          <div class="p-4">
-            <h3 class="mb-2 font-['Playfair_Display','Georgia',serif] text-lg text-[#12263a]">
+          <div class="flex flex-col space-y-4 p-6 bg-white relative">
+            <h3 class="font-['Playfair_Display','Georgia',serif] text-2xl text-[#0f3d5c]">
               {{ cabin.code || `舱位 #${cabin.id}` }}
             </h3>
-            <p class="mb-3 text-sm text-slate-600">
-              {{ cabin.cabin_type_name || '-' }} · {{ cabin.deck || '-' }}甲板 · {{ cabin.area || '-' }}m²
-            </p>
+            <div class="flex flex-wrap gap-3 text-[11px] font-semibold tracking-wider text-slate-500">
+              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.cabin_type_name || '-' }}</span>
+              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.deck || '-' }}甲板</span>
+              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.area || '-' }}m²</span>
+            </div>
             
-            <div class="flex items-center justify-between">
+            <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between">
               <div>
-                <span class="font-['Playfair_Display','Georgia',serif] text-xl text-[#12263a]">¥{{ displayPrice(cabin) }}</span>
+                <span class="font-['Playfair_Display','Georgia',serif] text-2xl text-[#c9a96e]">¥{{ displayPrice(cabin) }}</span>
               </div>
               <span :class="inventoryBadgeClass(cabin)">{{ inventoryLabel(cabin) }}</span>
             </div>

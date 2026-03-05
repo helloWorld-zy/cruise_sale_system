@@ -14,27 +14,29 @@ import (
 
 // Dependencies 聚合了所有处理器依赖，用于路由初始化时的依赖注入。
 type Dependencies struct {
-	Auth             *handler.AuthHandler                 // 认证处理器
-	Company          *handler.CompanyHandler              // 邮轮公司处理器
-	Cruise           *handler.CruiseHandler               // 邮轮处理器
-	CabinType        *handler.CabinTypeHandler            // 舱房类型处理器
-	FacilityCategory *handler.FacilityCategoryHandler     // 设施分类处理器
-	Facility         *handler.FacilityHandler             // 设施处理器
-	Image            *handler.ImageHandler                // 图片处理器
-	Route            *handler.RouteHandler                // 航线处理器
-	Voyage           *handler.VoyageHandler               // 航次处理器
-	Cabin            *handler.CabinHandler                // 舱房处理器
-	Booking          *handler.BookingHandler              // 订单处理器
-	User             *handler.UserHandler                 // C端用户处理器
-	Upload           *handler.UploadHandler               // 文件上传处理器
-	Payment          *handler.PaymentHandler              // 支付回调处理器
-	Refund           *handler.RefundHandler               // 退款处理器
-	Analytics        *handler.AnalyticsHandler            // 统计分析处理器
-	Staff            *handler.StaffHandler                // 员工管理处理器
-	ShopInfo         *handler.ShopInfoHandler             // 店铺信息处理器
-	NotificationTpl  *handler.NotificationTemplateHandler // 通知模板处理器
-	JWTSecret        string                               // JWT 签名密钥
-	Enforcer         *casbin.Enforcer                     // Casbin RBAC 执行器
+	Auth              *handler.AuthHandler                 // 认证处理器
+	Company           *handler.CompanyHandler              // 邮轮公司处理器
+	Cruise            *handler.CruiseHandler               // 邮轮处理器
+	CabinType         *handler.CabinTypeHandler            // 舱房类型处理器
+	CabinPricing      *handler.CabinPricingHandler         // 舱型价格管理处理器
+	CabinTypeCategory *handler.CabinTypeCategoryHandler    // 舱型大类处理器
+	CabinTypeMedia    *handler.CabinTypeMediaHandler       // 舱型媒体处理器
+	FacilityCategory  *handler.FacilityCategoryHandler     // 设施分类处理器
+	Facility          *handler.FacilityHandler             // 设施处理器
+	Image             *handler.ImageHandler                // 图片处理器
+	Voyage            *handler.VoyageHandler               // 航次处理器
+	Cabin             *handler.CabinHandler                // 舱房处理器
+	Booking           *handler.BookingHandler              // 订单处理器
+	User              *handler.UserHandler                 // C端用户处理器
+	Upload            *handler.UploadHandler               // 文件上传处理器
+	Payment           *handler.PaymentHandler              // 支付回调处理器
+	Refund            *handler.RefundHandler               // 退款处理器
+	Analytics         *handler.AnalyticsHandler            // 统计分析处理器
+	Staff             *handler.StaffHandler                // 员工管理处理器
+	ShopInfo          *handler.ShopInfoHandler             // 店铺信息处理器
+	NotificationTpl   *handler.NotificationTemplateHandler // 通知模板处理器
+	JWTSecret         string                               // JWT 签名密钥
+	Enforcer          *casbin.Enforcer                     // Casbin RBAC 执行器
 }
 
 // Setup 创建并配置 Gin 引擎，注册所有路由和中间件。
@@ -74,6 +76,9 @@ func Setup(deps Dependencies) *gin.Engine {
 
 	// Swagger API 文档界面（无需认证）
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	if deps.Upload != nil {
+		r.Static(deps.Upload.PublicBasePath(), deps.Upload.StorageDir())
+	}
 
 	api := r.Group("/api/v1")
 
@@ -116,10 +121,37 @@ func Setup(deps Dependencies) *gin.Engine {
 	// 舱房类型管理
 	cabinTypes := admin.Group("/cabin-types")
 	{
-		cabinTypes.GET("", deps.CabinType.List)          // 查询舱房类型列表
-		cabinTypes.POST("", deps.CabinType.Create)       // 创建舱房类型
-		cabinTypes.PUT("/:id", deps.CabinType.Update)    // 更新舱房类型
-		cabinTypes.DELETE("/:id", deps.CabinType.Delete) // 删除舱房类型
+		cabinTypes.GET("", deps.CabinType.List)                      // 查询舱房类型列表
+		cabinTypes.POST("", deps.CabinType.Create)                   // 创建舱房类型
+		cabinTypes.POST("/batch-create", deps.CabinType.BatchCreate) // 按多邮轮批量创建舱型
+		cabinTypes.PUT("/:id", deps.CabinType.Update)                // 更新舱房类型
+		cabinTypes.DELETE("/:id", deps.CabinType.Delete)             // 删除舱房类型
+		if deps.CabinTypeMedia != nil {
+			cabinTypes.GET("/:id/media", deps.CabinTypeMedia.List)
+			cabinTypes.POST("/:id/media", deps.CabinTypeMedia.Create)
+			cabinTypes.POST("/:id/media/upload", deps.CabinTypeMedia.Upload)
+			cabinTypes.PUT("/:id/media/:mediaId", deps.CabinTypeMedia.Update)
+			cabinTypes.DELETE("/:id/media/:mediaId", deps.CabinTypeMedia.Delete)
+		}
+	}
+
+	if deps.CabinTypeCategory != nil {
+		cabinTypeCategories := admin.Group("/cabin-type-categories")
+		{
+			cabinTypeCategories.GET("", deps.CabinTypeCategory.List)
+			cabinTypeCategories.POST("", deps.CabinTypeCategory.Create)
+			cabinTypeCategories.PUT("/:id", deps.CabinTypeCategory.Update)
+			cabinTypeCategories.DELETE("/:id", deps.CabinTypeCategory.Delete)
+		}
+	}
+
+	if deps.CabinPricing != nil {
+		pricing := admin.Group("/cabin-pricing")
+		{
+			pricing.GET("/voyages", deps.CabinPricing.ListVoyages)
+			pricing.POST("/batch-apply", deps.CabinPricing.BatchApply)
+			pricing.GET("/history", deps.CabinPricing.History)
+		}
 	}
 
 	// 设施分类管理
@@ -154,16 +186,7 @@ func Setup(deps Dependencies) *gin.Engine {
 		upload.POST("/image", deps.Upload.UploadImage) // 上传图片
 	}
 
-	// 航线、航次、舱房管理（Sprint 2）—— 完整 CRUD
-	routes := admin.Group("/routes")
-	{
-		routes.GET("", deps.Route.List)          // 查询航线列表
-		routes.GET("/:id", deps.Route.Get)       // 查询航线详情
-		routes.POST("", deps.Route.Create)       // 创建航线
-		routes.PUT("/:id", deps.Route.Update)    // 更新航线
-		routes.DELETE("/:id", deps.Route.Delete) // 删除航线
-	}
-
+	// 航次、舱房管理（Sprint 2）—— 完整 CRUD
 	voyages := admin.Group("/voyages")
 	{
 		voyages.GET("", deps.Voyage.List)          // 查询航次列表

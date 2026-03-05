@@ -4,6 +4,10 @@ import Page from '../../../../app/pages/orders/index.vue'
 
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
+vi.stubGlobal('sessionStorage', { getItem: () => 'fake-token' })
+const globalMountOptions = {
+  stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+}
 
 beforeEach(() => {
   mockRequest.mockReset()
@@ -19,7 +23,7 @@ beforeEach(() => {
 
 describe('Web Orders Index', () => {
   it('renders tabs and list', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: globalMountOptions })
     await flushPromises()
 
     expect(wrapper.text()).toContain('我的订单')
@@ -28,7 +32,7 @@ describe('Web Orders Index', () => {
   })
 
   it('filters by status tab', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: globalMountOptions })
     await flushPromises()
 
     const paidTab = wrapper.findAll('button').find((b) => b.text() === '已支付')
@@ -41,7 +45,7 @@ describe('Web Orders Index', () => {
 
   it('shows empty state', async () => {
     mockRequest.mockResolvedValueOnce({ data: { list: [] } })
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: globalMountOptions })
     await flushPromises()
 
     expect(wrapper.find('[data-test="empty"]').exists()).toBe(true)
@@ -49,7 +53,7 @@ describe('Web Orders Index', () => {
 
   it('shows error state', async () => {
     mockRequest.mockRejectedValueOnce(new Error('load failed'))
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: globalMountOptions })
     await flushPromises()
 
     expect(wrapper.find('[data-test="error"]').text()).toContain('load failed')

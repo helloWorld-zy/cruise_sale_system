@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 const { request } = useApi()
 
@@ -16,6 +17,9 @@ const items = ref<BookingRow[]>([])
 const total = ref(0)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const deleteDialogVisible = ref(false)
+const deleteSubmitting = ref(false)
+const deleteTargetId = ref(0)
 
 const statusTabs = [
   { key: '', label: '全部' },
@@ -29,7 +33,6 @@ const statusTabs = [
 const filters = ref({
   bookingNo: '',
   phone: '',
-  routeId: '',
   status: '',
   startDate: '',
   endDate: '',
@@ -44,7 +47,6 @@ function buildQuery() {
   }
   if (filters.value.bookingNo.trim()) q.booking_no = filters.value.bookingNo.trim()
   if (filters.value.phone.trim()) q.phone = filters.value.phone.trim()
-  if (filters.value.routeId.trim()) q.route_id = filters.value.routeId.trim()
   if (filters.value.status) q.status = filters.value.status
   if (filters.value.startDate) q.start_date = filters.value.startDate
   if (filters.value.endDate) q.end_date = filters.value.endDate
@@ -77,12 +79,33 @@ async function handleDelete(rawId: unknown) {
     error.value = '无效记录 ID，无法删除'
     return
   }
-  if (!confirm(`确认删除订单 #${id} 吗？`)) return
+  deleteTargetId.value = id
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleteSubmitting.value) return
+  deleteDialogVisible.value = false
+  deleteTargetId.value = 0
+}
+
+async function confirmDelete() {
+  const id = resolveId(deleteTargetId.value)
+  if (!id) {
+    error.value = '无效记录 ID，无法删除'
+    closeDeleteDialog()
+    return
+  }
+  deleteSubmitting.value = true
+  error.value = null
   try {
     await request(`/bookings/${id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await loadItems()
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete booking'
+    error.value = e?.message ?? '删除订单失败，请稍后重试。'
+  } finally {
+    deleteSubmitting.value = false
   }
 }
 
@@ -136,7 +159,7 @@ onMounted(loadItems)
       <h1>Bookings</h1>
       <div style="display:flex;gap:8px;align-items:center;">
         <button type="button" data-test="export" @click="exportCurrentRows">导出 CSV</button>
-        <NuxtLink to="/bookings/new"><button type="button">新建订单</button></NuxtLink>
+        <AdminActionLink to="/bookings/new" variant="primary" size="md">新建订单</AdminActionLink>
       </div>
     </div>
 
@@ -156,7 +179,6 @@ onMounted(loadItems)
     <form style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:10px;" @submit.prevent="loadItems">
       <input v-model="filters.bookingNo" data-test="filter-booking-no" placeholder="订单号" />
       <input v-model="filters.phone" data-test="filter-phone" placeholder="手机号" />
-      <input v-model="filters.routeId" data-test="filter-route" placeholder="航线ID" />
       <input v-model="filters.startDate" data-test="filter-start" type="date" />
       <input v-model="filters.endDate" data-test="filter-end" type="date" />
       <button type="submit" data-test="filter-submit">筛选</button>
@@ -182,14 +204,26 @@ onMounted(loadItems)
           <td>{{ statusText(b.status) }}</td>
           <td>{{ b.total_cents }}</td>
           <td>
-            <NuxtLink :to="`/bookings/${b.id}`">查看详情</NuxtLink>
-            <NuxtLink v-if="payActionVisible(b.status)" :to="`/bookings/${b.id}`" style="margin-left:8px">处理支付</NuxtLink>
-            <NuxtLink :to="`/bookings/${b.id}`" style="margin-left:8px">处理退改</NuxtLink>
-            <NuxtLink :to="`/bookings/${b.id}`" style="margin-left:8px">编辑</NuxtLink>
-            <button type="button" style="margin-left:8px" @click="handleDelete(b.id)">删除</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <AdminActionLink :to="`/bookings/${b.id}`">查看详情</AdminActionLink>
+              <AdminActionLink v-if="payActionVisible(b.status)" :to="`/bookings/${b.id}`">处理支付</AdminActionLink>
+              <AdminActionLink :to="`/bookings/${b.id}`">处理退改</AdminActionLink>
+              <AdminActionLink :to="`/bookings/${b.id}`">编辑</AdminActionLink>
+              <button type="button" class="inline-flex h-8 items-center rounded border border-rose-200 px-2.5 text-xs font-medium text-rose-700 hover:bg-rose-50" @click="handleDelete(b.id)">删除</button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
+
+    <AdminConfirmDialog
+      :visible="deleteDialogVisible"
+      title="确认删除订单"
+      :message="`确认删除订单 #${deleteTargetId} 吗？删除后不可恢复。`"
+      :loading="deleteSubmitting"
+      loading-text="删除中..."
+      @close="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

@@ -26,7 +26,6 @@ func TestSetup(t *testing.T) {
 		FacilityCategory: &handler.FacilityCategoryHandler{},
 		Facility:         &handler.FacilityHandler{},
 		Image:            &handler.ImageHandler{},
-		Route:            &handler.RouteHandler{},
 		Voyage:           &handler.VoyageHandler{},
 		Cabin:            &handler.CabinHandler{},
 		Booking:          &handler.BookingHandler{},
@@ -82,7 +81,7 @@ p, admin, /api/v1/admin/cabins/batch-status, PUT
 `), 0644)
 	enforcer, _ := casbin.NewEnforcer(modelPath, policyPath)
 
-	deps := Dependencies{JWTSecret: "test-secret", Enforcer: enforcer, Auth: &handler.AuthHandler{}, Company: &handler.CompanyHandler{}, Cruise: &handler.CruiseHandler{}, CabinType: &handler.CabinTypeHandler{}, FacilityCategory: &handler.FacilityCategoryHandler{}, Facility: &handler.FacilityHandler{}, Image: &handler.ImageHandler{}, Route: &handler.RouteHandler{}, Voyage: &handler.VoyageHandler{}, Cabin: &handler.CabinHandler{}, Booking: &handler.BookingHandler{}, User: &handler.UserHandler{}, Upload: &handler.UploadHandler{}, Payment: &handler.PaymentHandler{}, Refund: &handler.RefundHandler{}, Analytics: &handler.AnalyticsHandler{}}
+	deps := Dependencies{JWTSecret: "test-secret", Enforcer: enforcer, Auth: &handler.AuthHandler{}, Company: &handler.CompanyHandler{}, Cruise: &handler.CruiseHandler{}, CabinType: &handler.CabinTypeHandler{}, FacilityCategory: &handler.FacilityCategoryHandler{}, Facility: &handler.FacilityHandler{}, Image: &handler.ImageHandler{}, Voyage: &handler.VoyageHandler{}, Cabin: &handler.CabinHandler{}, Booking: &handler.BookingHandler{}, User: &handler.UserHandler{}, Upload: &handler.UploadHandler{}, Payment: &handler.PaymentHandler{}, Refund: &handler.RefundHandler{}, Analytics: &handler.AnalyticsHandler{}}
 	r := Setup(deps)
 
 	w1 := httptest.NewRecorder()

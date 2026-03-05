@@ -4,33 +4,43 @@ import Page from '../../../app/pages/cruises/index.vue'
 
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
-const confirmMock = vi.fn(() => true)
-vi.stubGlobal('confirm', confirmMock)
 
 describe('Cruise list enhanced', () => {
+    const globalStubs = {
+        NuxtLink: { template: '<a><slot /></a>' },
+        AdminActionLink: { template: '<a><slot /></a>' },
+    }
+
     beforeEach(() => {
         mockRequest.mockReset()
-        confirmMock.mockClear()
-        confirmMock.mockReturnValue(true)
-        mockRequest.mockResolvedValue({ data: { list: [{ id: 1, name: '示例邮轮', code: 'HARMONY', company_id: 9, status: 1 }], total: 1 } })
+        mockRequest.mockImplementation((url: string, options?: any) => {
+            if (url === '/companies' && !options) {
+                return Promise.resolve({ data: { list: [{ id: 9, name: '示例公司' }] } })
+            }
+            if (url === '/cruises/batch-status' && options?.method === 'PUT') {
+                return Promise.resolve({ data: { ok: true } })
+            }
+            return Promise.resolve({ data: { list: [{ id: 1, name: '示例邮轮', code: 'HARMONY', company_id: 9, status: 1 }], total: 1 } })
+        })
     })
 
     it('renders filter controls', async () => {
         const wrapper = mount(Page, {
             global: {
-                stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+                stubs: globalStubs,
             }
         })
         await flushPromises()
         expect(wrapper.find('[data-test="filter-keyword"]').exists()).toBe(true)
         expect(wrapper.find('[data-test="filter-status"]').exists()).toBe(true)
+        expect(wrapper.text()).toContain('示例公司')
         expect(wrapper.find('[data-test="batch-action"]').exists()).toBe(false)
     })
 
     it('shows batch action after selecting rows', async () => {
         const wrapper = mount(Page, {
             global: {
-                stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+                stubs: globalStubs,
             }
         })
         await flushPromises()
@@ -42,7 +52,7 @@ describe('Cruise list enhanced', () => {
     it('maps filter params and submits trimmed keyword/status/sort', async () => {
         const wrapper = mount(Page, {
             global: {
-                stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+                stubs: globalStubs,
             }
         })
         await flushPromises()
@@ -74,7 +84,7 @@ describe('Cruise list enhanced', () => {
     it('calls batch status endpoint after selecting item', async () => {
         const wrapper = mount(Page, {
             global: {
-                stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+                stubs: globalStubs,
             }
         })
         await flushPromises()
@@ -95,7 +105,7 @@ describe('Cruise list enhanced', () => {
     it('shows invalid id error when delete is called with bad id', async () => {
         const wrapper = mount(Page, {
             global: {
-                stubs: { NuxtLink: { template: '<a><slot /></a>' } }
+                stubs: globalStubs,
             }
         })
         await flushPromises()
@@ -104,5 +114,66 @@ describe('Cruise list enhanced', () => {
         await flushPromises()
 
         expect(wrapper.text()).toContain('无效记录 ID，无法删除')
+    })
+
+    it('opens delete modal and sends delete request after confirming', async () => {
+        const wrapper = mount(Page, {
+            global: {
+                stubs: globalStubs,
+            },
+            attachTo: document.body,
+        })
+        await flushPromises()
+
+        const deleteBtn = wrapper.findAll('button').find((btn) => btn.text().trim() === '删除')
+        expect(deleteBtn).toBeTruthy()
+        await deleteBtn!.trigger('click')
+        await flushPromises()
+
+        expect(document.body.textContent || '').toContain('确认删除邮轮')
+        const confirmBtn = Array.from(document.body.querySelectorAll('button')).find((btn) =>
+            (btn.textContent || '').includes('确认删除'),
+        )
+        expect(confirmBtn).toBeTruthy()
+        ;(confirmBtn as HTMLButtonElement).click()
+        await flushPromises()
+
+        expect(mockRequest).toHaveBeenCalledWith('/cruises/1', { method: 'DELETE' })
+        wrapper.unmount()
+    })
+
+    it('shows explicit message when cruise delete is blocked by voyages', async () => {
+        mockRequest.mockImplementation((url: string, options?: any) => {
+            if (url === '/companies' && !options) {
+                return Promise.resolve({ data: { list: [{ id: 9, name: '示例公司' }] } })
+            }
+            if (url === '/cruises/1' && options?.method === 'DELETE') {
+                return Promise.reject({ code: 42204, message: 'cruise has voyages' })
+            }
+            return Promise.resolve({ data: { list: [{ id: 1, name: '示例邮轮', code: 'HARMONY', company_id: 9, status: 1 }], total: 1 } })
+        })
+
+        const wrapper = mount(Page, {
+            global: {
+                stubs: globalStubs,
+            },
+            attachTo: document.body,
+        })
+        await flushPromises()
+
+        const deleteBtn = wrapper.findAll('button').find((btn) => btn.text().trim() === '删除')
+        expect(deleteBtn).toBeTruthy()
+        await deleteBtn!.trigger('click')
+        await flushPromises()
+
+        const confirmBtn = Array.from(document.body.querySelectorAll('button')).find((btn) =>
+            (btn.textContent || '').includes('确认删除'),
+        )
+        expect(confirmBtn).toBeTruthy()
+        ;(confirmBtn as HTMLButtonElement).click()
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('删除失败：该邮轮下存在航次，请先处理关联航次后再删除。')
+        wrapper.unmount()
     })
 })

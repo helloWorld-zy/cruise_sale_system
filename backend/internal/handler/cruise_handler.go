@@ -170,6 +170,7 @@ func (h *CruiseHandler) Update(c *gin.Context) {
 		return
 	}
 	// 更新字段
+	existing.CompanyID = req.CompanyID
 	existing.Name = req.Name
 	existing.EnglishName = req.EnglishName
 	existing.Code = req.Code
@@ -209,6 +210,10 @@ func (h *CruiseHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
 		if errors.Is(err, service.ErrCruiseHasCabins) {
 			response.Error(c, http.StatusConflict, errcode.ErrCruiseHasCabins, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrCruiseHasVoyages) {
+			response.Error(c, http.StatusConflict, errcode.ErrCruiseHasVoyages, err.Error())
 			return
 		}
 		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())

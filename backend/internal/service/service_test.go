@@ -51,6 +51,20 @@ func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, keyword stri
 }
 func (m *mockCruiseRepo) Delete(ctx context.Context, id int64) error { return nil }
 
+type mockCruiseRepoFKDelete struct{}
+
+func (m *mockCruiseRepoFKDelete) Create(ctx context.Context, cruise *domain.Cruise) error { return nil }
+func (m *mockCruiseRepoFKDelete) Update(ctx context.Context, cruise *domain.Cruise) error { return nil }
+func (m *mockCruiseRepoFKDelete) GetByID(ctx context.Context, id int64) (*domain.Cruise, error) {
+	return &domain.Cruise{ID: id}, nil
+}
+func (m *mockCruiseRepoFKDelete) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockCruiseRepoFKDelete) Delete(ctx context.Context, id int64) error {
+	return errors.New(`ERROR: update or delete on table "cruises" violates foreign key constraint "voyages_cruise_id_fkey" on table "voyages" (SQLSTATE 23503)`)
+}
+
 type mockCabinRepo struct{}
 
 func (m *mockCabinRepo) Create(ctx context.Context, cabinType *domain.CabinType) error { return nil }
@@ -104,6 +118,25 @@ func TestCruiseService_DeleteSucceedsWhenNoCabins(t *testing.T) {
 	err := svc.Delete(context.Background(), 99) // cruiseID 99 → 无舱房
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
+	}
+}
+
+func TestCruiseService_DeleteFailsWhenVoyagesExist(t *testing.T) {
+	svc := NewCruiseService(&mockCruiseRepoFKDelete{}, &mockCabinRepo{}, &mockCompanyRepo{})
+	err := svc.Delete(context.Background(), 99)
+	if err == nil {
+		t.Fatal("expected error when voyages exist")
+	}
+	if !errors.Is(err, ErrCruiseHasVoyages) {
+		t.Fatalf("expected ErrCruiseHasVoyages, got %v", err)
+	}
+}
+
+func TestCruiseService_UpdateRequiresValidCompany(t *testing.T) {
+	svc := NewCruiseService(&mockCruiseRepo{}, &mockCabinRepo{}, &mockCompanyRepo{})
+	err := svc.Update(context.Background(), &domain.Cruise{ID: 1, CompanyID: 99, Name: "x"})
+	if err == nil {
+		t.Fatal("expected error when updating cruise with invalid company")
 	}
 }
 

@@ -3,7 +3,7 @@
     <div class="mx-auto max-w-7xl">
       <div class="mb-4 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-slate-900">设施管理</h1>
-        <NuxtLink to="/facilities/new" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">新建设施</NuxtLink>
+        <AdminActionLink to="/facilities/new" variant="primary" size="md">新建设施</AdminActionLink>
       </div>
 
       <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -50,7 +50,7 @@
                 </span>
               </td>
               <td class="p-3">
-                <NuxtLink :to="`/facilities/${item.id}`" class="text-indigo-600 hover:text-indigo-500">编辑</NuxtLink>
+                <AdminActionLink :to="`/facilities/${item.id}`">编辑</AdminActionLink>
               </td>
             </tr>
           </tbody>

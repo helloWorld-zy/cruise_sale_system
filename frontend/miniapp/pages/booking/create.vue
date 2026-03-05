@@ -50,13 +50,13 @@ async function handleSubmit() {
 
     <view class="form">
       <text class="label">航次 ID</text>
-      <input v-model="voyageId" type="number" placeholder="例如 1" :disabled="submitting" />
+      <input v-model="voyageId" type="number" placeholder="输入航次 ID" :disabled="submitting" />
 
       <text class="label">舱位 SKU ID</text>
-      <input v-model="cabinSkuId" type="number" placeholder="例如 1" :disabled="submitting" />
+      <input v-model="cabinSkuId" type="number" placeholder="输入舱位 SKU ID" :disabled="submitting" />
 
       <text class="label">乘客人数</text>
-      <input v-model.number="guests" type="number" min="1" placeholder="例如 2" :disabled="submitting" />
+      <input v-model.number="guests" type="number" min="1" placeholder="输入乘客人数" :disabled="submitting" />
 
       <button class="submit-btn" :disabled="!canSubmit" @click="handleSubmit">
         {{ submitting ? 'Submitting...' : 'Submit Booking' }}
@@ -71,63 +71,74 @@ async function handleSubmit() {
 <style scoped>
 .page {
   min-height: 100vh;
-  padding: 30rpx;
-  background:
-    radial-gradient(circle at 8% 0, #dfeaf4 0, transparent 28%),
-    linear-gradient(180deg, #f4f8fb 0%, #edf3f7 100%);
+  padding: 40rpx;
+  background: #f5f7fa;
+  position: relative;
 }
-
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 360rpx;
+  background: linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%);
+  border-bottom-left-radius: 40rpx;
+  border-bottom-right-radius: 40rpx;
+  z-index: 0;
+}
 .title {
+  position: relative;
+  z-index: 1;
   display: block;
-  margin-bottom: 8rpx;
-  font-size: 46rpx;
-  font-weight: 700;
-  color: #122b42;
-}
-
-.subtitle {
-  display: block;
-  margin-bottom: 18rpx;
-  font-size: 24rpx;
-  color: #5a7189;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-  padding: 24rpx;
-  border-radius: 24rpx;
-  background: #fff;
-  border: 1rpx solid #d4e0ea;
-  box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
-}
-
-.label {
-  font-size: 23rpx;
-  font-weight: 600;
-  color: #24435f;
-}
-
-input {
-  border: 2rpx solid #cfdde7;
-  border-radius: 14rpx;
-  padding: 18rpx;
-  background: #f9fcff;
-}
-
-.submit-btn {
-  margin-top: 8rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #0f3d5c, #1f5f86);
+  margin-bottom: 12rpx;
+  font-size: 48rpx;
+  font-weight: 800;
   color: #fff;
 }
-
-.error {
-  color: #d13e5b;
+.subtitle {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 32rpx;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
 }
-
-.success {
-  color: #0f8b62;
+.form {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: #fff;
+  border: none;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.05);
 }
+.label {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #333;
+  margin-top: 8rpx;
+}
+input {
+  border: none;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  background: #f5f7fa;
+  font-size: 28rpx;
+}
+.submit-btn {
+  margin-top: 24rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 700;
+  border: none;
+  padding: 2rpx 0;
+}
+.error { color: #ffcccc; margin-top: 16rpx; text-align: center; }
+.success { color: #0cebeb; margin-top: 16rpx; text-align: center; font-weight: bold; }
 </style>

@@ -2,6 +2,7 @@
 <!-- 根据路由参数加载并展示单个订单的详细信息 -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 
 declare const useApi: any
 declare const navigateTo: any
@@ -13,6 +14,7 @@ const { request } = useApi()
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
 const booking = ref<{ id: number; status: string; total_cents: number } | null>(null)
 const status = ref('')
@@ -53,14 +55,24 @@ async function handleSave() {
 
 async function handleDelete() {
   if (!booking.value || deleting.value) return
-  if (!confirm(`确认删除订单 #${booking.value.id} 吗？`)) return
+  deleteDialogVisible.value = true
+}
+
+function closeDeleteDialog() {
+  if (deleting.value) return
+  deleteDialogVisible.value = false
+}
+
+async function confirmDelete() {
+  if (!booking.value || deleting.value) return
   deleting.value = true
   error.value = null
   try {
     await request(`/bookings/${booking.value.id}`, { method: 'DELETE' })
+    closeDeleteDialog()
     await navigateTo('/bookings')
   } catch (e: any) {
-    error.value = e?.message ?? 'failed to delete booking'
+    error.value = e?.message ?? '删除订单失败，请稍后重试。'
   } finally {
     deleting.value = false
   }
@@ -83,5 +95,15 @@ async function handleDelete() {
       </div>
     </div>
     <p v-else data-test="empty">暂无订单数据</p>
+
+    <AdminConfirmDialog
+      :visible="deleteDialogVisible"
+      title="确认删除订单"
+      :message="`确认删除订单 #${booking?.id ?? ''} 吗？删除后不可恢复。`"
+      :loading="deleting"
+      loading-text="删除中..."
+      @close="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
