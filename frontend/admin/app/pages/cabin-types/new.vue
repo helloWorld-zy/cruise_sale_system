@@ -38,7 +38,7 @@ async function loadCompanies() {
     const payload = res?.data ?? res ?? {}
     companies.value = Array.isArray(payload) ? payload : payload?.list ?? []
     if (companies.value.length > 0) {
-      const first = Number(companies.value[0].id)
+      const first = Number(companies.value[0]?.id)
       if (Number.isFinite(first) && first > 0) form.value.company_id = first
     }
   } catch {
@@ -64,9 +64,11 @@ async function loadCruises() {
 async function loadCategories() {
   try {
     const res = await request('/cabin-type-categories')
-    categories.value = (res?.data ?? res ?? []).filter((item: Record<string, any>) => Number(item.status ?? 1) !== 0)
+    const payload = res?.data ?? res ?? {}
+    const list = Array.isArray(payload) ? payload : payload?.list ?? []
+    categories.value = list.filter((item: Record<string, any>) => Number(item.status ?? 1) !== 0)
     if (categories.value.length > 0 && form.value.category_id <= 0) {
-      form.value.category_id = Number(categories.value[0].id) || 0
+      form.value.category_id = Number(categories.value[0]?.id) || 0
     }
   } catch {
     categories.value = []

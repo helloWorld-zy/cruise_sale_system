@@ -38,7 +38,8 @@
       </div>
 
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+        <div class="cabin-type-table-wrap overflow-x-auto">
+          <table class="w-full min-w-[1080px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-3">邮轮</th>
@@ -49,7 +50,7 @@
               <th class="p-3">容量</th>
               <th class="p-3">简介</th>
               <th class="p-3">状态</th>
-              <th class="p-3">操作</th>
+              <th class="p-3 whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -73,12 +74,15 @@
               <td class="p-3">
                 <span :class="statusClass(item.status)">{{ statusText(item.status) }}</span>
               </td>
-              <td class="p-3">
-                <AdminActionLink :to="`/cabin-types/${item.id}`">编辑</AdminActionLink>
+              <td class="p-3 whitespace-nowrap">
+                <div class="cabin-type-actions flex items-center gap-2">
+                  <AdminActionLink :to="`/cabin-types/${item.id}`">编辑</AdminActionLink>
+                </div>
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -240,3 +244,9 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.cabin-type-table-wrap {
+  scrollbar-gutter: stable;
+}
+</style>

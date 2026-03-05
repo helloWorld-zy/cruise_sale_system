@@ -71,7 +71,8 @@ async function loadCruises(companyID = 0) {
 async function loadCategories() {
   try {
     const res = await request('/cabin-type-categories')
-    categories.value = res?.data ?? res ?? []
+    const payload = res?.data ?? res ?? {}
+    categories.value = Array.isArray(payload) ? payload : payload?.list ?? []
   } catch {
     categories.value = []
   }

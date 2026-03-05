@@ -96,6 +96,46 @@ describe('Cabin type form pages', () => {
     expect(mockNavigateTo).toHaveBeenCalledWith('/cabin-types')
   })
 
+  it('new page renders category options when categories API returns list payload', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies') {
+        return Promise.resolve({ data: { list: [{ id: 1, name: 'Oceanic' }] } })
+      }
+      if (url === '/cruises') {
+        return Promise.resolve({ data: { list: [{ id: 1, name: 'Ocean Nova' }] } })
+      }
+      if (url === '/cabin-type-categories') {
+        return Promise.resolve({
+          data: {
+            list: [
+              { id: 1, name: '内舱房', status: 1 },
+              { id: 2, name: '海景房', status: 1 },
+              { id: 3, name: '阳台房', status: 1 },
+              { id: 4, name: '套房', status: 1 },
+            ],
+          },
+        })
+      }
+      if (url === '/cabin-types' && options?.query?.cruise_id === 1) {
+        return Promise.resolve({ data: { list: [] } })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = mount(NewPage, { global: globalConfig })
+    await flushPromises()
+
+    const selects = wrapper.findAll('select')
+    const categorySelect = selects[1]
+    expect(categorySelect?.exists()).toBe(true)
+    const optionLabels = categorySelect!.findAll('option').map((opt) => opt.text())
+
+    expect(optionLabels).toContain('内舱房')
+    expect(optionLabels).toContain('海景房')
+    expect(optionLabels).toContain('阳台房')
+    expect(optionLabels).toContain('套房')
+  })
+
   it('edit page loads detail and updates', async () => {
     const wrapper = mount(EditPage, { global: globalConfig })
     await flushPromises()
