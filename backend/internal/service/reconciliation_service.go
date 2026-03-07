@@ -10,23 +10,26 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
+// PaymentReconciliationReader 定义支付对账数据查询接口。
 type PaymentReconciliationReader interface {
-	SumByDate(ctx context.Context, date time.Time) (int64, error)
-	CountByDate(ctx context.Context, date time.Time) (int64, error)
-	SumRefundsByDate(ctx context.Context, date time.Time) (int64, error)
+	SumByDate(ctx context.Context, date time.Time) (int64, error)        // 按日期统计支付金额
+	CountByDate(ctx context.Context, date time.Time) (int64, error)      // 按日期统计支付笔数
+	SumRefundsByDate(ctx context.Context, date time.Time) (int64, error) // 按日期统计退款金额
 }
 
+// ReconciliationService 提供每日对账报表生成服务。
 type ReconciliationService struct {
-	paymentRepo PaymentReconciliationReader
-	mu          sync.Mutex
-	generated   map[string]struct{}
+	paymentRepo PaymentReconciliationReader // 支付数据仓储
+	mu          sync.Mutex                  // 互斥锁，防止重复生成
+	generated   map[string]struct{}         // 已生成的报表日期缓存
 }
 
 var (
-	// ErrReconciliationReportAlreadyGenerated indicates a daily report has already been generated for the date.
+	// ErrReconciliationReportAlreadyGenerated 表示指定日期的对账报表已生成。
 	ErrReconciliationReportAlreadyGenerated = errors.New("reconciliation report already generated for date")
 )
 
+// NewReconciliationService 创建对账服务实例。
 func NewReconciliationService(paymentRepo PaymentReconciliationReader) *ReconciliationService {
 	return &ReconciliationService{
 		paymentRepo: paymentRepo,
@@ -34,6 +37,9 @@ func NewReconciliationService(paymentRepo PaymentReconciliationReader) *Reconcil
 	}
 }
 
+// GenerateDailyReport 生成指定日期的每日对账报表。
+// 流程：检查是否已生成 → 查询支付/退款数据 → 生成对账报表。
+// 注意：此方法仅在内存中记录已生成状态，重启服务后会重置。
 func (s *ReconciliationService) GenerateDailyReport(ctx context.Context, date time.Time) (*domain.Reconciliation, error) {
 	normalizedDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 	dateKey := normalizedDate.Format("2006-01-02")
