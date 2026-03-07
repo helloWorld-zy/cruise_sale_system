@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-7xl">
-      <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">设施管理</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="设施管理">
+      <template #actions>
         <AdminActionLink to="/facilities/new" variant="primary" size="md">新建设施</AdminActionLink>
-      </div>
+      </template>
+    </AdminPageHeader>
 
-      <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-        <div class="flex flex-wrap items-center gap-3">
+    <AdminFilterBar>
+      <div class="flex flex-wrap items-center gap-3">
           <select v-model.number="filters.cruiseId" data-test="facility-cruise-filter" class="h-10 min-w-56 rounded-md border border-slate-200 px-3 text-sm text-slate-700 outline-none ring-indigo-500 focus:ring-2">
             <option :value="0">选择邮轮</option>
             <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
@@ -17,11 +17,11 @@
             <option v-for="cat in categories" :key="cat.id" :value="Number(cat.id)">{{ cat.name || `分类 #${cat.id}` }}</option>
           </select>
           <button type="button" class="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50" @click="loadItems">筛选</button>
-        </div>
       </div>
+    </AdminFilterBar>
 
-      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="w-full text-sm">
+    <AdminDataCard flush>
+      <table class="w-full text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
               <th class="p-3">名称</th>
@@ -41,13 +41,11 @@
               <td class="p-3 text-slate-600">{{ item.location || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.open_hours || '-' }}</td>
               <td class="p-3">
-                <span v-if="item.extra_charge" class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">收费</span>
-                <span v-else class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">免费</span>
+                <AdminStatusTag v-if="item.extra_charge" type="warning" text="收费" />
+                <AdminStatusTag v-else type="success" text="免费" />
               </td>
               <td class="p-3">
-                <span :class="Number(item.status ?? 1) === 1 ? 'rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700' : 'rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600'">
-                  {{ Number(item.status ?? 1) === 1 ? '开放' : '关闭' }}
-                </span>
+                <AdminStatusTag :type="Number(item.status ?? 1) === 1 ? 'success' : 'info'" :text="Number(item.status ?? 1) === 1 ? '开放' : '关闭'" />
               </td>
               <td class="p-3">
                 <AdminActionLink :to="`/facilities/${item.id}`">编辑</AdminActionLink>
@@ -55,8 +53,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
+    </AdminDataCard>
   </div>
 </template>
 

@@ -7,6 +7,7 @@ import AdminCompanySelect from '../../components/AdminCompanySelect.vue'
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 const companies = ref<Array<{ id: number; name: string; english_name?: string; logo_url?: string }>>([])
 
 const form = ref({
@@ -27,8 +28,37 @@ const form = ref({
   status: 1,
 })
 
+function validateForm() {
+  const nextErrors: Record<string, string> = {}
+  if (!String(form.value.name || '').trim()) {
+    nextErrors.name = '请填写邮轮名称'
+  }
+  if (!Number.isFinite(Number(form.value.company_id)) || Number(form.value.company_id) <= 0) {
+    nextErrors.company_id = '请选择所属公司'
+  }
+
+  const buildYear = Number(form.value.build_year)
+  const refurbishYear = Number(form.value.refurbish_year)
+  if (buildYear > 0 && (buildYear < 1900 || buildYear > 2100)) {
+    nextErrors.build_year = '建造年份需在 1900-2100 之间'
+  }
+  if (refurbishYear > 0 && (refurbishYear < 1900 || refurbishYear > 2100)) {
+    nextErrors.refurbish_year = '翻新年份需在 1900-2100 之间'
+  }
+  if (buildYear > 0 && refurbishYear > 0 && refurbishYear < buildYear) {
+    nextErrors.refurbish_year = '翻新年份不能小于建造年份'
+  }
+
+  fieldErrors.value = nextErrors
+  return Object.keys(nextErrors).length === 0
+}
+
 async function handleSubmit() {
   if (loading.value) return
+  if (!validateForm()) {
+    error.value = '请先修正表单校验错误'
+    return
+  }
   loading.value = true
   error.value = null
   try {
@@ -76,42 +106,113 @@ onMounted(loadCompanies)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h1 class="mb-4 text-xl font-semibold text-slate-900">新建邮轮</h1>
-      <form class="space-y-4" @submit.prevent="handleSubmit">
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="text-sm text-slate-600">名称<input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">英文名<input v-model="form.english_name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">代码<input v-model="form.code" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">所属公司
-            <div class="mt-1">
+  <div class="admin-page">
+    <AdminPageHeader title="新建邮轮" />
+    <AdminFormCard title="邮轮基础信息">
+      <form class="admin-cruise-form" @submit.prevent="handleSubmit">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">创建新邮轮档案</h2>
+          <p class="admin-cruise-form__intro-desc">请先填写标识与所属公司，再补充规格参数与运营状态，便于后续航次、舱型和价格管理联动。</p>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">识别信息</h3>
+          <p class="admin-cruise-form__section-subtitle">用于后台检索、筛选与对外展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>名称</span><span class="admin-cruise-form__field-hint">必填</span></span>
+              <input v-model="form.name" :class="['admin-cruise-form__control', fieldErrors.name && 'admin-cruise-form__control--error']" :disabled="loading" />
+              <p v-if="fieldErrors.name" class="admin-form-error-text">{{ fieldErrors.name }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>英文名</span><span class="admin-cruise-form__field-hint">选填</span></span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>代码</span><span class="admin-cruise-form__field-hint">建议唯一</span></span>
+              <input v-model="form.code" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>所属公司</span><span class="admin-cruise-form__field-hint">必选</span></span>
               <AdminCompanySelect v-model="form.company_id" :options="companies" :disabled="loading" placeholder="请选择公司" />
-            </div>
+              <p v-if="fieldErrors.company_id" class="admin-form-error-text">{{ fieldErrors.company_id }}</p>
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">规格参数</h3>
+          <p class="admin-cruise-form__section-subtitle">按实际船舶参数填写，便于后续运营统计与展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>吨位</span><span class="admin-cruise-form__field-hint">单位: 吨</span></span>
+              <input v-model.number="form.tonnage" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>载客量</span><span class="admin-cruise-form__field-hint">人数</span></span>
+              <input v-model.number="form.passenger_capacity" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>船员数</span><span class="admin-cruise-form__field-hint">人数</span></span>
+              <input v-model.number="form.crew_count" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>建造年份</span><span class="admin-cruise-form__field-hint">YYYY</span></span>
+              <input v-model.number="form.build_year" type="number" :class="['admin-cruise-form__control', fieldErrors.build_year && 'admin-cruise-form__control--error']" :disabled="loading" />
+              <p v-if="fieldErrors.build_year" class="admin-form-error-text">{{ fieldErrors.build_year }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>翻新年份</span><span class="admin-cruise-form__field-hint">YYYY</span></span>
+              <input v-model.number="form.refurbish_year" type="number" :class="['admin-cruise-form__control', fieldErrors.refurbish_year && 'admin-cruise-form__control--error']" :disabled="loading" />
+              <p v-if="fieldErrors.refurbish_year" class="admin-form-error-text">{{ fieldErrors.refurbish_year }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>长度(m)</span><span class="admin-cruise-form__field-hint">船长</span></span>
+              <input v-model.number="form.length" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>宽度(m)</span><span class="admin-cruise-form__field-hint">船宽</span></span>
+              <input v-model.number="form.width" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>甲板数</span><span class="admin-cruise-form__field-hint">整数</span></span>
+              <input v-model.number="form.deck_count" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">运营配置</h3>
+          <p class="admin-cruise-form__section-subtitle">控制排序和上架状态，描述内容用于前台展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>排序</span><span class="admin-cruise-form__field-hint">数字越小越靠前</span></span>
+              <input v-model.number="form.sort_order" type="number" class="admin-cruise-form__control" :disabled="loading" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>状态</span><span class="admin-cruise-form__field-hint">影响前台可见性</span></span>
+              <select v-model.number="form.status" class="admin-cruise-form__control" :disabled="loading">
+                <option :value="1">上架</option>
+                <option :value="2">维护中</option>
+                <option :value="0">下架</option>
+              </select>
+            </label>
+          </div>
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>描述</span><span class="admin-cruise-form__field-hint">建议填写亮点与定位</span></span>
+            <textarea v-model="form.description" class="admin-cruise-form__control admin-cruise-form__control--textarea" :disabled="loading" />
           </label>
-          <label class="text-sm text-slate-600">吨位<input v-model.number="form.tonnage" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">载客量<input v-model.number="form.passenger_capacity" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">船员数<input v-model.number="form.crew_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">建造年份<input v-model.number="form.build_year" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">翻新年份<input v-model.number="form.refurbish_year" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">长度(m)<input v-model.number="form.length" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">宽度(m)<input v-model.number="form.width" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">甲板数<input v-model.number="form.deck_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-          <label class="text-sm text-slate-600">排序<input v-model.number="form.sort_order" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-        </div>
-        <label class="block text-sm text-slate-600">描述<textarea v-model="form.description" class="mt-1 min-h-[180px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 outline-none ring-indigo-500 focus:ring-2" :disabled="loading" /></label>
-        <label class="block text-sm text-slate-600">状态
-          <select v-model.number="form.status" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="loading">
-            <option :value="1">上架</option>
-            <option :value="2">维护中</option>
-            <option :value="0">下架</option>
-          </select>
-        </label>
-        <div class="rounded-lg border-2 border-dashed border-slate-300 p-4 text-sm text-slate-500">图片上传（占位，Task 16 后续接入拖拽与主图标识）</div>
+        </section>
+
+        <div class="admin-cruise-form__upload">图片上传（占位，Task 16 后续接入拖拽与主图标识）</div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
-        <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="loading">{{ loading ? '提交中...' : '创建' }}</button>
+
+        <div class="admin-cruise-form__actions">
+          <button type="button" class="admin-btn admin-btn--secondary" :disabled="loading" @click="navigateTo('/cruises')">返回列表</button>
+          <button type="submit" class="admin-btn" :disabled="loading">{{ loading ? '提交中...' : '创建' }}</button>
+        </div>
       </form>
-    </div>
+    </AdminFormCard>
   </div>
 </template>
 

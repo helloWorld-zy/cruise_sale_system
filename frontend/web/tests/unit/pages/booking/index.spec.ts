@@ -13,7 +13,7 @@ vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 describe('Booking Step 1', () => {
     it('渲染标题和输入框', () => {
         const wrapper = mount(Page)
-        expect(wrapper.text()).toContain('Booking Step 1')
+        expect(wrapper.text()).toContain('填写预订信息')
         expect(wrapper.find('input#voyage-id').exists()).toBe(true)
         expect(wrapper.find('input#cabin-sku-id').exists()).toBe(true)
         expect(wrapper.find('input#guests').exists()).toBe(true)

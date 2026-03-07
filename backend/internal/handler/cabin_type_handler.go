@@ -78,6 +78,29 @@ func (h *CabinTypeHandler) List(c *gin.Context) {
 	response.Success(c, gin.H{"list": items, "total": total})
 }
 
+// Get godoc
+// @Summary Get a cabin type
+// @Tags CabinType
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "CabinType ID"
+// @Success 200 {object} response.Response
+// @Router /api/v1/admin/cabin-types/{id} [get]
+// Get 查询单个舱房类型详情。
+func (h *CabinTypeHandler) Get(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, errcode.ErrValidation, "invalid id")
+		return
+	}
+	item, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, errcode.ErrNotFound, "cabin type not found")
+		return
+	}
+	response.Success(c, item)
+}
+
 // Create godoc
 // @Summary Create a cabin type
 // @Tags CabinType

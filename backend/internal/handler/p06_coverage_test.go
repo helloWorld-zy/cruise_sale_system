@@ -49,6 +49,42 @@ func (m *mockBookingAdminStore) Delete(_ context.Context, id int64) error {
 	return nil
 }
 
+type captureBookingAdminStore struct {
+	filter   repository.BookingFilter
+	page     int
+	pageSize int
+}
+
+func (s *captureBookingAdminStore) List(_ context.Context, page, pageSize int) ([]domain.Booking, int64, error) {
+	s.page = page
+	s.pageSize = pageSize
+	return []domain.Booking{{ID: 1}}, 1, nil
+}
+
+func (s *captureBookingAdminStore) ListWithFilter(_ context.Context, filter repository.BookingFilter, page, pageSize int) ([]domain.Booking, int64, error) {
+	s.filter = filter
+	s.page = page
+	s.pageSize = pageSize
+	return []domain.Booking{{ID: 1}}, 1, nil
+}
+
+func (s *captureBookingAdminStore) GetByID(_ context.Context, id int64) (*domain.Booking, error) {
+	return &domain.Booking{ID: id}, nil
+}
+
+func (s *captureBookingAdminStore) TransitionStatus(_ context.Context, id int64, status string, operatorID int64, remark string) error {
+	_ = id
+	_ = status
+	_ = operatorID
+	_ = remark
+	return nil
+}
+
+func (s *captureBookingAdminStore) Delete(_ context.Context, id int64) error {
+	_ = id
+	return nil
+}
+
 func doJSONReq(r *gin.Engine, method, path string, body interface{}) *httptest.ResponseRecorder {
 	var buf []byte
 	if body != nil {
@@ -78,6 +114,31 @@ func TestBookingHandler_AdminList(t *testing.T) {
 	r2.GET("/bookings", h2.AdminList)
 	w2 := doJSONReq(r2, "GET", "/bookings", nil)
 	assert.Equal(t, http.StatusInternalServerError, w2.Code)
+}
+
+func TestBookingHandler_AdminList_ParsesExtendedFilters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	store := &captureBookingAdminStore{}
+	h := NewBookingHandler(&mockBookingSvc{}, store)
+	r.GET("/bookings", h.AdminList)
+
+	w := doJSONReq(r, "GET", "/bookings?page=2&page_size=15&booking_no=BK001&phone=1380000&voyage_code=VOY-2026&cruise_name=%E6%B5%B7%E6%B4%8B&keyword=%E9%87%8F%E5%AD%90&status=paid&start_date=2026-03-01&end_date=2026-03-31", nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 2, store.page)
+	assert.Equal(t, 15, store.pageSize)
+	assert.Equal(t, "BK001", store.filter.BookingNo)
+	assert.Equal(t, "1380000", store.filter.Phone)
+	assert.Equal(t, "VOY-2026", store.filter.VoyageCode)
+	assert.Equal(t, "海洋", store.filter.CruiseName)
+	assert.Equal(t, "量子", store.filter.Keyword)
+	assert.Equal(t, "paid", store.filter.Status)
+	if assert.NotNil(t, store.filter.StartDate) {
+		assert.Equal(t, "2026-03-01", *store.filter.StartDate)
+	}
+	if assert.NotNil(t, store.filter.EndDate) {
+		assert.Equal(t, "2026-03-31", *store.filter.EndDate)
+	}
 }
 
 func TestBookingHandler_AdminGet(t *testing.T) {

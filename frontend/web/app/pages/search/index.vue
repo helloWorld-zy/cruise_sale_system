@@ -1,34 +1,34 @@
 <template>
   <div class="min-h-screen bg-[#fcfbf9] pb-24 text-slate-900 font-sans">
-    <div class="bg-[#0f3d5c] text-[#fcfbf9] py-16 px-6 mb-10 relative overflow-hidden">
+    <div class="bg-[var(--color-primary)] text-white py-16 px-6 mb-10 relative overflow-hidden">
       <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
       <div class="max-w-6xl mx-auto relative z-10">
-        <p class="text-[10px] tracking-[0.3em] font-bold uppercase mb-4 text-[#c9a96e]">Cabin Selection</p>
-        <h1 class="font-['Playfair_Display','Georgia',serif] text-4xl md:text-5xl text-white">搜索舱位</h1>
+        <p class="text-[10px] tracking-[0.3em] font-bold uppercase mb-4 text-[var(--color-cta)]">Cabin Selection</p>
+        <h1 class="heading-font text-4xl md:text-5xl text-white">搜索舱位</h1>
       </div>
     </div>
 
     <main class="mx-auto max-w-6xl px-6">
-      <div class="mb-12 flex flex-wrap gap-4 -mt-24 relative z-20 bg-white/90 backdrop-blur-md p-6 border border-[#eadfcb]/50 shadow-2xl">
+      <div class="mb-12 flex flex-wrap gap-4 -mt-24 relative z-20 bg-white/90 backdrop-blur-md p-6 border border-[var(--web-border)] shadow-2xl rounded-xl">
         <input 
           v-model="filters.keyword"
           type="text"
           placeholder="搜索舱位编号"
-          class="h-12 flex-1 min-w-48 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none"
+          class="h-12 flex-1 min-w-48 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[var(--color-primary)] transition-colors rounded-none"
           @keyup.enter="handleSearch"
         />
         
-        <select v-model.number="filters.routeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none appearance-none">
+        <select v-model.number="filters.routeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[var(--color-primary)] transition-colors rounded-none appearance-none">
           <option :value="0">选择航线</option>
           <option v-for="route in routes" :key="route.id" :value="Number(route.id)">{{ route.name || `航线 #${route.id}` }}</option>
         </select>
         
-        <select v-model.number="filters.cabinTypeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[#c9a96e] transition-colors rounded-none appearance-none">
+        <select v-model.number="filters.cabinTypeId" class="h-12 min-w-40 border-b-2 border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-[var(--color-primary)] transition-colors rounded-none appearance-none">
           <option :value="0">选择舱型</option>
           <option v-for="ct in cabinTypes" :key="ct.id" :value="Number(ct.id)">{{ ct.name || `舱型 #${ct.id}` }}</option>
         </select>
 
-        <button type="button" class="h-12 bg-[#0f3d5c] px-8 text-xs tracking-widest text-white hover:bg-[#1a3a5c] transition-colors uppercase font-serif" @click="handleSearch">
+        <button type="button" class="btn-primary h-12 px-8 text-xs tracking-widest uppercase rounded-lg" @click="handleSearch">
           搜索
         </button>
       </div>
@@ -50,7 +50,7 @@
           v-for="cabin in results"
           :key="cabin.id"
           :to="`/cabins/${cabin.id}`"
-          class="group overflow-hidden bg-white shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl border border-transparent hover:border-[#eadfcb]"
+          class="card group !p-0 overflow-hidden border border-transparent hover:border-[var(--color-cta)]"
         >
           <div class="relative aspect-[16/10] overflow-hidden bg-slate-100">
             <img 
@@ -61,18 +61,18 @@
             <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </div>
           <div class="flex flex-col space-y-4 p-6 bg-white relative">
-            <h3 class="font-['Playfair_Display','Georgia',serif] text-2xl text-[#0f3d5c]">
+            <h3 class="heading-font text-2xl text-[var(--color-primary)]">
               {{ cabin.code || `舱位 #${cabin.id}` }}
             </h3>
-            <div class="flex flex-wrap gap-3 text-[11px] font-semibold tracking-wider text-slate-500">
-              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.cabin_type_name || '-' }}</span>
-              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.deck || '-' }}甲板</span>
-              <span class="border-b border-[#eadfcb] pb-1">{{ cabin.area || '-' }}m²</span>
+            <div class="flex flex-wrap gap-3 text-[11px] font-semibold tracking-wider text-[var(--web-muted)]">
+              <span class="border-b border-[var(--web-border)] pb-1">{{ cabin.cabin_type_name || '-' }}</span>
+              <span class="border-b border-[var(--web-border)] pb-1">{{ cabin.deck || '-' }}甲板</span>
+              <span class="border-b border-[var(--web-border)] pb-1">{{ cabin.area || '-' }}m²</span>
             </div>
             
             <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between">
               <div>
-                <span class="font-['Playfair_Display','Georgia',serif] text-2xl text-[#c9a96e]">¥{{ displayPrice(cabin) }}</span>
+                <span class="heading-font text-2xl text-[var(--color-cta)]">¥{{ displayPrice(cabin) }}</span>
               </div>
               <span :class="inventoryBadgeClass(cabin)">{{ inventoryLabel(cabin) }}</span>
             </div>
@@ -206,7 +206,7 @@ async function handleSearch() {
 
 function cabinImage(cabin: CabinItem): string {
   if (cabin.images && cabin.images.length > 0) {
-    return cabin.images[0].url
+    return cabin.images[0]?.url || `https://picsum.photos/seed/cabin-${cabin.id}/800/500`
   }
   return `https://picsum.photos/seed/cabin-${cabin.id}/800/500`
 }

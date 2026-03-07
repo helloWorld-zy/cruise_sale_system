@@ -122,6 +122,7 @@ func Setup(deps Dependencies) *gin.Engine {
 	cabinTypes := admin.Group("/cabin-types")
 	{
 		cabinTypes.GET("", deps.CabinType.List)                      // 查询舱房类型列表
+		cabinTypes.GET("/:id", deps.CabinType.Get)                   // 查询舱房类型详情
 		cabinTypes.POST("", deps.CabinType.Create)                   // 创建舱房类型
 		cabinTypes.POST("/batch-create", deps.CabinType.BatchCreate) // 按多邮轮批量创建舱型
 		cabinTypes.PUT("/:id", deps.CabinType.Update)                // 更新舱房类型

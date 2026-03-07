@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-7xl">
-      <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">舱位商品管理</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="舱位商品管理">
+      <template #actions>
         <AdminActionLink to="/cabins/new" variant="primary" size="md">新建舱位</AdminActionLink>
-      </div>
+      </template>
+    </AdminPageHeader>
 
-      <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-        <div class="flex flex-wrap items-center gap-3">
+    <AdminFilterBar>
+      <div class="flex flex-wrap items-center gap-3">
           <select v-model.number="filters.cruiseId" data-test="filter-cruise" class="h-10 min-w-44 rounded-md border border-slate-200 px-3 text-sm outline-none ring-indigo-500 focus:ring-2" @change="handleCruiseChange">
             <option :value="0">邮轮</option>
             <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
@@ -28,11 +28,11 @@
             <option :value="-1">下架</option>
           </select>
           <button type="button" class="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50" @click="loadItems">筛选</button>
-        </div>
       </div>
+    </AdminFilterBar>
 
-      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div class="cabin-table-wrap overflow-x-auto">
+    <AdminDataCard flush>
+      <div class="cabin-table-wrap overflow-x-auto">
           <table class="w-full min-w-[1200px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
@@ -70,7 +70,7 @@
                   </div>
                 </div>
               </td>
-              <td class="p-3"><span :class="statusClass(item.status)">{{ statusText(item.status) }}</span></td>
+              <td class="p-3"><AdminStatusTag :type="statusType(item.status)" :text="statusText(item.status)" /></td>
               <td class="p-3 whitespace-nowrap">
                 <div class="cabin-actions flex items-center gap-2">
                   <AdminActionLink :to="`/cabins/${item.id}`">编辑</AdminActionLink>
@@ -81,14 +81,13 @@
             </tr>
           </tbody>
           </table>
-        </div>
       </div>
+    </AdminDataCard>
 
-      <div v-if="selectedIds.size > 0" data-test="batch-action" class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
-        <span>已选 {{ selectedIds.size }} 项</span>
-        <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(1)">批量上架</button>
-        <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(-1)">批量下架</button>
-      </div>
+    <div v-if="selectedIds.size > 0" data-test="batch-action" class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white">
+      <span>已选 {{ selectedIds.size }} 项</span>
+      <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(1)">批量上架</button>
+      <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(-1)">批量下架</button>
     </div>
   </div>
 </template>
@@ -254,6 +253,13 @@ function statusClass(statusRaw: unknown) {
   if (status === 1) return 'rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700'
   if (status === 2) return 'rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700'
   return 'rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600'
+}
+
+function statusType(statusRaw: unknown): 'success' | 'warning' | 'info' {
+  const status = Number(statusRaw)
+  if (status === 1) return 'success'
+  if (status === 2) return 'warning'
+  return 'info'
 }
 
 function toggleSingle(id: number, checked: boolean) {

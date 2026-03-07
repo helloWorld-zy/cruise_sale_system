@@ -14,13 +14,16 @@ import (
 )
 
 type OrderFilter struct {
-	Status    string
-	Phone     string
-	RouteID   int64
-	VoyageID  int64
-	StartDate *time.Time
-	EndDate   *time.Time
-	BookingNo string
+	Status     string
+	Phone      string
+	RouteID    int64
+	VoyageID   int64
+	VoyageCode string
+	CruiseName string
+	Keyword    string
+	StartDate  *string
+	EndDate    *string
+	BookingNo  string
 }
 
 type OrderRepositoryFilter interface {
@@ -70,14 +73,21 @@ func (s *OrderExportService) ExportToExcel(ctx context.Context, filter OrderFilt
 func generateExcelBytes(orders []domain.Booking) []byte {
 	buf := bytes.NewBuffer(nil)
 	writer := csv.NewWriter(buf)
-	_ = writer.Write([]string{"id", "user_id", "voyage_id", "cabin_sku_id", "status", "total_cents", "paid_cents", "created_at"})
+	_ = writer.Write([]string{"booking_no", "phone", "voyage_code", "cruise_name", "status", "user_id", "voyage_id", "cabin_sku_id", "total_cents", "paid_cents", "created_at"})
 	for _, order := range orders {
+		bookingNo := order.BookingNo
+		if bookingNo == "" {
+			bookingNo = strconv.FormatInt(order.ID, 10)
+		}
 		_ = writer.Write([]string{
-			strconv.FormatInt(order.ID, 10),
+			sanitizeCSVCell(bookingNo),
+			sanitizeCSVCell(order.Phone),
+			sanitizeCSVCell(order.VoyageCode),
+			sanitizeCSVCell(order.CruiseName),
+			sanitizeCSVCell(order.Status),
 			strconv.FormatInt(order.UserID, 10),
 			strconv.FormatInt(order.VoyageID, 10),
 			strconv.FormatInt(order.CabinSKUID, 10),
-			sanitizeCSVCell(order.Status),
 			strconv.FormatInt(order.TotalCents, 10),
 			strconv.FormatInt(order.PaidCents, 10),
 			order.CreatedAt.Format(time.RFC3339),

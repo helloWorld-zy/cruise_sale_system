@@ -87,40 +87,24 @@ async function loadDetail() {
   loading.value = true
   error.value = null
   try {
-    let detail: Record<string, any> | null = null
+    const res = await request(`/cabin-types/${id.value}`)
+    const payload = res?.data ?? res ?? {}
+    const detail = payload && !Array.isArray(payload) ? payload : null
 
-    const companyCandidates = companies.value.length > 0 ? companies.value : [{ id: 0 }]
-    for (const company of companyCandidates) {
-      const companyID = Number(company.id || 0)
-      await loadCruises(companyID)
-      for (const cruise of cruises.value) {
-        const cruiseID = Number(cruise.id)
-        if (!Number.isFinite(cruiseID) || cruiseID <= 0) continue
-        const res = await request('/cabin-types', {
-          query: { cruise_id: cruiseID, page: 1, page_size: 200 },
-        })
-        const payload = res?.data ?? res ?? {}
-        const list = Array.isArray(payload) ? payload : payload?.list ?? []
-        const found = list.find((item: Record<string, any>) => Number(item.id) === id.value)
-        if (found) {
-          detail = found
-          break
-        }
-      }
-      if (detail) break
-    }
-
-    if (!detail) {
+    if (!detail || Object.keys(detail).length === 0) {
       error.value = '未找到舱型详情'
       return
     }
 
-    const companyID = Number(detail.company_id || 0)
-    await loadCruises(companyID)
+    const cruiseID = Number(detail.cruise_id || 0)
+    await loadCruises()
+    const matchedCruise = cruises.value.find((item) => Number(item.id) === cruiseID)
+    const companyID = Number(detail.company_id || matchedCruise?.company_id || 0)
+    if (companyID > 0) await loadCruises(companyID)
 
     form.value = {
       company_id: companyID,
-      cruise_id: Number(detail.cruise_id || 0),
+      cruise_id: cruiseID,
       category_id: Number(detail.category_id || 0),
       name: detail.name || '',
       english_name: detail.english_name || '',
@@ -270,111 +254,126 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-6xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">编辑舱型</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="编辑舱型" subtitle="维护舱型基础参数、展示信息和媒体资源。">
+      <template #actions>
         <div class="flex items-center gap-2">
           <button type="button" class="rounded-md border border-rose-200 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50" :disabled="loading" @click="handleDelete">删除</button>
           <AdminActionLink to="/cabin-types">返回列表</AdminActionLink>
         </div>
-      </div>
+      </template>
+    </AdminPageHeader>
 
-      <form class="space-y-6" @submit.prevent="handleSubmit">
-        <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>公司</span>
-            <select v-model.number="form.company_id" disabled class="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3">
-              <option :value="0">未知公司</option>
-              <option v-for="company in companies" :key="company.id" :value="Number(company.id)">{{ company.name || `公司 #${company.id}` }}</option>
-            </select>
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>邮轮</span>
-            <select v-model.number="form.cruise_id" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2">
-              <option :value="0">请选择邮轮</option>
-              <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
-            </select>
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>舱型大类</span>
-            <select v-model.number="form.category_id" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2">
-              <option :value="0">请选择大类</option>
-              <option v-for="category in categories" :key="category.id" :value="Number(category.id)">{{ category.name || `分类 #${category.id}` }}</option>
-            </select>
-          </label>
+    <AdminFormCard title="舱型详情">
+      <form class="admin-cruise-form" @submit.prevent="handleSubmit">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">舱型信息维护</h2>
+          <p class="admin-cruise-form__intro-desc">当前正在编辑舱型 ID #{{ id }}，修改后会同步更新该舱型信息。</p>
         </section>
 
-        <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>舱型名称</span>
-            <input v-model="form.name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>英文名</span>
-            <input v-model="form.english_name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>代码</span>
-            <input v-model="form.code" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>面积最小值</span>
-            <input v-model.number="form.area_min" type="number" min="0" step="0.1" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>面积最大值</span>
-            <input v-model.number="form.area_max" type="number" min="0" step="0.1" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>排序权重</span>
-            <input v-model.number="form.sort_order" type="number" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>默认入住人数</span>
-            <input v-model.number="form.occupancy" type="number" min="1" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>标准容量</span>
-            <input v-model.number="form.capacity" type="number" min="1" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>最大容量</span>
-            <input v-model.number="form.max_capacity" type="number" min="1" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-        </section>
-
-        <section>
-          <label class="space-y-1 text-sm text-slate-600">
-            <span>简介</span>
-            <textarea v-model="form.intro" rows="4" class="w-full rounded-md border border-slate-200 px-3 py-2 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label class="space-y-1 text-sm text-slate-600">
-              <span>标签（逗号分隔）</span>
-              <input v-model="form.tags" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">基础信息</h3>
+          <p class="admin-cruise-form__section-subtitle">用于后台识别、前台文案展示和筛选。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">公司</span>
+              <select v-model.number="form.company_id" disabled class="admin-cruise-form__control admin-cruise-form__control--disabled">
+                <option :value="0">未知公司</option>
+                <option v-for="company in companies" :key="company.id" :value="Number(company.id)">{{ company.name || `公司 #${company.id}` }}</option>
+              </select>
             </label>
-            <label class="space-y-1 text-sm text-slate-600">
-              <span>设施（逗号分隔）</span>
-              <input v-model="form.amenities" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">邮轮</span>
+              <select v-model.number="form.cruise_id" class="admin-cruise-form__control">
+                <option :value="0">请选择邮轮</option>
+                <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
+              </select>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">舱型大类</span>
+              <select v-model.number="form.category_id" class="admin-cruise-form__control">
+                <option :value="0">请选择大类</option>
+                <option v-for="category in categories" :key="category.id" :value="Number(category.id)">{{ category.name || `分类 #${category.id}` }}</option>
+              </select>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">舱型名称</span>
+              <input v-model="form.name" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">英文名</span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">代码</span>
+              <input v-model="form.code" class="admin-cruise-form__control" />
             </label>
           </div>
         </section>
 
-        <section class="rounded-md border border-slate-200 p-4">
-          <h2 class="mb-3 text-sm font-semibold text-slate-700">舱型媒体</h2>
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <select v-model="mediaType" class="h-10 rounded-md border border-slate-200 px-3 text-sm">
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">规格参数</h3>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">面积最小值</span>
+              <input v-model.number="form.area_min" type="number" min="0" step="0.1" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">面积最大值</span>
+              <input v-model.number="form.area_max" type="number" min="0" step="0.1" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">排序权重</span>
+              <input v-model.number="form.sort_order" type="number" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">默认入住人数</span>
+              <input v-model.number="form.occupancy" type="number" min="1" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">标准容量</span>
+              <input v-model.number="form.capacity" type="number" min="1" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">最大容量</span>
+              <input v-model.number="form.max_capacity" type="number" min="1" class="admin-cruise-form__control" />
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">简介与标签</h3>
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label">简介</span>
+            <textarea v-model="form.intro" rows="4" class="admin-cruise-form__control admin-cruise-form__control--textarea" />
+          </label>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">标签（逗号分隔）</span>
+              <input v-model="form.tags" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">设施（逗号分隔）</span>
+              <input v-model="form.amenities" class="admin-cruise-form__control" />
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">舱型媒体</h3>
+          <p class="admin-cruise-form__section-subtitle">可上传图片与平面图，并维护标题、排序与主图标记。</p>
+          <div class="cabin-type-media-upload-grid">
+            <select v-model="mediaType" class="admin-cruise-form__control">
               <option value="image">图片</option>
               <option value="floor_plan">平面图</option>
             </select>
-            <input v-model="mediaTitle" placeholder="标题" class="h-10 rounded-md border border-slate-200 px-3 text-sm" />
-            <input v-model.number="mediaSortOrder" type="number" placeholder="排序" class="h-10 rounded-md border border-slate-200 px-3 text-sm" />
-            <label class="flex items-center gap-2 text-sm text-slate-600"><input v-model="mediaPrimary" type="checkbox" />设为主图</label>
+            <input v-model="mediaTitle" placeholder="标题" class="admin-cruise-form__control" />
+            <input v-model.number="mediaSortOrder" type="number" placeholder="排序" class="admin-cruise-form__control" />
+            <label class="cabin-type-feature-item"><input v-model="mediaPrimary" type="checkbox" />设为主图</label>
             <input type="file" accept="image/*" class="text-sm" @change="mediaFile = ($event.target as HTMLInputElement).files?.[0] || null" />
           </div>
           <div class="mt-3">
-            <button type="button" class="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" :disabled="mediaUploading || !mediaFile" @click="uploadMedia">
+            <button type="button" class="admin-btn admin-btn--secondary" :disabled="mediaUploading || !mediaFile" @click="uploadMedia">
               {{ mediaUploading ? '上传中...' : '上传媒体' }}
             </button>
           </div>
@@ -391,8 +390,8 @@ onMounted(async () => {
                     <label class="flex items-center gap-1 text-xs"><input v-model="item.is_primary" type="checkbox" />主图</label>
                   </div>
                   <div class="mt-2 flex items-center gap-2">
-                    <button type="button" class="rounded border border-slate-200 px-2 py-1 text-xs" @click="saveMedia(item)">保存</button>
-                    <button type="button" class="rounded border border-rose-200 px-2 py-1 text-xs text-rose-600" @click="removeMedia(item)">删除</button>
+                    <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="saveMedia(item)">保存</button>
+                    <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" @click="removeMedia(item)">删除</button>
                   </div>
                 </div>
                 <p v-if="normalizedMedia('image').length === 0" class="text-xs text-slate-500">暂无图片</p>
@@ -409,8 +408,8 @@ onMounted(async () => {
                     <label class="flex items-center gap-1 text-xs"><input v-model="item.is_primary" type="checkbox" />主图</label>
                   </div>
                   <div class="mt-2 flex items-center gap-2">
-                    <button type="button" class="rounded border border-slate-200 px-2 py-1 text-xs" @click="saveMedia(item)">保存</button>
-                    <button type="button" class="rounded border border-rose-200 px-2 py-1 text-xs text-rose-600" @click="removeMedia(item)">删除</button>
+                    <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="saveMedia(item)">保存</button>
+                    <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" @click="removeMedia(item)">删除</button>
                   </div>
                 </div>
                 <p v-if="normalizedMedia('floor_plan').length === 0" class="text-xs text-slate-500">暂无平面图</p>
@@ -419,14 +418,37 @@ onMounted(async () => {
           </div>
         </section>
 
-        <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-          <AdminActionLink to="/cabin-types">取消</AdminActionLink>
-          <button type="submit" :disabled="loading" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60">
+        <AdminActionBar>
+          <button type="button" class="admin-btn admin-btn--danger" :disabled="loading" @click="handleDelete">删除</button>
+          <AdminActionLink to="/cabin-types" class="admin-btn admin-btn--secondary">取消</AdminActionLink>
+          <button type="submit" :disabled="loading" class="admin-btn disabled:cursor-not-allowed disabled:opacity-60">
             {{ loading ? '提交中...' : '保存' }}
           </button>
-        </div>
+        </AdminActionBar>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
-    </div>
+    </AdminFormCard>
   </div>
 </template>
+
+<style scoped>
+.cabin-type-feature-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+}
+
+.cabin-type-media-upload-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .cabin-type-media-upload-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+  }
+}
+</style>

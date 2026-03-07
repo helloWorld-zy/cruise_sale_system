@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/cruisebooking/backend/internal/domain"
 	"gorm.io/gorm"
@@ -110,13 +111,59 @@ func (r *BookingRepository) Delete(ctx context.Context, id int64) error {
 }
 
 type BookingFilter struct {
-	Status    string
-	Phone     string
-	RouteID   int64
-	VoyageID  int64
-	StartDate *string
-	EndDate   *string
-	BookingNo string
+	Status     string
+	Phone      string
+	RouteID    int64
+	VoyageID   int64
+	VoyageCode string
+	CruiseName string
+	Keyword    string
+	StartDate  *string
+	EndDate    *string
+	BookingNo  string
+}
+
+func applyBookingFilter(query *gorm.DB, filter BookingFilter) *gorm.DB {
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.VoyageID > 0 {
+		query = query.Where("voyage_id = ?", filter.VoyageID)
+	}
+	if filter.BookingNo != "" {
+		query = query.Where("CAST(bookings.id AS TEXT) LIKE ?", "%"+strings.TrimSpace(filter.BookingNo)+"%")
+	}
+	if filter.Phone != "" {
+		query = query.Where("users.phone LIKE ?", "%"+strings.TrimSpace(filter.Phone)+"%")
+	}
+	if filter.VoyageCode != "" {
+		query = query.Where("voyages.code LIKE ?", "%"+strings.TrimSpace(filter.VoyageCode)+"%")
+	}
+	if filter.CruiseName != "" {
+		query = query.Where("cruises.name LIKE ?", "%"+strings.TrimSpace(filter.CruiseName)+"%")
+	}
+	if filter.Keyword != "" {
+		keyword := "%" + strings.TrimSpace(filter.Keyword) + "%"
+		query = query.Where(
+			`CAST(bookings.id AS TEXT) LIKE ? OR bookings.status LIKE ? OR CAST(bookings.total_cents AS TEXT) LIKE ? OR users.phone LIKE ? OR voyages.code LIKE ? OR cruises.name LIKE ? OR cruises.code LIKE ?`,
+			keyword, keyword, keyword, keyword, keyword, keyword, keyword,
+		)
+	}
+	if filter.StartDate != nil {
+		query = query.Where("bookings.created_at >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		query = query.Where("bookings.created_at <= ?", *filter.EndDate)
+	}
+	return query
+}
+
+func bookingFilterBaseQuery(db *gorm.DB, ctx context.Context) *gorm.DB {
+	return db.WithContext(ctx).
+		Model(&domain.Booking{}).
+		Joins("LEFT JOIN users ON users.id = bookings.user_id").
+		Joins("LEFT JOIN voyages ON voyages.id = bookings.voyage_id").
+		Joins("LEFT JOIN cruises ON cruises.id = voyages.cruise_id")
 }
 
 func (r *BookingRepository) ListWithFilter(ctx context.Context, filter BookingFilter, page, pageSize int) ([]domain.Booking, int64, error) {
@@ -127,23 +174,7 @@ func (r *BookingRepository) ListWithFilter(ctx context.Context, filter BookingFi
 		pageSize = 20
 	}
 
-	query := r.db.WithContext(ctx).Model(&domain.Booking{})
-
-	if filter.Status != "" {
-		query = query.Where("status = ?", filter.Status)
-	}
-	if filter.VoyageID > 0 {
-		query = query.Where("voyage_id = ?", filter.VoyageID)
-	}
-	if filter.BookingNo != "" {
-		query = query.Where("id LIKE ?", "%"+filter.BookingNo+"%")
-	}
-	if filter.StartDate != nil {
-		query = query.Where("created_at >= ?", *filter.StartDate)
-	}
-	if filter.EndDate != nil {
-		query = query.Where("created_at <= ?", *filter.EndDate)
-	}
+	query := applyBookingFilter(bookingFilterBaseQuery(r.db, ctx), filter)
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -152,9 +183,23 @@ func (r *BookingRepository) ListWithFilter(ctx context.Context, filter BookingFi
 
 	var items []domain.Booking
 	err := query.
-		Order("id DESC").
+		Select(`bookings.*, CAST(bookings.id AS TEXT) AS booking_no, COALESCE(users.phone, '') AS phone, COALESCE(voyages.code, '') AS voyage_code, COALESCE(cruises.name, '') AS cruise_name`).
+		Order("bookings.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&items).Error
 	return items, total, err
+}
+
+func (r *BookingRepository) ListForExport(ctx context.Context, filter BookingFilter, limit int) ([]domain.Booking, error) {
+	if limit <= 0 {
+		limit = 5000
+	}
+	var items []domain.Booking
+	err := applyBookingFilter(bookingFilterBaseQuery(r.db, ctx), filter).
+		Select(`bookings.*, CAST(bookings.id AS TEXT) AS booking_no, COALESCE(users.phone, '') AS phone, COALESCE(voyages.code, '') AS voyage_code, COALESCE(cruises.name, '') AS cruise_name`).
+		Order("bookings.id DESC").
+		Limit(limit).
+		Find(&items).Error
+	return items, err
 }

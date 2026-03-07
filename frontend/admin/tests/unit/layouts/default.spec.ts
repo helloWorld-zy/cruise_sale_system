@@ -2,6 +2,8 @@ import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DefaultLayout from '../../../app/layouts/default.vue'
 
+;(globalThis as any).useRoute = () => ({ path: '/dashboard' })
+
 describe('Default layout', () => {
     test('renders a main content slot and navigation links', () => {
         const wrapper = mount(DefaultLayout, {

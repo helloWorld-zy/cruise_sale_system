@@ -1,40 +1,53 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-7xl">
-      <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">邮轮公司管理</h1>
-      </div>
+  <div class="admin-page">
+    <AdminPageHeader title="邮轮公司管理" />
 
-      <div class="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <form class="grid gap-3 md:grid-cols-2" @submit.prevent="createCompany">
-          <label class="text-sm text-slate-600">中文名
-            <input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+    <AdminFormCard title="新增公司">
+      <form class="admin-cruise-form" @submit.prevent="createCompany">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">创建邮轮公司</h2>
+          <p class="admin-cruise-form__intro-desc">公司信息将用于邮轮归属关系、筛选条件及前台品牌展示。</p>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">基础信息</h3>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>中文名</span><span class="admin-cruise-form__field-hint">必填</span></span>
+              <input v-model="form.name" :class="['admin-cruise-form__control', fieldErrors.name && 'admin-cruise-form__control--error']" />
+              <p v-if="fieldErrors.name" class="admin-form-error-text">{{ fieldErrors.name }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>英文名</span><span class="admin-cruise-form__field-hint">选填</span></span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" />
+            </label>
+          </div>
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>Logo 上传</span><span class="admin-cruise-form__field-hint">支持图片文件</span></span>
+            <input type="file" accept="image/*" class="admin-cruise-form__control" @change="onLogoFileChange" />
           </label>
-          <label class="text-sm text-slate-600">英文名
-            <input v-model="form.english_name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-          </label>
-          <label class="text-sm text-slate-600 md:col-span-2">Logo 上传
-            <input type="file" accept="image/*" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" @change="onLogoFileChange" />
-          </label>
-          <div class="md:col-span-2">
+          <div>
             <div v-if="form.logo_url" class="company-logo-preview-frame">
               <img :src="form.logo_url" alt="logo-preview" class="company-logo-preview-image" />
             </div>
             <button v-if="form.logo_url" type="button" class="ml-3 text-xs text-slate-500 hover:text-slate-700" @click="form.logo_url = ''">清除 Logo</button>
           </div>
-          <label class="text-sm text-slate-600 md:col-span-2">文字介绍
-            <textarea v-model="form.description" class="mt-1 min-h-[100px] w-full rounded-md border border-slate-200 px-3 py-2 outline-none ring-indigo-500 focus:ring-2" />
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>文字介绍</span><span class="admin-cruise-form__field-hint">选填</span></span>
+            <textarea v-model="form.description" class="admin-cruise-form__control admin-cruise-form__control--textarea" />
           </label>
-          <div class="md:col-span-2">
-            <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="submitting">
+        </section>
+
+        <div class="admin-cruise-form__actions">
+            <button type="submit" class="admin-btn" :disabled="submitting">
               {{ submitting ? '提交中...' : '新增公司' }}
             </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      </form>
+    </AdminFormCard>
 
-      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div class="company-table-wrap overflow-x-auto">
+    <AdminDataCard flush>
+      <div class="company-table-wrap overflow-x-auto">
           <table class="w-full min-w-[900px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
@@ -64,43 +77,49 @@
               <td class="p-3 text-slate-600">{{ item.description || '-' }}</td>
               <td class="p-3 whitespace-nowrap">
                 <div class="company-actions flex items-center gap-3">
-                  <AdminActionLink :to="`/companies/${item.id}`">编辑</AdminActionLink>
-                  <button type="button" class="text-rose-500 hover:text-rose-400" @click="askRemoveCompany(item)">删除</button>
+                  <AdminActionLink :to="`/companies/${item.id}`" class="admin-table-action-btn">编辑</AdminActionLink>
+                  <button type="button" class="admin-table-action-btn admin-table-action-btn--danger" @click="askRemoveCompany(item)">删除</button>
                 </div>
               </td>
             </tr>
           </tbody>
           </table>
-        </div>
       </div>
+    </AdminDataCard>
 
-      <AdminConfirmDialog
-        :visible="deleteDialogVisible"
-        title="确认删除公司"
-        :message="`确认删除公司「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
-        hint="若该公司下存在邮轮，将无法删除。"
-        :loading="deleteSubmitting"
-        loading-text="删除中..."
-        @close="closeDeleteDialog"
-        @confirm="confirmRemoveCompany"
-      />
-    </div>
+    <AdminConfirmDialog
+      :visible="deleteDialogVisible"
+      title="确认删除公司"
+      :message="`确认删除公司「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
+      hint="若该公司下存在邮轮，将无法删除。"
+      :loading="deleteSubmitting"
+      loading-text="删除中..."
+      @close="closeDeleteDialog"
+      @confirm="confirmRemoveCompany"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 const { request } = useApi()
 const loading = ref(false)
 const submitting = ref(false)
-const deleteSubmitting = ref(false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 const items = ref<any[]>([])
 const normalizedItems = ref<Array<{ id: number; name: string; english_name: string; logo_url: string; description: string }>>([])
-const deleteDialogVisible = ref(false)
-const deleteTarget = ref<{ id: number; name: string } | null>(null)
+const {
+  visible: deleteDialogVisible,
+  submitting: deleteSubmitting,
+  target: deleteTarget,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog<{ id: number; name: string }>()
 
 const form = ref({
   name: '',
@@ -108,6 +127,15 @@ const form = ref({
   logo_url: '',
   description: '',
 })
+
+function validateCreateForm() {
+  const nextErrors: Record<string, string> = {}
+  if (!String(form.value.name || '').trim()) {
+    nextErrors.name = '请填写公司中文名'
+  }
+  fieldErrors.value = nextErrors
+  return Object.keys(nextErrors).length === 0
+}
 
 async function loadItems() {
   loading.value = true
@@ -133,6 +161,10 @@ async function loadItems() {
 
 async function createCompany() {
   if (submitting.value) return
+  if (!validateCreateForm()) {
+    error.value = '请先修正表单校验错误'
+    return
+  }
   submitting.value = true
   error.value = null
   try {
@@ -146,6 +178,7 @@ async function createCompany() {
       },
     })
     form.value = { name: '', english_name: '', logo_url: '', description: '' }
+    fieldErrors.value = {}
     await loadItems()
   } catch (e: any) {
     error.value = e?.message ?? 'failed to create company'
@@ -188,14 +221,7 @@ function askRemoveCompany(item: { id: number; name: string }) {
     error.value = '无效公司 ID，无法删除'
     return
   }
-  deleteTarget.value = { id: targetId, name: item?.name || '' }
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleteSubmitting.value) return
-  deleteDialogVisible.value = false
-  deleteTarget.value = null
+  openDeleteDialog({ id: targetId, name: item?.name || '' })
 }
 
 async function confirmRemoveCompany() {
@@ -206,14 +232,13 @@ async function confirmRemoveCompany() {
     return
   }
   error.value = null
-  deleteSubmitting.value = true
   try {
-    await request(`/companies/${targetId}`, { method: 'DELETE' })
-    // Optimistically remove deleted row to avoid "no response" feeling when list reload is delayed.
-    normalizedItems.value = normalizedItems.value.filter((item) => Number(item.id) !== targetId)
-    items.value = items.value.filter((raw) => Number(raw?.id ?? raw?.ID ?? 0) !== targetId)
-    closeDeleteDialog()
-    await loadItems()
+    await runDelete(async () => {
+      await request(`/companies/${targetId}`, { method: 'DELETE' })
+      normalizedItems.value = normalizedItems.value.filter((item) => Number(item.id) !== targetId)
+      items.value = items.value.filter((raw) => Number(raw?.id ?? raw?.ID ?? 0) !== targetId)
+      await loadItems()
+    })
   } catch (e: any) {
     const code = Number(e?.code ?? 0)
     const status = Number(e?.status ?? 0)
@@ -222,8 +247,6 @@ async function confirmRemoveCompany() {
     } else {
       error.value = '删除失败，请稍后重试。'
     }
-  } finally {
-    deleteSubmitting.value = false
   }
 }
 

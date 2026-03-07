@@ -5,8 +5,10 @@ import LoginPage from '../../../app/pages/login.vue'
 const mockRequest = vi.fn()
 const mockSetToken = vi.fn()
 const mockNavigate = vi.fn().mockResolvedValue(undefined)
+const mockDefinePageMeta = vi.fn()
 vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: '/api/v1' } }))
 vi.stubGlobal('$fetch', mockRequest)
+vi.stubGlobal('definePageMeta', mockDefinePageMeta)
 vi.mock('../../../app/stores/auth', () => ({
     useAuthStore: () => ({ setToken: mockSetToken }),
 }))
@@ -18,6 +20,12 @@ describe('Login page', () => {
         mockRequest.mockResolvedValue({ token: 'admin-token' })
         mockSetToken.mockClear()
         mockNavigate.mockClear()
+        mockDefinePageMeta.mockClear()
+    })
+
+    test('uses auth layout', () => {
+        mount(LoginPage)
+        expect(mockDefinePageMeta).toHaveBeenCalledWith(expect.objectContaining({ layout: 'auth' }))
     })
 
     test('renders login form', () => {
@@ -35,7 +43,7 @@ describe('Login page', () => {
         const wrapper = mount(LoginPage)
         await wrapper.find('form').trigger('submit.prevent')
         expect(wrapper.text()).toContain('请填写用户名和密码')
-        expect(wrapper.find('p.text-red-500').exists()).toBe(true)
+        expect(wrapper.find('p.login-form__error').exists()).toBe(true)
     })
 
     test('handles valid submit', async () => {

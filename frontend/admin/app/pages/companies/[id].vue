@@ -1,40 +1,54 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 class="mb-6 text-xl font-semibold text-slate-900">编辑邮轮公司</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="编辑邮轮公司" />
+    <AdminFormCard title="公司资料维护">
+      <h1 class="mb-3 text-xl font-semibold text-slate-900">编辑邮轮公司</h1>
       <p v-if="loading" class="mb-3 text-sm text-slate-600">加载中...</p>
       <p v-else-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无公司数据</p>
-      <form class="space-y-4" @submit.prevent="handleSubmit">
-        <label class="block space-y-1 text-sm text-slate-600">
-          <span>中文名</span>
-          <input v-model="form.name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-        </label>
-        <label class="block space-y-1 text-sm text-slate-600">
-          <span>英文名</span>
-          <input v-model="form.english_name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-        </label>
-        <label class="block space-y-1 text-sm text-slate-600">
-          <span>Logo 上传</span>
-          <input type="file" accept="image/*" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" @change="onLogoFileChange" />
-        </label>
-        <div>
-          <div v-if="form.logo_url" class="company-logo-preview-frame">
-            <img :src="form.logo_url" alt="logo-preview" class="company-logo-preview-image" />
-          </div>
-          <button v-if="form.logo_url" type="button" class="ml-3 text-xs text-slate-500 hover:text-slate-700" @click="form.logo_url = ''">清除 Logo</button>
-        </div>
-        <label class="block space-y-1 text-sm text-slate-600">
-          <span>文字介绍</span>
-          <textarea v-model="form.description" class="min-h-[120px] w-full rounded-md border border-slate-200 px-3 py-2 outline-none ring-indigo-500 focus:ring-2" />
-        </label>
+      <form class="admin-cruise-form" @submit.prevent="handleSubmit">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">更新公司信息</h2>
+          <p class="admin-cruise-form__intro-desc">公司信息会关联该公司下的全部邮轮展示和筛选结果，请保持命名一致性。</p>
+        </section>
 
-        <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-          <AdminActionLink to="/companies">取消</AdminActionLink>
-          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="loading">{{ loading ? '提交中...' : '保存' }}</button>
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">基础信息</h3>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>中文名</span><span class="admin-cruise-form__field-hint">必填</span></span>
+              <input v-model="form.name" :class="['admin-cruise-form__control', fieldErrors.name && 'admin-cruise-form__control--error']" />
+              <p v-if="fieldErrors.name" class="admin-form-error-text">{{ fieldErrors.name }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>英文名</span><span class="admin-cruise-form__field-hint">选填</span></span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" />
+            </label>
+          </div>
+
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>Logo 上传</span><span class="admin-cruise-form__field-hint">支持图片文件</span></span>
+            <input type="file" accept="image/*" class="admin-cruise-form__control" @change="onLogoFileChange" />
+          </label>
+          <div>
+            <div v-if="form.logo_url" class="company-logo-preview-frame">
+              <img :src="form.logo_url" alt="logo-preview" class="company-logo-preview-image" />
+            </div>
+            <button v-if="form.logo_url" type="button" class="ml-3 text-xs text-slate-500 hover:text-slate-700" @click="form.logo_url = ''">清除 Logo</button>
+          </div>
+
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>文字介绍</span><span class="admin-cruise-form__field-hint">选填</span></span>
+            <textarea v-model="form.description" class="admin-cruise-form__control admin-cruise-form__control--textarea" />
+          </label>
+        </section>
+
+        <div class="admin-cruise-form__actions">
+          <AdminActionLink to="/companies" class="admin-btn admin-btn--secondary">取消</AdminActionLink>
+          <button type="submit" class="admin-btn" :disabled="loading">{{ loading ? '提交中...' : '保存' }}</button>
         </div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
-    </div>
+    </AdminFormCard>
   </div>
 </template>
 
@@ -45,6 +59,7 @@ const route = useRoute()
 const { request } = useApi()
 const loading = ref(false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 const empty = ref(false)
 
 const id = computed(() => {
@@ -58,6 +73,15 @@ const form = ref({
   logo_url: '',
   description: '',
 })
+
+function validateForm() {
+  const nextErrors: Record<string, string> = {}
+  if (!String(form.value.name || '').trim()) {
+    nextErrors.name = '请填写公司中文名'
+  }
+  fieldErrors.value = nextErrors
+  return Object.keys(nextErrors).length === 0
+}
 
 async function loadDetail() {
   loading.value = true
@@ -87,6 +111,10 @@ async function loadDetail() {
 
 async function handleSubmit() {
   if (!id.value || loading.value) return
+  if (!validateForm()) {
+    error.value = '请先修正表单校验错误'
+    return
+  }
   loading.value = true
   error.value = null
   try {

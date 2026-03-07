@@ -9,6 +9,7 @@ type Voyage struct {
 	RouteID    int64     `gorm:"-" json:"route_id,omitempty"`     // 已下线字段，仅用于兼容旧测试/旧请求
 	CruiseID   int64     `gorm:"index" json:"cruise_id"`          // 执行邮轮 ID
 	Code       string    `gorm:"size:50;uniqueIndex" json:"code"` // 航次编码（全局唯一）
+	ImageURL   string    `gorm:"size:500" json:"image_url"`        // 航次封面图 URL
 	BriefInfo  string    `gorm:"size:300" json:"brief_info"`      // 航次简短信息（手动输入）
 	DepartDate time.Time `json:"depart_date"`                     // 出发日期
 	ReturnDate time.Time `json:"return_date"`                     // 返航日期

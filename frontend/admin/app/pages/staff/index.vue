@@ -33,30 +33,37 @@ onMounted(loadItems)
 </script>
 
 <template>
-  <div class="page">
-    <h1>员工管理</h1>
-    <p v-if="loading" data-test="loading">加载中...</p>
-    <p v-else-if="error" data-test="error" class="error">{{ error }}</p>
-    <p v-else-if="items.length === 0" data-test="empty">暂无员工数据</p>
-    <table v-else data-test="table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>姓名</th>
-          <th>邮箱</th>
-          <th>角色</th>
-          <th>状态</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in items" :key="s.id">
-          <td>{{ s.id }}</td>
-          <td>{{ s.real_name || '-' }}</td>
-          <td>{{ s.email || '-' }}</td>
-          <td>{{ s.role || '-' }}</td>
-          <td>{{ s.status === 1 ? '启用' : '禁用' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="admin-page">
+    <AdminPageHeader title="员工管理" subtitle="查看后台员工与角色状态" />
+
+    <AdminDataCard flush>
+      <div class="overflow-x-auto">
+        <p v-if="loading" data-test="loading" class="p-3 text-sm text-slate-600">加载中...</p>
+        <p v-else-if="error" data-test="error" class="p-3 text-sm text-rose-500">{{ error }}</p>
+        <p v-else-if="items.length === 0" data-test="empty" class="p-3 text-sm text-slate-600">暂无员工数据</p>
+        <table v-else data-test="table" class="w-full min-w-[760px] text-sm">
+          <thead class="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th class="p-3">ID</th>
+              <th class="p-3">姓名</th>
+              <th class="p-3">邮箱</th>
+              <th class="p-3">角色</th>
+              <th class="p-3">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="s in items" :key="s.id">
+              <td class="p-3 text-slate-900">{{ s.id }}</td>
+              <td class="p-3 text-slate-900">{{ s.real_name || '-' }}</td>
+              <td class="p-3 text-slate-600">{{ s.email || '-' }}</td>
+              <td class="p-3 text-slate-600">{{ s.role || '-' }}</td>
+              <td class="p-3">
+                <AdminStatusTag :type="s.status === 1 ? 'success' : 'warning'" :text="s.status === 1 ? '启用' : '禁用'" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AdminDataCard>
   </div>
 </template>

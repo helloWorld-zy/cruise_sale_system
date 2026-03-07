@@ -82,6 +82,7 @@ describe('Facilities edit page', () => {
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/facilities/9', { method: 'DELETE' })
+    expect(document.body.textContent || '').not.toContain('确认删除设施')
     expect(mockNavigateTo).toHaveBeenCalledWith('/facilities')
     wrapper.unmount()
   })

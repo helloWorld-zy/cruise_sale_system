@@ -7,25 +7,18 @@ defineProps<{ cabin: { id: number; name: string; price: number } }>()
 
 <template>
   <!-- 舱房卡片：显示名称和价格 -->
-  <article class="cabin-card">
-    <h3>{{ cabin.name }}</h3>
-    <p>舱房编号：#{{ cabin.id }}</p>
-    <strong>￥{{ (cabin.price / 100).toFixed(2) }}</strong>
+  <article class="card">
+    <h3 class="heading-font text-[var(--color-primary)]">{{ cabin.name }}</h3>
+    <p class="text-sm text-[var(--web-muted)]">舱房编号：#{{ cabin.id }}</p>
+    <strong class="text-[var(--color-cta)] heading-font text-xl">￥{{ (cabin.price / 100).toFixed(2) }}</strong>
   </article>
 </template>
 
 <style scoped>
-.cabin-card {
-  border: 1px solid #f1d9c9;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 12px;
-  background: #fff;
-}
-
+/* Scoped styles can be minimal since we use Tailwind / global CSS vars on card */
 h3 {
   margin: 0 0 8px;
-  font-size: 18px;
+  font-size: 1.25rem;
 }
 
 p {

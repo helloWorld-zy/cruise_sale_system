@@ -1,0 +1,2 @@
+ALTER TABLE voyages
+  DROP COLUMN IF EXISTS image_url;

@@ -3,6 +3,7 @@
 import { onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 import AdminCompanySelect from '../../components/AdminCompanySelect.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 declare const useApi: any
 declare const navigateTo: any
@@ -12,11 +13,17 @@ const { request } = useApi()
 
 const loading = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
-const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
+const fieldErrors = ref<Record<string, string>>({})
 const empty = ref(false)
 const companies = ref<Array<{ id: number; name: string; english_name?: string; logo_url?: string }>>([])
+const {
+  visible: deleteDialogVisible,
+  submitting: deleting,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog()
 const form = ref({
   id: 0,
   name: '',
@@ -37,6 +44,31 @@ const form = ref({
 })
 
 const id = Number(route.params.id)
+
+function validateForm() {
+  const nextErrors: Record<string, string> = {}
+  if (!String(form.value.name || '').trim()) {
+    nextErrors.name = '请填写邮轮名称'
+  }
+  if (!Number.isFinite(Number(form.value.company_id)) || Number(form.value.company_id) <= 0) {
+    nextErrors.company_id = '请选择所属公司'
+  }
+
+  const buildYear = Number(form.value.build_year)
+  const refurbishYear = Number(form.value.refurbish_year)
+  if (buildYear > 0 && (buildYear < 1900 || buildYear > 2100)) {
+    nextErrors.build_year = '建造年份需在 1900-2100 之间'
+  }
+  if (refurbishYear > 0 && (refurbishYear < 1900 || refurbishYear > 2100)) {
+    nextErrors.refurbish_year = '翻新年份需在 1900-2100 之间'
+  }
+  if (buildYear > 0 && refurbishYear > 0 && refurbishYear < buildYear) {
+    nextErrors.refurbish_year = '翻新年份不能小于建造年份'
+  }
+
+  fieldErrors.value = nextErrors
+  return Object.keys(nextErrors).length === 0
+}
 
 async function loadDetail() {
   loading.value = true
@@ -91,6 +123,10 @@ async function loadCompanies() {
 
 async function handleSave() {
   if (saving.value) return
+  if (!validateForm()) {
+    error.value = '请先修正表单校验错误'
+    return
+  }
   saving.value = true
   error.value = null
   try {
@@ -121,22 +157,17 @@ async function handleSave() {
 
 async function handleDelete() {
   if (deleting.value) return
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleting.value) return
-  deleteDialogVisible.value = false
+  openDeleteDialog()
 }
 
 async function confirmDelete() {
   if (deleting.value) return
-  deleting.value = true
   error.value = null
   try {
-    await request(`/cruises/${id}`, { method: 'DELETE' })
-    closeDeleteDialog()
-    await navigateTo('/cruises')
+    await runDelete(async () => {
+      await request(`/cruises/${id}`, { method: 'DELETE' })
+      await navigateTo('/cruises')
+    })
   } catch (e: any) {
     const code = Number(e?.code ?? 0)
     const status = Number(e?.status ?? 0)
@@ -148,8 +179,6 @@ async function confirmDelete() {
     } else {
       error.value = e?.message ?? '删除邮轮失败，请稍后重试。'
     }
-  } finally {
-    deleting.value = false
   }
 }
 
@@ -159,44 +188,113 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h1 class="mb-4 text-xl font-semibold text-slate-900">编辑邮轮 #{{ id }}</h1>
+  <div class="admin-page">
+    <AdminPageHeader :title="`编辑邮轮 #${id}`" />
+    <AdminFormCard title="邮轮资料维护">
+      <h1 class="mb-3 text-xl font-semibold text-slate-900">编辑邮轮 #{{ id }}</h1>
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
       <p v-else-if="empty" data-test="empty" class="text-sm text-slate-600">暂无邮轮数据</p>
-      <form v-else class="space-y-4" @submit.prevent="handleSave">
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="text-sm text-slate-600">名称<input v-model="form.name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">英文名<input v-model="form.english_name" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">代码<input v-model="form.code" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">所属公司
-            <div class="mt-1">
+      <form v-else class="admin-cruise-form" @submit.prevent="handleSave">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">维护邮轮档案</h2>
+          <p class="admin-cruise-form__intro-desc">更新后将影响航次配置、舱型管理与前台展示，请确认关键数据准确后再保存。</p>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">识别信息</h3>
+          <p class="admin-cruise-form__section-subtitle">用于后台检索、筛选与对外展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>名称</span><span class="admin-cruise-form__field-hint">必填</span></span>
+              <input v-model="form.name" :class="['admin-cruise-form__control', fieldErrors.name && 'admin-cruise-form__control--error']" :disabled="saving || deleting" />
+              <p v-if="fieldErrors.name" class="admin-form-error-text">{{ fieldErrors.name }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>英文名</span><span class="admin-cruise-form__field-hint">选填</span></span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>代码</span><span class="admin-cruise-form__field-hint">建议唯一</span></span>
+              <input v-model="form.code" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>所属公司</span><span class="admin-cruise-form__field-hint">必选</span></span>
               <AdminCompanySelect v-model="form.company_id" :options="companies" :disabled="saving || deleting" placeholder="请选择公司" />
-            </div>
+              <p v-if="fieldErrors.company_id" class="admin-form-error-text">{{ fieldErrors.company_id }}</p>
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">规格参数</h3>
+          <p class="admin-cruise-form__section-subtitle">按实际船舶参数填写，便于后续运营统计与展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>吨位</span><span class="admin-cruise-form__field-hint">单位: 吨</span></span>
+              <input v-model.number="form.tonnage" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>载客量</span><span class="admin-cruise-form__field-hint">人数</span></span>
+              <input v-model.number="form.passenger_capacity" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>船员数</span><span class="admin-cruise-form__field-hint">人数</span></span>
+              <input v-model.number="form.crew_count" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>建造年份</span><span class="admin-cruise-form__field-hint">YYYY</span></span>
+              <input v-model.number="form.build_year" type="number" :class="['admin-cruise-form__control', fieldErrors.build_year && 'admin-cruise-form__control--error']" :disabled="saving || deleting" />
+              <p v-if="fieldErrors.build_year" class="admin-form-error-text">{{ fieldErrors.build_year }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>翻新年份</span><span class="admin-cruise-form__field-hint">YYYY</span></span>
+              <input v-model.number="form.refurbish_year" type="number" :class="['admin-cruise-form__control', fieldErrors.refurbish_year && 'admin-cruise-form__control--error']" :disabled="saving || deleting" />
+              <p v-if="fieldErrors.refurbish_year" class="admin-form-error-text">{{ fieldErrors.refurbish_year }}</p>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>长度(m)</span><span class="admin-cruise-form__field-hint">船长</span></span>
+              <input v-model.number="form.length" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>宽度(m)</span><span class="admin-cruise-form__field-hint">船宽</span></span>
+              <input v-model.number="form.width" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>甲板数</span><span class="admin-cruise-form__field-hint">整数</span></span>
+              <input v-model.number="form.deck_count" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">运营配置</h3>
+          <p class="admin-cruise-form__section-subtitle">控制排序和上架状态，描述内容用于前台展示。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>排序</span><span class="admin-cruise-form__field-hint">数字越小越靠前</span></span>
+              <input v-model.number="form.sort_order" type="number" class="admin-cruise-form__control" :disabled="saving || deleting" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label"><span>状态</span><span class="admin-cruise-form__field-hint">影响前台可见性</span></span>
+              <select v-model.number="form.status" class="admin-cruise-form__control" :disabled="saving || deleting">
+                <option :value="1">上架</option>
+                <option :value="2">维护中</option>
+                <option :value="0">下架</option>
+              </select>
+            </label>
+          </div>
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label"><span>描述</span><span class="admin-cruise-form__field-hint">建议填写亮点与定位</span></span>
+            <textarea v-model="form.description" class="admin-cruise-form__control admin-cruise-form__control--textarea" :disabled="saving || deleting" />
           </label>
-          <label class="text-sm text-slate-600">吨位<input v-model.number="form.tonnage" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">载客量<input v-model.number="form.passenger_capacity" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">船员数<input v-model.number="form.crew_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">建造年份<input v-model.number="form.build_year" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">翻新年份<input v-model.number="form.refurbish_year" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">长度(m)<input v-model.number="form.length" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">宽度(m)<input v-model.number="form.width" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">甲板数<input v-model.number="form.deck_count" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-          <label class="text-sm text-slate-600">排序<input v-model.number="form.sort_order" type="number" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-        </div>
-        <label class="block text-sm text-slate-600">描述<textarea v-model="form.description" class="mt-1 min-h-[180px] w-full rounded-md border border-slate-200 px-3 py-2 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting" /></label>
-        <label class="block text-sm text-slate-600">状态
-          <select v-model.number="form.status" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" :disabled="saving || deleting">
-            <option :value="1">上架</option>
-            <option :value="2">维护中</option>
-            <option :value="0">下架</option>
-          </select>
-        </label>
-        <div class="rounded-lg border-2 border-dashed border-slate-300 p-4 text-sm text-slate-500">图片上传（占位，Task 16 后续接入拖拽与主图标识）</div>
+        </section>
+
+        <div class="admin-cruise-form__upload">图片上传（占位，Task 16 后续接入拖拽与主图标识）</div>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
-        <div class="flex gap-2">
-          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="saving || deleting">{{ saving ? '保存中...' : '保存' }}</button>
-          <button type="button" class="rounded-md bg-rose-500 px-4 py-2 text-sm font-medium text-white hover:bg-rose-400" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
+        <div class="admin-cruise-form__actions">
+          <button type="button" class="admin-btn admin-btn--secondary" :disabled="saving || deleting" @click="navigateTo('/cruises')">返回列表</button>
+          <button type="submit" class="admin-btn" :disabled="saving || deleting">{{ saving ? '保存中...' : '保存' }}</button>
+          <button type="button" class="admin-btn" style="background: var(--admin-color-danger)" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
         </div>
       </form>
 
@@ -209,6 +307,6 @@ onMounted(async () => {
         @close="closeDeleteDialog"
         @confirm="confirmDelete"
       />
-    </div>
+    </AdminFormCard>
   </div>
 </template>

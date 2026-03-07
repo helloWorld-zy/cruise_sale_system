@@ -112,11 +112,15 @@ func (h *BookingHandler) AdminList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
 	filter := repository.BookingFilter{
-		Status:    c.Query("status"),
-		VoyageID:  0,
-		BookingNo: c.Query("booking_no"),
-		StartDate: nil,
-		EndDate:   nil,
+		Status:     c.Query("status"),
+		VoyageID:   0,
+		BookingNo:  c.Query("booking_no"),
+		Phone:      c.Query("phone"),
+		VoyageCode: c.Query("voyage_code"),
+		CruiseName: c.Query("cruise_name"),
+		Keyword:    c.Query("keyword"),
+		StartDate:  nil,
+		EndDate:    nil,
 	}
 
 	if voyageID, err := strconv.ParseInt(c.Query("voyage_id"), 10, 64); err == nil {
@@ -234,11 +238,21 @@ func (h *BookingHandler) AdminExport(c *gin.Context) {
 	}
 
 	filter := service.OrderFilter{
-		Status:    c.Query("status"),
-		BookingNo: c.Query("booking_no"),
+		Status:     c.Query("status"),
+		BookingNo:  c.Query("booking_no"),
+		Phone:      c.Query("phone"),
+		VoyageCode: c.Query("voyage_code"),
+		CruiseName: c.Query("cruise_name"),
+		Keyword:    c.Query("keyword"),
 	}
 	if voyageID, err := strconv.ParseInt(c.Query("voyage_id"), 10, 64); err == nil {
 		filter.VoyageID = voyageID
+	}
+	if startDate := c.Query("start_date"); startDate != "" {
+		filter.StartDate = &startDate
+	}
+	if endDate := c.Query("end_date"); endDate != "" {
+		filter.EndDate = &endDate
 	}
 
 	ctx := service.WithOrderExportPermission(c.Request.Context(), true)

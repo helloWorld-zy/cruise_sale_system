@@ -12,7 +12,16 @@ beforeEach(() => {
 
 describe('CabinsAlertsPage', () => {
   it('loads alerts and renders warning table', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, {
+      global: {
+        stubs: {
+          NuxtLink: { template: '<a><slot /></a>' },
+          AdminPageHeader: { props: ['title', 'subtitle'], template: '<div>{{ title }} {{ subtitle }}<slot /><slot name="actions" /></div>' },
+          AdminDataCard: { props: ['flush'], template: '<div><slot /></div>' },
+          AdminStatusTag: { props: ['text'], template: '<span>{{ text }}</span>' },
+        },
+      },
+    })
     await flushPromises()
     expect(mockRequest).toHaveBeenCalledWith('/cabins/alerts')
     expect(wrapper.text()).toContain('库存预警')

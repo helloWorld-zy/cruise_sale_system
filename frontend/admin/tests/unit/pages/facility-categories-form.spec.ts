@@ -44,10 +44,16 @@ describe('Facility category edit page', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('编辑设施分类')
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-music"] svg').exists()).toBe(true)
+    await wrapper.find('[data-test="facility-category-edit-icon-option-music"]').trigger('click')
+    await flushPromises()
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/facility-categories/3', expect.objectContaining({ method: 'PUT' }))
+    expect(mockRequest).toHaveBeenCalledWith('/facility-categories/3', expect.objectContaining({
+      body: expect.objectContaining({ icon: 'music' }),
+    }))
     expect(mockNavigateTo).toHaveBeenCalledWith('/facility-categories')
   })
 

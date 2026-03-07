@@ -34,25 +34,30 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
-    <h1>Finance</h1>
-    <p v-if="loading">Loading...</p>
-    <p v-else-if="error" class="text-red-500">{{ error }}</p>
-    <p v-else-if="rows.length === 0">No data</p>
-    <!-- 财务概览表格 -->
-    <table v-else>
-      <thead>
-        <tr>
-          <th>指标</th>
-          <th>数值</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in rows" :key="row.label">
-          <td>{{ row.label }}</td>
-          <td>{{ row.value }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="admin-page">
+    <AdminPageHeader title="财务总览" subtitle="展示核心财务统计指标" />
+    <h1 class="sr-only">Finance</h1>
+
+    <AdminDataCard flush>
+      <div class="overflow-x-auto">
+        <p v-if="loading" class="p-3 text-sm text-slate-600">Loading...</p>
+        <p v-else-if="error" class="p-3 text-sm text-rose-500">{{ error }}</p>
+        <p v-else-if="rows.length === 0" class="p-3 text-sm text-slate-600">No data</p>
+        <table v-else class="w-full min-w-[680px] text-sm">
+          <thead class="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th class="p-3">指标</th>
+              <th class="p-3">数值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in rows" :key="row.label">
+              <td class="p-3 text-slate-600">{{ row.label }}</td>
+              <td class="p-3 text-slate-900">{{ row.value }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AdminDataCard>
   </div>
 </template>

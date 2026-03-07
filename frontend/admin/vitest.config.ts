@@ -7,6 +7,7 @@ export default defineConfig({
     plugins: [vue()],
     test: {
         environment: 'jsdom',
+        setupFiles: ['./tests/unit/setup.ts'],
         coverage: {
             include: [
                 'app/**/*.vue',

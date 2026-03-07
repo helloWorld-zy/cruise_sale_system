@@ -19,6 +19,7 @@ type ItineraryFormItem = {
 type VoyageForm = {
   cruise_id: number
   code: string
+  image_url: string
   brief_info: string
   depart_date: string
   return_date: string
@@ -29,6 +30,7 @@ type VoyageForm = {
 const form = ref<VoyageForm>({
   cruise_id: 1,
   code: '',
+  image_url: '',
   brief_info: '',
   depart_date: '',
   return_date: '',
@@ -51,6 +53,7 @@ const form = ref<VoyageForm>({
 })
 
 const loading = ref(false)
+const uploadingImage = ref(false)
 const error = ref<string | null>(null)
 const { request } = useApi()
 const cruises = ref<Array<{ id: number; name: string }>>([])
@@ -153,11 +156,35 @@ function buildSubmitBody() {
   return {
     cruise_id: Number(form.value.cruise_id),
     code: form.value.code.trim(),
+    image_url: form.value.image_url.trim(),
     brief_info: form.value.brief_info.trim(),
     depart_date: toRFC3339Date(form.value.depart_date),
     return_date: toRFC3339Date(form.value.return_date),
     status: Number(form.value.status) || 1,
     itineraries: normalizeItineraries(form.value.itineraries),
+  }
+}
+
+async function uploadVoyageImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploadingImage.value = true
+  error.value = null
+  try {
+    const body = new FormData()
+    body.append('file', file)
+    const res = await request('/upload/image', { method: 'POST', body })
+    const payload = res?.data ?? res ?? {}
+    const url = String(payload?.url || '')
+    if (!url) throw new Error('上传成功但未返回图片地址')
+    form.value.image_url = url
+  } catch (e: any) {
+    error.value = e?.message ?? '上传航次图片失败'
+  } finally {
+    uploadingImage.value = false
+    input.value = ''
   }
 }
 
@@ -207,10 +234,20 @@ onMounted(loadDefaultCruise)
 </script>
 
 <template>
-  <div class="page">
-    <h1>新建航次</h1>
-    <form style="display:grid;gap:10px;max-width:980px;" @submit.prevent="handleSubmit">
+  <div class="admin-page">
+    <AdminPageHeader title="新建航次" />
+    <AdminFormCard>
+      <form style="display:grid;gap:10px;max-width:980px;" @submit.prevent="handleSubmit">
       <input v-model="form.code" placeholder="航次代码（如 TJ-20260701）" :disabled="loading" />
+      <div style="display:grid;gap:6px;">
+        <label style="font-size:13px;color:#475569;">航次图片</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <input type="file" accept="image/*" :disabled="loading || uploadingImage" @change="uploadVoyageImage" />
+          <input v-model="form.image_url" placeholder="或直接填写图片 URL" :disabled="loading || uploadingImage" />
+          <span v-if="uploadingImage" style="font-size:12px;color:#64748b;">上传中...</span>
+        </div>
+        <img v-if="form.image_url" :src="form.image_url" alt="航次图片预览" style="width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+      </div>
       <input v-model="form.brief_info" placeholder="航次简介（手动输入）" :disabled="loading" />
       <select v-model.number="form.cruise_id" data-test="cruise-select" :disabled="loading || cruises.length === 0">
         <option :value="0">请选择邮轮</option>
@@ -288,7 +325,8 @@ onMounted(loadDefaultCruise)
 
       <p v-if="error" class="text-red-500">{{ error }}</p>
       <button type="submit" :disabled="loading || !hasCruiseOptions || !form.cruise_id">{{ loading ? '提交中...' : '提交' }}</button>
-    </form>
+      </form>
+    </AdminFormCard>
   </div>
 </template>
 

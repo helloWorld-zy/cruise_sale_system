@@ -19,6 +19,14 @@ const globalConfig = {
       props: ['to'],
       template: '<a :href="String(to)"><slot /></a>',
     },
+    AdminPageHeader: {
+      props: ['title', 'subtitle'],
+      template: '<div>{{ title }} {{ subtitle }}<slot /><slot name="actions" /></div>',
+    },
+    AdminFormCard: {
+      props: ['title'],
+      template: '<div><slot /></div>',
+    },
     NuxtLink: {
       props: ['to'],
       template: '<a :href="String(to)"><slot /></a>',
@@ -38,10 +46,26 @@ describe('Cabin type form pages', () => {
         return Promise.resolve({ data: { list: [{ id: 1, name: 'Oceanic' }] } })
       }
       if (url === '/cruises') {
-        return Promise.resolve({ data: { list: [{ id: 1, name: 'Ocean Nova' }] } })
+        return Promise.resolve({ data: { list: [{ id: 1, company_id: 1, name: 'Ocean Nova' }] } })
       }
       if (url === '/cabin-type-categories') {
         return Promise.resolve({ data: [{ id: 3, name: '阳台房', status: 1 }] })
+      }
+      if (url === '/cabin-types/11' && !options) {
+        return Promise.resolve({
+          data: {
+            id: 11,
+            company_id: 1,
+            cruise_id: 1,
+            category_id: 3,
+            name: '阳台房',
+            code: 'BAL',
+            intro: '明亮通透',
+            tags: '亲子优选',
+            amenities: '独立卫浴',
+            status: 1,
+          },
+        })
       }
       if (url === '/cabin-types' && options?.query?.cruise_id === 1) {
         return Promise.resolve({
@@ -92,7 +116,16 @@ describe('Cabin type form pages', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(mockRequest).toHaveBeenCalledWith('/cabin-types/batch-create', expect.objectContaining({ method: 'POST' }))
+    expect(mockRequest).toHaveBeenCalledWith(
+      '/cabin-types/batch-create',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          cruise_id: 1,
+          cruise_ids: [1],
+        }),
+      }),
+    )
     expect(mockNavigateTo).toHaveBeenCalledWith('/cabin-types')
   })
 
@@ -146,6 +179,49 @@ describe('Cabin type form pages', () => {
 
     expect(mockRequest).toHaveBeenCalledWith('/cabin-types/11', expect.objectContaining({ method: 'PUT' }))
     expect(mockNavigateTo).toHaveBeenCalledWith('/cabin-types')
+  })
+
+  it('edit page infers company from matched cruise when cabin type payload has no company_id', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies') {
+        return Promise.resolve({ data: { list: [{ id: 1, name: 'Oceanic' }] } })
+      }
+      if (url === '/cruises') {
+        return Promise.resolve({ data: { list: [{ id: 1, company_id: 1, name: 'Ocean Nova' }] } })
+      }
+      if (url === '/cabin-type-categories') {
+        return Promise.resolve({ data: [{ id: 3, name: '阳台房', status: 1 }] })
+      }
+      if (url === '/cabin-types/11' && !options) {
+        return Promise.resolve({
+          data: {
+            id: 11,
+            cruise_id: 1,
+            category_id: 3,
+            name: '阳台房',
+            code: 'BAL',
+            intro: '明亮通透',
+            tags: '亲子优选',
+            amenities: '独立卫浴',
+            status: 1,
+          },
+        })
+      }
+      if (url === '/cabin-types/11/media') {
+        return Promise.resolve({ data: [] })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = mount(EditPage, { global: globalConfig })
+    await flushPromises()
+
+    const companySelect = wrapper.findAll('select')[0]
+    expect(companySelect?.exists()).toBe(true)
+    expect((companySelect!.element as HTMLSelectElement).value).toBe('1')
+    expect(companySelect!.text()).toContain('Oceanic')
+    expect(wrapper.text()).not.toContain('未找到舱型详情')
+    expect(mockRequest).toHaveBeenCalledWith('/cabin-types/11')
   })
 
   it('edit page delete respects confirm', async () => {

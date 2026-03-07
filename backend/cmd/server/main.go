@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	casbinv2 "github.com/casbin/casbin/v2"
 	"github.com/cruisebooking/backend/internal/config"
+	"github.com/cruisebooking/backend/internal/domain"
 	"github.com/cruisebooking/backend/internal/handler"
 	"github.com/cruisebooking/backend/internal/pkg/database"
 	"github.com/cruisebooking/backend/internal/pkg/logger"
@@ -26,6 +28,25 @@ import (
 // @host localhost:8080
 // @BasePath /api/v1
 var osExit = os.Exit
+
+type bookingOrderExportRepo struct {
+	repo *repository.BookingRepository
+}
+
+func (r bookingOrderExportRepo) ListWithFilter(ctx context.Context, filter service.OrderFilter) ([]domain.Booking, error) {
+	return r.repo.ListForExport(ctx, repository.BookingFilter{
+		Status:     filter.Status,
+		Phone:      filter.Phone,
+		RouteID:    filter.RouteID,
+		VoyageID:   filter.VoyageID,
+		VoyageCode: filter.VoyageCode,
+		CruiseName: filter.CruiseName,
+		Keyword:    filter.Keyword,
+		StartDate:  filter.StartDate,
+		EndDate:    filter.EndDate,
+		BookingNo:  filter.BookingNo,
+	}, 5001)
+}
 
 // main 为服务进程入口。
 func main() {
@@ -128,6 +149,7 @@ func RunApp(configDir string) error {
 	bookingRepo := repository.NewBookingRepository(db)
 	bookingSvc := service.NewBookingService(bookingRepo, pricingSvc, holdSvc)
 	bookingHandler := handler.NewBookingHandler(bookingSvc, bookingRepo)
+	bookingHandler.SetExportService(service.NewOrderExportService(bookingOrderExportRepo{repo: bookingRepo}))
 	userAuthSvc := service.NewUserAuthService(service.NewInMemoryCodeStore())
 	userHandler := handler.NewUserHandlerWithRepo(userAuthSvc, userRepo, cfg.JWT.Secret) // M-03
 	staffRoleSync := service.NewCasbinStaffRoleSync(enforcer)

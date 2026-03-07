@@ -38,17 +38,33 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="page">
-    <h1>新建订单</h1>
-    <form @submit.prevent="handleSubmit">
-      <input v-model.number="form.user_id" type="number" min="1" placeholder="User ID" :disabled="loading" />
-      <input v-model.number="form.voyage_id" type="number" min="1" placeholder="Voyage ID" :disabled="loading" />
-      <input v-model.number="form.cabin_sku_id" type="number" min="1" placeholder="Cabin SKU ID" :disabled="loading" />
-      <input v-model.number="form.guests" type="number" min="1" placeholder="Guests" :disabled="loading" />
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-if="success" style="color:#11865d">{{ success }}</p>
-      <button type="button" :disabled="loading" @click="handleSubmit">{{ loading ? '提交中...' : '创建' }}</button>
-    </form>
+  <div class="admin-page">
+    <AdminPageHeader title="新建订单" subtitle="手动创建预订记录" />
+    <AdminFormCard title="订单基础信息">
+      <form class="grid max-w-3xl gap-4" @submit.prevent="handleSubmit">
+        <label class="space-y-1 text-sm text-slate-600">
+          <span>用户 ID</span>
+          <input v-model.number="form.user_id" type="number" min="1" placeholder="User ID" :disabled="loading" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        </label>
+        <label class="space-y-1 text-sm text-slate-600">
+          <span>航次 ID</span>
+          <input v-model.number="form.voyage_id" type="number" min="1" placeholder="Voyage ID" :disabled="loading" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        </label>
+        <label class="space-y-1 text-sm text-slate-600">
+          <span>舱位 SKU ID</span>
+          <input v-model.number="form.cabin_sku_id" type="number" min="1" placeholder="Cabin SKU ID" :disabled="loading" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        </label>
+        <label class="space-y-1 text-sm text-slate-600">
+          <span>出行人数</span>
+          <input v-model.number="form.guests" type="number" min="1" placeholder="Guests" :disabled="loading" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        </label>
+        <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
+        <p v-if="success" class="text-sm text-emerald-600">{{ success }}</p>
+        <AdminActionBar>
+          <button type="button" class="admin-btn" :disabled="loading" @click="handleSubmit">{{ loading ? '提交中...' : '创建' }}</button>
+        </AdminActionBar>
+      </form>
+    </AdminFormCard>
   </div>
 </template>
 

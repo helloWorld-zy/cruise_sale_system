@@ -62,32 +62,32 @@ onMounted(loadShopInfo)
 </script>
 
 <template>
-  <div class="page">
-    <h1>店铺设置</h1>
-    <p v-if="loading" data-test="loading">加载中...</p>
-    <p v-else-if="error" data-test="error" class="error">{{ error }}</p>
-    <div v-else>
-      <p v-if="isEmpty" data-test="empty">暂无店铺配置，请先填写基础信息</p>
-      <form @submit.prevent="saveShopInfo">
-        <label>
-          店铺名称
-          <input v-model="form.name" data-test="name" type="text" />
-        </label>
-        <label>
-          联系电话
-          <input v-model="form.contact_phone" data-test="phone" type="text" />
-        </label>
-        <label>
-          联系邮箱
-          <input v-model="form.contact_email" data-test="email" type="text" />
-        </label>
-        <label>
-          备案号
-          <input v-model="form.icp_number" data-test="icp" type="text" />
-        </label>
-        <button data-test="submit" type="submit" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
-      </form>
-      <p v-if="success" data-test="success">{{ success }}</p>
-    </div>
+  <div class="admin-page">
+    <AdminPageHeader title="店铺设置" subtitle="维护店铺基础信息与联系方式" />
+    <AdminFormCard>
+      <p v-if="loading" data-test="loading" class="text-sm text-slate-600">加载中...</p>
+      <p v-else-if="error" data-test="error" class="text-sm text-rose-500">{{ error }}</p>
+      <div v-else>
+        <p v-if="isEmpty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无店铺配置，请先填写基础信息</p>
+        <form class="grid max-w-3xl gap-3" @submit.prevent="saveShopInfo">
+          <label class="text-sm text-slate-600">店铺名称
+            <input v-model="form.name" data-test="name" type="text" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+          </label>
+          <label class="text-sm text-slate-600">联系电话
+            <input v-model="form.contact_phone" data-test="phone" type="text" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+          </label>
+          <label class="text-sm text-slate-600">联系邮箱
+            <input v-model="form.contact_email" data-test="email" type="text" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+          </label>
+          <label class="text-sm text-slate-600">备案号
+            <input v-model="form.icp_number" data-test="icp" type="text" class="mt-1 h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+          </label>
+          <AdminActionBar>
+            <button data-test="submit" type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="saving">{{ saving ? '保存中...' : '保存' }}</button>
+          </AdminActionBar>
+        </form>
+        <p v-if="success" data-test="success" class="text-sm text-emerald-600">{{ success }}</p>
+      </div>
+    </AdminFormCard>
   </div>
 </template>

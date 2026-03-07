@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "acceptance:local": "node scripts/local-acceptance.mjs"
+  },
   "devDependencies": {
     "@types/node": "^25.3.3"
   }

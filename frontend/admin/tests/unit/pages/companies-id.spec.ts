@@ -45,4 +45,23 @@ describe('Companies edit page', () => {
     expect(mockRequest).toHaveBeenCalledWith('/companies/1', expect.objectContaining({ method: 'PUT' }))
     expect(mockNavigateTo).toHaveBeenCalledWith('/companies')
   })
+
+  it('blocks update when company name is empty', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies' && !options) {
+        return Promise.resolve({ data: { list: [{ id: 1, name: '', english_name: 'Royal Caribbean', logo_url: '', description: '' }] } })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('请先修正表单校验错误')
+    expect(wrapper.text()).toContain('请填写公司中文名')
+    expect(mockRequest).not.toHaveBeenCalledWith('/companies/1', expect.objectContaining({ method: 'PUT' }))
+  })
 })

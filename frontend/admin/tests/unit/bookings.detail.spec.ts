@@ -29,8 +29,10 @@ describe('Admin Booking Detail', () => {
         await flushPromises()
 
         expect(mockRequest).toHaveBeenCalledWith('/bookings/12')
-        expect(wrapper.text()).toContain('Status: created')
-        expect(wrapper.text()).toContain('Total: 19900')
+        expect(wrapper.text()).toContain('当前状态')
+        expect(wrapper.text()).toContain('created')
+        expect(wrapper.text()).toContain('订单总额（分）')
+        expect(wrapper.text()).toContain('19900')
     })
 
     it('shows error text when request fails', async () => {
@@ -45,8 +47,8 @@ describe('Admin Booking Detail', () => {
         const wrapper = mount(Page)
         await flushPromises()
 
-        const input = wrapper.find('input')
-        await input.setValue('paid')
+        const statusSelect = wrapper.find('select')
+        await statusSelect.setValue('paid')
         const saveBtn = wrapper.findAll('button').find((b) => b.text().includes('保存状态'))
         await saveBtn!.trigger('click')
         await flushPromises()
@@ -55,7 +57,8 @@ describe('Admin Booking Detail', () => {
             method: 'PUT',
             body: { status: 'paid' },
         })
-        expect(wrapper.text()).toContain('Status: paid')
+        expect(wrapper.text()).toContain('当前状态')
+        expect(wrapper.text()).toContain('paid')
     })
 
     it('does not delete when confirm is cancelled', async () => {

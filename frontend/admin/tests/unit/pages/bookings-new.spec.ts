@@ -6,6 +6,16 @@ const mockFetch = vi.fn()
 vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: '/api/v1' } }))
 vi.stubGlobal('$fetch', mockFetch)
 
+const mountOptions = {
+  global: {
+    stubs: {
+      AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+      AdminFormCard: { props: ['title'], template: '<div><slot /></div>' },
+      AdminActionBar: { template: '<div><slot /></div>' },
+    },
+  },
+}
+
 describe('Bookings new page', () => {
   beforeEach(() => {
     mockFetch.mockReset()
@@ -13,7 +23,7 @@ describe('Bookings new page', () => {
 
   it('submits create booking request with numeric payload', async () => {
     mockFetch.mockResolvedValue({ data: { id: 100 } })
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
 
     const inputs = wrapper.findAll('input')
     await inputs[0]!.setValue('3')
@@ -39,7 +49,7 @@ describe('Bookings new page', () => {
 
   it('shows request error message', async () => {
     mockFetch.mockRejectedValueOnce(new Error('create failed'))
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
 
     await wrapper.find('button').trigger('click')
     await flushPromises()

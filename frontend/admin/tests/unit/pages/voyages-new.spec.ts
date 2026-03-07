@@ -18,6 +18,9 @@ beforeEach(() => {
     if (url === '/api/v1/admin/voyages' && options?.method === 'POST') {
       return Promise.resolve({ data: { ok: true } })
     }
+    if (url === '/api/v1/admin/upload/image' && options?.method === 'POST') {
+      return Promise.resolve({ data: { url: 'http://127.0.0.1:8080/uploads/voyage.jpg' } })
+    }
     return Promise.resolve({})
   })
 })
@@ -56,16 +59,28 @@ describe('VoyagesNewPage', () => {
   it('提交表单触发创建并跳转', async () => {
     const wrapper = mount(Page)
     await flushPromises()
-    const inputs = wrapper.findAll('input')
-    await inputs[0]!.setValue('V-100')
-    await inputs[1]!.setValue('天津-济州-釜山-天津 5晚6天')
-    await inputs[2]!.setValue('2026-05-01')
-    await inputs[3]!.setValue('2026-05-10')
-    await inputs[4]!.setValue('天津')
+
+    await wrapper.find('input[placeholder="航次代码（如 TJ-20260701）"]').setValue('V-100')
+    await wrapper.find('input[placeholder="航次简介（手动输入）"]').setValue('天津-济州-釜山-天津 5晚6天')
+
+    const dateInputs = wrapper.findAll('input[type="date"]')
+    await dateInputs[0]!.setValue('2026-05-01')
+    await dateInputs[1]!.setValue('2026-05-10')
+
+    await wrapper.find('input[placeholder="城市（必填）"]').setValue('天津')
+
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/v1/admin/voyages', expect.objectContaining({ method: 'POST' }))
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/v1/admin/voyages',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          image_url: '',
+        }),
+      }),
+    )
     expect(mockNavigate).toHaveBeenCalledWith('/voyages')
   })
 })

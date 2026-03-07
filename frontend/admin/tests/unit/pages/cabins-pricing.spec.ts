@@ -7,6 +7,10 @@ vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 
 const globalConfig = {
   stubs: {
+    AdminPageHeader: {
+      props: ['title'],
+      template: '<div>{{ title }}<slot /><slot name="actions" /></div>',
+    },
     AdminActionLink: {
       props: ['to'],
       template: '<a :href="String(to)"><slot /></a>',
@@ -29,13 +33,38 @@ describe('CabinTypesPricingPage', () => {
         return Promise.resolve({ data: { list: [{ id: 2, name: 'Ocean Nova' }] } })
       }
       if (url === '/cabin-pricing/voyages') {
-        return Promise.resolve({ data: { list: [{ id: 10, cruise_id: 2, name: 'VN001', depart_date: '2026-05-01' }] } })
+        return Promise.resolve({
+          data: {
+            list: [
+              {
+                id: 10,
+                cruise_id: 2,
+                code: 'VN001',
+                brief_info: '日韩短线',
+                depart_date: '2026-05-01',
+                return_date: '2026-05-05',
+              },
+            ],
+          },
+        })
       }
       if (url === '/cabin-types' && options?.query?.cruise_id === 2) {
         return Promise.resolve({ data: { list: [{ id: 99, name: '豪华阳台房', code: 'BAL' }] } })
       }
       if (url === '/cabin-pricing/history') {
-        return Promise.resolve({ data: { list: [] } })
+        return Promise.resolve({
+          data: {
+            list: [
+              {
+                id: 1,
+                inventory_total: 20,
+                settlement_price_cents: 110000,
+                sale_price_cents: 150000,
+                effective_at: '2026-05-01 00:00:00',
+              },
+            ],
+          },
+        })
       }
       if (url === '/cabin-pricing/batch-apply' && options?.method === 'POST') {
         return Promise.resolve({ data: { applied: 1, failed: 0, errors: [] } })
@@ -58,26 +87,24 @@ describe('CabinTypesPricingPage', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('舱型价格管理')
-    expect(wrapper.text()).toContain('批量应用价格')
+    expect(wrapper.text()).toContain('批量设置')
+    expect(wrapper.text()).toContain('价格设置（基于已选航次）')
+    expect(wrapper.text()).toContain('可选航次（可多选）')
   })
 
-  it('选择航次和舱型后提交 batch apply', async () => {
+  it('批量单项生效时保留未填写字段历史值', async () => {
     const wrapper = mount(Page, { global: globalConfig })
     await flushPromises()
 
     const checkbox = wrapper.find('input[type="checkbox"]')
     await checkbox.setValue(true)
+    await flushPromises()
 
-    const selects = wrapper.findAll('select')
-    await selects[2]!.setValue('99')
+    const numberInputs = wrapper.findAll('input[type="number"]')
+    await numberInputs[1]!.setValue('120000')
 
-    const numbers = wrapper.findAll('input[type="number"]')
-    await numbers[0]!.setValue('20')
-    await numbers[1]!.setValue('120000')
-    await numbers[2]!.setValue('150000')
-
-    const applyBtn = wrapper.findAll('button').find((btn) => btn.text().includes('批量应用价格'))
-    await applyBtn!.trigger('click')
+    const applyButtons = wrapper.findAll('button').filter((btn) => btn.text().trim() === '应用')
+    await applyButtons[1]!.trigger('click')
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/cabin-pricing/batch-apply', {

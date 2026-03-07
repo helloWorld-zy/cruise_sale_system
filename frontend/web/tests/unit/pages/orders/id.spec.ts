@@ -29,9 +29,9 @@ describe('Order Detail Page', () => {
     const wrapper = mount(Page)
     await flushPromises()
 
-    expect(wrapper.text()).toContain('订单号 #88')
-    expect(wrapper.text()).toContain('状态: PAID')
-    expect(wrapper.text()).toContain('金额: ¥123.45')
+    expect(wrapper.text()).toContain('Order #88')
+    expect(wrapper.text()).toContain('PAID')
+    expect(wrapper.text()).toContain('¥123.45')
   })
 
   it('shows generic error message on unknown exception', async () => {

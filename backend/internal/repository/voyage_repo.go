@@ -38,6 +38,7 @@ func (r *VoyageRepository) Update(ctx context.Context, v *domain.Voyage) error {
 			Updates(map[string]any{
 				"cruise_id":   v.CruiseID,
 				"code":        v.Code,
+				"image_url":   v.ImageURL,
 				"brief_info":  v.BriefInfo,
 				"depart_date": v.DepartDate,
 				"return_date": v.ReturnDate,

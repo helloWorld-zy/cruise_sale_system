@@ -20,6 +20,9 @@ const mountOptions = {
     stubs: {
       AdminActionLink: { template: '<a><slot /></a>' },
       NuxtLink: { template: '<a><slot /></a>' },
+      AdminPageHeader: { template: '<div><slot /><slot name="actions" /></div>' },
+      AdminFilterBar: { template: '<div><slot /></div>' },
+      AdminDataCard: { template: '<div><slot /></div>' },
     },
   },
 }
@@ -104,6 +107,7 @@ describe('VoyagesIndexPage', () => {
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/voyages/1', { method: 'DELETE' })
+    expect(document.body.textContent || '').not.toContain('确认删除航次')
     wrapper.unmount()
   })
 })

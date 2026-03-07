@@ -26,8 +26,17 @@ beforeEach(() => {
 })
 
 describe('CabinType list', () => {
+  const globalStubs = {
+    NuxtLink: { template: '<a><slot /></a>' },
+    AdminActionLink: { template: '<a><slot /></a>' },
+    AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+    AdminFilterBar: { template: '<div><slot /></div>' },
+    AdminDataCard: { template: '<div><slot /></div>' },
+    AdminStatusTag: { props: ['text'], template: '<span>{{ text }}</span>' },
+  }
+
   it('renders cruise filter and table', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
     await flushPromises()
     expect(wrapper.find('[data-test="cruise-filter"]').exists()).toBe(true)
     expect((wrapper.find('[data-test="cruise-filter"]').element as HTMLSelectElement).value).toBe('0')
@@ -35,7 +44,7 @@ describe('CabinType list', () => {
   })
 
   it('renders all cabin types when cruise is not selected', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
     await flushPromises()
     expect(wrapper.text()).toContain('阳台房')
     expect(wrapper.text()).toContain('标准内舱')

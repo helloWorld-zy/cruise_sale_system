@@ -57,38 +57,47 @@ onMounted(loadItems)
 </script>
 
 <template>
-  <div class="page">
-    <h1>通知模板</h1>
-    <p v-if="loading" data-test="loading">加载中...</p>
-    <p v-else-if="error" data-test="error" class="error">{{ error }}</p>
-    <p v-else-if="items.length === 0" data-test="empty">暂无模板数据</p>
-    <table v-else data-test="table">
-      <thead>
-        <tr>
-          <th>事件</th>
-          <th>渠道</th>
-          <th>模板内容</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="it in items" :key="it.id">
-          <td>{{ it.event_type }}</td>
-          <td>{{ it.channel }}</td>
-          <td>{{ it.template }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="admin-page">
+    <AdminPageHeader title="通知模板" subtitle="管理短信、微信与站内消息模板" />
 
-    <form style="margin-top: 12px" @submit.prevent="createTemplate">
-      <input v-model="form.event_type" data-test="event" type="text" placeholder="事件类型" />
-      <select v-model="form.channel" data-test="channel">
-        <option value="sms">sms</option>
-        <option value="wechat_subscribe">wechat_subscribe</option>
-        <option value="wechat_template">wechat_template</option>
-        <option value="in_app">in_app</option>
-      </select>
-      <input v-model="form.template" data-test="template" type="text" placeholder="模板内容" />
-      <button data-test="create" type="submit" :disabled="saving">{{ saving ? '提交中...' : '新增模板' }}</button>
-    </form>
+    <AdminDataCard flush>
+      <div class="overflow-x-auto">
+        <p v-if="loading" data-test="loading" class="p-3 text-sm text-slate-600">加载中...</p>
+        <p v-else-if="error" data-test="error" class="p-3 text-sm text-rose-500">{{ error }}</p>
+        <p v-else-if="items.length === 0" data-test="empty" class="p-3 text-sm text-slate-600">暂无模板数据</p>
+        <table v-else data-test="table" class="w-full min-w-[760px] text-sm">
+          <thead class="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th class="p-3">事件</th>
+              <th class="p-3">渠道</th>
+              <th class="p-3">模板内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="it in items" :key="it.id">
+              <td class="p-3 text-slate-900">{{ it.event_type }}</td>
+              <td class="p-3 text-slate-600">{{ it.channel }}</td>
+              <td class="p-3 text-slate-600">{{ it.template }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AdminDataCard>
+
+    <AdminFormCard title="新增模板">
+      <form class="grid gap-3 md:grid-cols-3" @submit.prevent="createTemplate">
+        <input v-model="form.event_type" data-test="event" type="text" placeholder="事件类型" class="h-10 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+        <select v-model="form.channel" data-test="channel" class="h-10 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2">
+          <option value="sms">sms</option>
+          <option value="wechat_subscribe">wechat_subscribe</option>
+          <option value="wechat_template">wechat_template</option>
+          <option value="in_app">in_app</option>
+        </select>
+        <input v-model="form.template" data-test="template" type="text" placeholder="模板内容" class="h-10 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2 md:col-span-2" />
+        <div class="md:col-span-3">
+          <button data-test="create" type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="saving">{{ saving ? '提交中...' : '新增模板' }}</button>
+        </div>
+      </form>
+    </AdminFormCard>
   </div>
 </template>

@@ -24,6 +24,7 @@ describe('Voyages edit page', () => {
           data: {
             cruise_id: 6,
             code: 'V13',
+            image_url: 'http://127.0.0.1:8080/uploads/v13.jpg',
             brief_info: '日韩春季线 5晚6天',
             depart_date: '2026-05-01T00:00:00Z',
             return_date: '2026-05-06T00:00:00Z',
@@ -49,6 +50,7 @@ describe('Voyages edit page', () => {
           data: {
             cruise_id: 6,
             code: 'V13',
+            image_url: 'http://127.0.0.1:8080/uploads/v13.jpg',
             brief_info: '日韩春季线 5晚6天',
             depart_date: '2026-05-01T00:00:00Z',
             return_date: '2026-05-06T00:00:00Z',
@@ -79,8 +81,43 @@ describe('Voyages edit page', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(mockRequest).toHaveBeenCalledWith('/voyages/13', expect.objectContaining({ method: 'PUT' }))
+    expect(mockRequest).toHaveBeenCalledWith(
+      '/voyages/13',
+      expect.objectContaining({
+        method: 'PUT',
+        body: expect.objectContaining({
+          image_url: 'http://127.0.0.1:8080/uploads/v13.jpg',
+        }),
+      }),
+    )
     expect(mockNavigateTo).toHaveBeenCalledWith('/voyages')
+  })
+
+  it('does not silently fallback to the first cruise when detail misses cruise_id', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/cruises' && options?.query) {
+        return Promise.resolve({ data: { list: [{ id: 6, name: 'Ocean Nova' }] } })
+      }
+      if (url === '/voyages/13' && !options) {
+        return Promise.resolve({
+          data: {
+            code: 'V13',
+            brief_info: '日韩春季线 5晚6天',
+            depart_date: '2026-05-01T00:00:00Z',
+            return_date: '2026-05-06T00:00:00Z',
+            itineraries: [{ day_no: 1, stop_index: 1, city: '天津' }],
+          },
+        })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    const cruiseSelect = wrapper.find('[data-test="cruise-select"]')
+    expect((cruiseSelect.element as HTMLSelectElement).value).toBe('0')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
   })
 
   it('deletes and navigates when confirmed', async () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 type ItineraryFormItem = {
   day_no: number
@@ -19,6 +20,7 @@ type ItineraryFormItem = {
 type VoyageForm = {
   cruise_id: number
   code: string
+  image_url: string
   brief_info: string
   depart_date: string
   return_date: string
@@ -32,15 +34,22 @@ const id = Number(route.params.id)
 
 const loading = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
-const deleteDialogVisible = ref(false)
+const uploadingImage = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
 const cruises = ref<Array<{ id: number; name: string }>>([])
 const hasCruiseOptions = computed(() => cruises.value.length > 0)
+const {
+  visible: deleteDialogVisible,
+  submitting: deleting,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog()
 const form = ref<VoyageForm>({
-  cruise_id: 1,
+  cruise_id: 0,
   code: '',
+  image_url: '',
   brief_info: '',
   depart_date: '',
   return_date: '',
@@ -193,8 +202,9 @@ async function loadDetail() {
       : []
 
     form.value = {
-      cruise_id: Number(data.cruise_id || 1),
+      cruise_id: Number(data.cruise_id || 0),
       code: data.code ?? '',
+      image_url: String(data.image_url || ''),
       brief_info: data.brief_info ?? '',
       depart_date: dateOnly(data.depart_date),
       return_date: dateOnly(data.return_date),
@@ -206,6 +216,29 @@ async function loadDetail() {
     error.value = e?.message ?? 'failed to load voyage detail'
   } finally {
     loading.value = false
+  }
+}
+
+async function uploadVoyageImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploadingImage.value = true
+  error.value = null
+  try {
+    const body = new FormData()
+    body.append('file', file)
+    const res = await request('/upload/image', { method: 'POST', body })
+    const payload = res?.data ?? res ?? {}
+    const url = String(payload?.url || '')
+    if (!url) throw new Error('上传成功但未返回图片地址')
+    form.value.image_url = url
+  } catch (e: any) {
+    error.value = e?.message ?? '上传航次图片失败'
+  } finally {
+    uploadingImage.value = false
+    input.value = ''
   }
 }
 
@@ -236,6 +269,7 @@ async function handleSave() {
       body: {
         cruise_id: Number(form.value.cruise_id),
         code: form.value.code.trim(),
+        image_url: form.value.image_url.trim(),
         brief_info: form.value.brief_info.trim(),
         depart_date: toRFC3339Date(form.value.depart_date),
         return_date: toRFC3339Date(form.value.return_date),
@@ -253,26 +287,19 @@ async function handleSave() {
 
 async function handleDelete() {
   if (deleting.value) return
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleting.value) return
-  deleteDialogVisible.value = false
+  openDeleteDialog()
 }
 
 async function confirmDelete() {
   if (deleting.value) return
-  deleting.value = true
   error.value = null
   try {
-    await request(`/voyages/${id}`, { method: 'DELETE' })
-    closeDeleteDialog()
-    await navigateTo('/voyages')
+    await runDelete(async () => {
+      await request(`/voyages/${id}`, { method: 'DELETE' })
+      await navigateTo('/voyages')
+    })
   } catch (e: any) {
     error.value = e?.message ?? '删除航次失败，请稍后重试。'
-  } finally {
-    deleting.value = false
   }
 }
 
@@ -282,12 +309,22 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
-    <h1>编辑航次 #{{ id }}</h1>
-    <p v-if="loading">Loading...</p>
-    <p v-else-if="empty" data-test="empty">暂无航次数据</p>
-    <form v-else style="display:grid;gap:10px;max-width:980px;" @submit.prevent="handleSave">
+  <div class="admin-page">
+    <AdminPageHeader :title="`编辑航次 #${id}`" />
+    <AdminFormCard>
+      <p v-if="loading" class="text-sm text-slate-600">Loading...</p>
+      <p v-else-if="empty" data-test="empty" class="text-sm text-slate-600">暂无航次数据</p>
+      <form v-else style="display:grid;gap:10px;max-width:980px;" @submit.prevent="handleSave">
       <input v-model="form.code" placeholder="航次代码" :disabled="saving || deleting" />
+      <div style="display:grid;gap:6px;">
+        <label style="font-size:13px;color:#475569;">航次图片</label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <input type="file" accept="image/*" :disabled="saving || deleting || uploadingImage" @change="uploadVoyageImage" />
+          <input v-model="form.image_url" placeholder="或直接填写图片 URL" :disabled="saving || deleting || uploadingImage" />
+          <span v-if="uploadingImage" style="font-size:12px;color:#64748b;">上传中...</span>
+        </div>
+        <img v-if="form.image_url" :src="form.image_url" alt="航次图片预览" style="width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;" />
+      </div>
       <input v-model="form.brief_info" placeholder="航次简介（手动输入）" :disabled="saving || deleting" />
       <select v-model.number="form.cruise_id" data-test="cruise-select" :disabled="saving || deleting || cruises.length === 0">
         <option :value="0">请选择邮轮</option>
@@ -363,12 +400,13 @@ onMounted(async () => {
         </article>
       </section>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       <div>
         <button type="submit" :disabled="saving || deleting || !hasCruiseOptions || !form.cruise_id">{{ saving ? '保存中...' : '保存' }}</button>
         <button type="button" style="margin-left:8px" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
       </div>
-    </form>
+      </form>
+    </AdminFormCard>
 
     <AdminConfirmDialog
       :visible="deleteDialogVisible"

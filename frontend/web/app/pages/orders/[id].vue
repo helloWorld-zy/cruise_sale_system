@@ -63,15 +63,31 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
-    <h1>订单状态</h1>
-    <div v-if="loading">加载中…</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <template v-else-if="order">
-      <p>订单号 #{{ order.id }}</p>
-      <p>状态: {{ order.status }}</p>
-      <p>金额: ¥{{ (order.amount / 100).toFixed(2) }}</p>
-    </template>
-    <div v-else>订单未找到。</div>
+  <div class="page max-w-xl mx-auto mt-10 text-center">
+    <h1 class="text-[var(--color-primary)]">订单状态</h1>
+    
+    <div class="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-100 flex flex-col items-center gap-4">
+      <div v-if="loading" class="text-[var(--web-muted)] italic">加载中...</div>
+      <div v-else-if="error" class="error bg-red-50 p-3 rounded-lg w-full">{{ error }}</div>
+      <template v-else-if="order">
+        <div class="text-xs font-bold tracking-widest text-[var(--web-muted)] uppercase mb-2">Order #{{ order.id }}</div>
+        
+        <div class="inline-flex items-center px-4 py-2 rounded-full font-bold text-sm" 
+             :class="order.status.includes('成功') || order.status.includes('已') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+          {{ order.status }}
+        </div>
+        
+        <div class="mt-4 heading-font text-4xl text-[var(--color-cta)]">
+          ¥{{ (order.amount / 100).toFixed(2) }}
+        </div>
+      </template>
+      <div v-else class="text-[var(--web-muted)]">订单未找到。</div>
+    </div>
+    
+    <div class="mt-8">
+      <NuxtLink to="/orders" class="text-sm font-semibold text-[var(--color-primary)] hover:text-[var(--color-cta)] transition-colors underline underline-offset-4">
+        返回订单列表
+      </NuxtLink>
+    </div>
   </div>
 </template>

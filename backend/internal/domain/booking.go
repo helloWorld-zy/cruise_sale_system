@@ -47,8 +47,12 @@ type Booking struct {
 	Status     string    `gorm:"size:30;default:created" json:"status"`   // 订单状态
 	TotalCents int64     `json:"total_cents"`                             // 订单总金额（单位：分）
 	PaidCents  int64     `json:"paid_cents"`                              // 已支付金额（单位：分）
-	CreatedAt  time.Time `json:"created_at"`                              // 创建时间
-	UpdatedAt  time.Time `json:"updated_at"`                              // 更新时间
+	BookingNo  string    `gorm:"->;-:migration;column:booking_no" json:"booking_no,omitempty"`
+	Phone      string    `gorm:"->;-:migration;column:phone" json:"phone,omitempty"`
+	VoyageCode string    `gorm:"->;-:migration;column:voyage_code" json:"voyage_code,omitempty"`
+	CruiseName string    `gorm:"->;-:migration;column:cruise_name" json:"cruise_name,omitempty"`
+	CreatedAt  time.Time `json:"created_at"` // 创建时间
+	UpdatedAt  time.Time `json:"updated_at"` // 更新时间
 }
 
 // OrderStatusLog 记录订单状态变更日志。

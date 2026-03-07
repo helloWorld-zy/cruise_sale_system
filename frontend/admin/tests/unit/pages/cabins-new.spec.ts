@@ -9,6 +9,16 @@ vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: '/api/v1' } }))
 vi.stubGlobal('$fetch', mockFetch)
 vi.stubGlobal('navigateTo', mockNavigateTo)
 
+const mountOptions = {
+  global: {
+    stubs: {
+      AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+      AdminFormCard: { props: ['title'], template: '<div><slot /></div>' },
+      AdminActionBar: { template: '<div><slot /></div>' },
+    },
+  },
+}
+
 describe('Cabins new page', () => {
   beforeEach(() => {
     mockFetch.mockReset()
@@ -17,7 +27,7 @@ describe('Cabins new page', () => {
 
   it('creates cabin and navigates', async () => {
     mockFetch.mockResolvedValue({ data: { id: 21 } })
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
 
     const inputs = wrapper.findAll('input')
     await inputs[0]!.setValue('8')
@@ -45,7 +55,7 @@ describe('Cabins new page', () => {
 
   it('renders error when create fails', async () => {
     mockFetch.mockRejectedValueOnce(new Error('create cabin failed'))
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
 
     await wrapper.find('button').trigger('click')
     await flushPromises()

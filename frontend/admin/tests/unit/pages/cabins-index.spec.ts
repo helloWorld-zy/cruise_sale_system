@@ -18,8 +18,17 @@ beforeEach(() => {
 })
 
 describe('CabinsIndexPage', () => {
+  const globalStubs = {
+    NuxtLink: { template: '<a><slot /></a>' },
+    AdminActionLink: { template: '<a><slot /></a>' },
+    AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+    AdminFilterBar: { template: '<div><slot /></div>' },
+    AdminDataCard: { template: '<div><slot /></div>' },
+    AdminStatusTag: { props: ['text'], template: '<span>{{ text }}</span>' },
+  }
+
   it('renders triple filters and table', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
     await flushPromises()
     expect(wrapper.find('[data-test="filter-cruise"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="filter-voyage"]').exists()).toBe(true)
@@ -28,7 +37,7 @@ describe('CabinsIndexPage', () => {
   })
 
   it('shows batch action after row selection', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
     await flushPromises()
     const checkbox = wrapper.find('tbody input[type="checkbox"]')
     await checkbox.setValue(true)
@@ -36,7 +45,7 @@ describe('CabinsIndexPage', () => {
   })
 
   it('reloads cabin type options when cruise filter changes', async () => {
-    const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' }, AdminActionLink: { template: '<a><slot /></a>' } } } })
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
     await flushPromises()
 
     const cruiseFilter = wrapper.find('[data-test="filter-cruise"]')

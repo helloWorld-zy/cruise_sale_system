@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 type VoyageRow = {
   id: number
@@ -16,9 +17,14 @@ const { request } = useApi()
 const items = ref<VoyageRow[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const deleteDialogVisible = ref(false)
-const deleteSubmitting = ref(false)
-const deleteTarget = ref<{ id: number; name: string } | null>(null)
+const {
+  visible: deleteDialogVisible,
+  submitting: deleteSubmitting,
+  target: deleteTarget,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog<{ id: number; name: string }>()
 const filters = ref({
   code: '',
   departDate: '',
@@ -52,14 +58,7 @@ async function handleDelete(rawId: unknown) {
     return
   }
   const item = items.value.find((it) => resolveId(it?.id) === id)
-  deleteTarget.value = { id, name: String(item?.name ?? '') }
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleteSubmitting.value) return
-  deleteDialogVisible.value = false
-  deleteTarget.value = null
+  openDeleteDialog({ id, name: String(item?.name ?? '') })
 }
 
 async function confirmDelete() {
@@ -70,15 +69,13 @@ async function confirmDelete() {
     return
   }
   error.value = null
-  deleteSubmitting.value = true
   try {
-    await request(`/voyages/${id}`, { method: 'DELETE' })
-    closeDeleteDialog()
-    await loadItems()
+    await runDelete(async () => {
+      await request(`/voyages/${id}`, { method: 'DELETE' })
+      await loadItems()
+    })
   } catch (e: any) {
     error.value = e?.message ?? '删除航次失败，请稍后重试。'
-  } finally {
-    deleteSubmitting.value = false
   }
 }
 
@@ -110,23 +107,28 @@ onMounted(loadItems)
 </script>
 
 <template>
-  <div class="page">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h1>航次管理</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="航次管理">
+      <template #actions>
       <AdminActionLink to="/voyages/new" variant="primary" size="md">新建航次</AdminActionLink>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      </template>
+    </AdminPageHeader>
+
+    <AdminFilterBar>
+      <div class="flex flex-wrap items-center gap-2">
       <input v-model="filters.code" data-test="filter-code" placeholder="按航次代码搜索" />
       <input v-model="filters.departDate" data-test="filter-depart" type="date" />
       <input v-model="filters.returnDate" data-test="filter-return" type="date" />
       <input v-model="filters.port" data-test="filter-port" placeholder="按港口关键字搜索" />
-    </div>
+      </div>
+    </AdminFilterBar>
 
-    <p v-if="loading">Loading...</p>
-    <p v-else-if="error" class="text-red-500">{{ error }}</p>
-    <p v-else-if="filteredItems.length === 0">No data</p>
-    <div v-else class="voyage-table-wrap">
-      <table>
+    <AdminDataCard flush>
+      <p v-if="loading" class="p-3">Loading...</p>
+      <p v-else-if="error" class="p-3 text-red-500">{{ error }}</p>
+      <p v-else-if="filteredItems.length === 0" class="p-3">No data</p>
+      <div v-else class="voyage-table-wrap">
+        <table>
         <thead>
           <tr>
             <th>ID</th>
@@ -157,7 +159,8 @@ onMounted(loadItems)
           </tr>
         </tbody>
       </table>
-    </div>
+      </div>
+    </AdminDataCard>
 
     <AdminConfirmDialog
       :visible="deleteDialogVisible"

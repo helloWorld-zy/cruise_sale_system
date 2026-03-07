@@ -9,6 +9,10 @@ describe('Cruise list enhanced', () => {
     const globalStubs = {
         NuxtLink: { template: '<a><slot /></a>' },
         AdminActionLink: { template: '<a><slot /></a>' },
+        AdminPageHeader: { template: '<div><slot /><slot name="actions" /></div>' },
+        AdminFilterBar: { template: '<div><slot /></div>' },
+        AdminDataCard: { template: '<div><slot /></div>' },
+        AdminStatusTag: { props: ['text'], template: '<span>{{ text }}</span>' },
     }
 
     beforeEach(() => {
@@ -139,6 +143,7 @@ describe('Cruise list enhanced', () => {
         await flushPromises()
 
         expect(mockRequest).toHaveBeenCalledWith('/cruises/1', { method: 'DELETE' })
+        expect(document.body.textContent || '').not.toContain('确认删除邮轮')
         wrapper.unmount()
     })
 

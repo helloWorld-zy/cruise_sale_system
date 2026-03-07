@@ -86,6 +86,7 @@ describe('Cruise edit page', () => {
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/cruises/5', { method: 'DELETE' })
+    expect(document.body.textContent || '').not.toContain('确认删除邮轮')
     expect(mockNavigateTo).toHaveBeenCalledWith('/cruises')
     wrapper.unmount()
   })
@@ -111,8 +112,11 @@ describe('Cruise edit page', () => {
 
   it('shows save error when update request fails', async () => {
     mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies' && !options) {
+        return Promise.resolve({ data: { list: [{ id: 1, name: '皇家加勒比' }] } })
+      }
       if (url === '/cruises/5' && !options) {
-        return Promise.resolve({ data: { id: 5, name: 'Ocean Nova', code: 'ONOVA' } })
+        return Promise.resolve({ data: { id: 5, name: 'Ocean Nova', code: 'ONOVA', company_id: 1 } })
       }
       if (url === '/cruises/5' && options?.method === 'PUT') {
         return Promise.reject(new Error('update failed'))
@@ -135,5 +139,28 @@ describe('Cruise edit page', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('load failed')
+  })
+
+  it('blocks save when required fields are invalid', async () => {
+    mockRequest.mockImplementation((url: string, options?: any) => {
+      if (url === '/companies' && !options) {
+        return Promise.resolve({ data: { list: [] } })
+      }
+      if (url === '/cruises/5' && !options) {
+        return Promise.resolve({ data: { id: 5, name: '', code: 'ONOVA', company_id: 0 } })
+      }
+      return Promise.resolve({ data: {} })
+    })
+
+    const wrapper = mount(Page)
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('请先修正表单校验错误')
+    expect(wrapper.text()).toContain('请填写邮轮名称')
+    expect(wrapper.text()).toContain('请选择所属公司')
+    expect(mockRequest).not.toHaveBeenCalledWith('/cruises/5', expect.objectContaining({ method: 'PUT' }))
   })
 })

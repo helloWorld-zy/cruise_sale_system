@@ -1,44 +1,78 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-5xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 class="mb-6 text-xl font-semibold text-slate-900">新建设施</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="新建设施" subtitle="补充设施的基础信息、收费策略和适用人群，用于前台展示与筛选。" />
+    <AdminFormCard title="新建设施">
       <p v-if="empty" data-test="empty" class="mb-3 text-sm text-slate-600">暂无邮轮或分类数据，无法建设施</p>
-      <form class="space-y-6" @submit.prevent="handleSubmit">
-        <section>
-          <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">基本信息</h2>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label class="space-y-1 text-sm text-slate-600"><span>所属邮轮</span><select v-model.number="form.cruise_id" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2"><option :value="0">请选择邮轮</option><option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option></select></label>
-            <label class="space-y-1 text-sm text-slate-600"><span>设施分类</span><select v-model.number="form.category_id" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2"><option :value="0">请选择分类</option><option v-for="cat in categories" :key="cat.id" :value="Number(cat.id)">{{ cat.name || `分类 #${cat.id}` }}</option></select></label>
-            <label class="space-y-1 text-sm text-slate-600"><span>名称</span><input v-model="form.name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
-            <label class="space-y-1 text-sm text-slate-600"><span>英文名</span><input v-model="form.english_name" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
-            <label class="space-y-1 text-sm text-slate-600"><span>位置</span><input v-model="form.location" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
-            <label class="space-y-1 text-sm text-slate-600"><span>开放时间</span><input v-model="form.open_hours" placeholder="如 08:00-22:00" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
+      <form class="admin-cruise-form" @submit.prevent="handleSubmit">
+        <section class="admin-cruise-form__intro">
+          <h2 class="admin-cruise-form__intro-title">创建设施档案</h2>
+          <p class="admin-cruise-form__intro-desc">先选择邮轮与分类，再完善营业信息和收费策略，便于后续在前台准确检索。</p>
+        </section>
+
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">基本信息</h3>
+          <p class="admin-cruise-form__section-subtitle">确定设施归属、名称和位置等识别信息。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">所属邮轮</span>
+              <select v-model.number="form.cruise_id" class="admin-cruise-form__control">
+                <option :value="0">请选择邮轮</option>
+                <option v-for="cruise in cruises" :key="cruise.id" :value="Number(cruise.id)">{{ cruise.name || `邮轮 #${cruise.id}` }}</option>
+              </select>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">设施分类</span>
+              <select v-model.number="form.category_id" class="admin-cruise-form__control">
+                <option :value="0">请选择分类</option>
+                <option v-for="cat in categories" :key="cat.id" :value="Number(cat.id)">{{ cat.name || `分类 #${cat.id}` }}</option>
+              </select>
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">名称</span>
+              <input v-model="form.name" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">英文名</span>
+              <input v-model="form.english_name" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">位置</span>
+              <input v-model="form.location" class="admin-cruise-form__control" />
+            </label>
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">开放时间</span>
+              <input v-model="form.open_hours" placeholder="如 08:00-22:00" class="admin-cruise-form__control" />
+            </label>
           </div>
         </section>
 
-        <section>
-          <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">收费与人群</h2>
-          <div class="space-y-4">
-            <label class="flex items-center gap-2 text-sm text-slate-700">
-              <input v-model="form.extra_charge" type="checkbox" />
-              <span>是否额外收费</span>
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">收费与人群</h3>
+          <p class="admin-cruise-form__section-subtitle">用于控制付费策略与适配客群标签。</p>
+          <div class="admin-cruise-form__grid">
+            <label class="admin-cruise-form__field facility-form-checkbox-row">
+              <span class="admin-cruise-form__field-label">是否额外收费</span>
+              <span class="facility-form-checkbox-wrap">
+                <input v-model="form.extra_charge" type="checkbox" />
+                <span>开启后可填写收费说明</span>
+              </span>
             </label>
-            <label v-if="form.extra_charge" class="block space-y-1 text-sm text-slate-600">
-              <span>收费说明</span>
-              <input v-model="form.charge_price_tip" placeholder="如 ¥200/人" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
+            <label v-if="form.extra_charge" class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">收费说明</span>
+              <input v-model="form.charge_price_tip" placeholder="如 ¥200/人" class="admin-cruise-form__control" />
             </label>
-            <div>
-              <p class="mb-2 text-sm text-slate-600">适合人群</p>
-              <div class="flex flex-wrap gap-3">
-                <label v-for="aud in audienceOptions" :key="aud" class="flex items-center gap-2 text-sm text-slate-700">
+            <div class="admin-cruise-form__field facility-form-audience-block">
+              <span class="admin-cruise-form__field-label">适合人群</span>
+              <div class="facility-form-audience-list">
+                <label v-for="aud in audienceOptions" :key="aud" class="facility-form-audience-item">
                   <input type="checkbox" :checked="form.target_audience.includes(aud)" @change="toggleAudience(aud, ($event.target as HTMLInputElement).checked)" />
                   <span>{{ aud }}</span>
                 </label>
               </div>
             </div>
-            <label class="block space-y-1 text-sm text-slate-600">
-              <span>状态</span>
-              <select v-model.number="form.status" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2">
+            <label class="admin-cruise-form__field">
+              <span class="admin-cruise-form__field-label">状态</span>
+              <select v-model.number="form.status" class="admin-cruise-form__control">
                 <option :value="1">开放</option>
                 <option :value="0">关闭</option>
               </select>
@@ -46,21 +80,22 @@
           </div>
         </section>
 
-        <section>
-          <h2 class="mb-4 border-b border-slate-200 pb-2 text-sm font-semibold text-slate-700">描述</h2>
-          <label class="block space-y-1 text-sm text-slate-600">
-            <span>设施描述</span>
-            <textarea v-model="form.description" rows="5" class="w-full rounded-md border border-slate-200 px-3 py-2 outline-none ring-indigo-500 focus:ring-2" />
+        <section class="admin-cruise-form__section">
+          <h3 class="admin-cruise-form__section-title">描述</h3>
+          <p class="admin-cruise-form__section-subtitle">建议补充体验亮点、使用规则等说明。</p>
+          <label class="admin-cruise-form__field">
+            <span class="admin-cruise-form__field-label">设施描述</span>
+            <textarea v-model="form.description" rows="5" class="admin-cruise-form__control admin-cruise-form__control--textarea" />
           </label>
         </section>
 
-        <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-          <AdminActionLink to="/facilities">取消</AdminActionLink>
-          <button type="submit" :disabled="loading" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">{{ loading ? '提交中...' : '保存' }}</button>
-        </div>
+        <AdminActionBar>
+          <AdminActionLink to="/facilities" class="admin-btn admin-btn--secondary">取消</AdminActionLink>
+          <button type="submit" :disabled="loading" class="admin-btn">{{ loading ? '提交中...' : '保存' }}</button>
+        </AdminActionBar>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
-    </div>
+    </AdminFormCard>
   </div>
 </template>
 
@@ -149,3 +184,31 @@ async function handleSubmit() {
 
 onMounted(loadOptions)
 </script>
+
+<style scoped>
+.facility-form-checkbox-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  color: #334155;
+}
+
+.facility-form-audience-block {
+  grid-column: 1 / -1;
+}
+
+.facility-form-audience-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 0 4px;
+}
+
+.facility-form-audience-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+}
+</style>

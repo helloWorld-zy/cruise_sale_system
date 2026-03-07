@@ -14,6 +14,16 @@ const mockRequest = vi.fn().mockResolvedValue({
 
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 
+const mountOptions = {
+  global: {
+    stubs: {
+      AdminPageHeader: { props: ['title', 'subtitle'], template: '<div>{{ title }} {{ subtitle }}<slot /><slot name="actions" /></div>' },
+      AdminDataCard: { props: ['flush'], template: '<div><slot /></div>' },
+      AdminStatusTag: { props: ['text'], template: '<span>{{ text }}</span>' },
+    },
+  },
+}
+
 describe('Task21 route smoke', () => {
   it('login/dashboard/finance route pages exist and render', async () => {
     const root = process.cwd()
@@ -25,11 +35,11 @@ describe('Task21 route smoke', () => {
     expect(fs.existsSync(dashboardPage)).toBe(true)
     expect(fs.existsSync(financePage)).toBe(true)
 
-    const dashboard = mount(DashboardPage)
+    const dashboard = mount(DashboardPage, mountOptions)
     await flushPromises()
     expect(dashboard.text()).toContain('Dashboard')
 
-    const finance = mount(FinancePage)
+    const finance = mount(FinancePage, mountOptions)
     await flushPromises()
     expect(finance.text()).toContain('Finance')
   })

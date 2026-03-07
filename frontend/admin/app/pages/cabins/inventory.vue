@@ -95,50 +95,50 @@ onMounted(loadInventory)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-6xl space-y-4">
-      <h1 class="text-xl font-semibold text-slate-900">库存管理</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="库存管理" />
+    <div class="space-y-4">
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
       <p v-else-if="error" class="text-sm text-rose-500">{{ error }}</p>
       <div v-else-if="inventory" class="space-y-4">
         <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <AdminDataCard>
             <p class="text-sm text-slate-600">总量</p>
             <p class="text-2xl font-bold text-slate-900">{{ inventory.total }}</p>
             <p class="text-xs text-emerald-600">{{ arrows.up }} 稳定</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          </AdminDataCard>
+          <AdminDataCard>
             <p class="text-sm text-slate-600">锁定</p>
             <p class="text-2xl font-bold text-slate-900">{{ inventory.locked }}</p>
             <p class="text-xs text-amber-600">{{ arrows.up }} +1</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          </AdminDataCard>
+          <AdminDataCard>
             <p class="text-sm text-slate-600">已售</p>
             <p class="text-2xl font-bold text-slate-900">{{ inventory.sold }}</p>
             <p class="text-xs text-emerald-600">{{ arrows.up }} +2</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          </AdminDataCard>
+          <AdminDataCard>
             <p class="text-sm text-slate-600">可用</p>
             <p class="text-2xl font-bold text-slate-900">{{ available() }}</p>
             <p class="text-xs" :class="available() < threshold ? 'text-rose-600' : 'text-emerald-600'">{{ available() < threshold ? `${arrows.down} 低于阈值` : `${arrows.up} 正常` }}</p>
-          </div>
+          </AdminDataCard>
         </div>
 
-        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <AdminFormCard title="库存预警阈值">
           <div class="flex flex-wrap items-center gap-3">
             <span class="text-sm text-slate-700">预警阈值</span>
             <input v-model.number="threshold" type="number" min="0" class="h-10 w-32 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-            <button type="button" class="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-500" :disabled="submitting" @click="saveThreshold">保存</button>
+            <button type="button" class="admin-btn" :disabled="submitting" @click="saveThreshold">保存</button>
           </div>
-        </div>
+        </AdminFormCard>
 
-        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="mb-3 flex items-center gap-2">
+        <AdminDataCard>
+          <div class="mb-3 flex flex-wrap items-center gap-2">
             <input v-model.number="delta" type="number" placeholder="调整值" class="h-10 w-32 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
             <input v-model="reason" type="text" placeholder="原因" class="h-10 w-64 rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" />
-            <button type="button" class="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" :disabled="submitting" @click="adjustInventory">提交调整</button>
+            <button type="button" class="admin-btn admin-btn--secondary" :disabled="submitting" @click="adjustInventory">提交调整</button>
           </div>
-          <table class="w-full text-sm">
+          <table class="w-full min-w-[640px] text-sm">
             <thead class="bg-slate-50 text-left text-slate-600">
               <tr>
                 <th class="p-3">时间</th>
@@ -148,14 +148,14 @@ onMounted(loadInventory)
             </thead>
             <tbody>
               <tr v-if="logs.length === 0"><td class="p-3 text-slate-500" colspan="3">暂无变动记录</td></tr>
-              <tr v-for="(log, idx) in logs" v-else :key="`${log.time}-${idx}`">
+              <tr v-for="(log, idx) in logs" v-else :key="`${log.time}-${idx}`" class="border-t border-slate-100">
                 <td class="p-3 text-slate-600">{{ log.time }}</td>
                 <td class="p-3 font-medium" :class="log.delta >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ log.delta >= 0 ? `+${log.delta}` : log.delta }}</td>
                 <td class="p-3 text-slate-600">{{ log.reason }}</td>
               </tr>
             </tbody>
           </table>
-        </div>
+        </AdminDataCard>
       </div>
     </div>
   </div>

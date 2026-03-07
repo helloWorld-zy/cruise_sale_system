@@ -247,6 +247,27 @@ Set-Location d:\cruise_sale_system
 node scripts/frontend-smoke.mjs
 ```
 
+### D. 统一本地验收入口
+
+当前仓库已经提供统一本地验收脚本，串联：
+
+- 前端页面可达性 smoke：`scripts/frontend-smoke.mjs`
+- 真实后端订单导出 smoke：`scripts/bookings-export-real-smoke.mjs`
+
+执行方式：
+
+```powershell
+Set-Location d:\cruise_sale_system
+npm run acceptance:local
+```
+
+默认真实后端地址为 `http://127.0.0.1:18080`。如需覆盖：
+
+```powershell
+Set-Location d:\cruise_sale_system
+npm run acceptance:local -- --backend-base http://127.0.0.1:18080
+```
+
 **Step 2: Run test to verify it fails**
 
 Run: `node scripts/frontend-smoke.mjs`
@@ -346,3 +367,96 @@ git commit -m "test: complete manual functional and visual validation for three 
 ### Next Suggested Action
 
 - Make Nuxt dev proxy target configurable by environment (instead of hardcoded `:8080`), so local startup/Playwright validation is robust even when `8080` is occupied.
+
+---
+
+## 2026-03-07 Frontend Unified Pattern Notes
+
+### A. Admin Unified UI Building Blocks
+
+为避免页面结构和交互节奏再次分叉，后台页面默认复用以下模板组件：
+
+- `AdminPageHeader`: 标题、副标题、右侧 actions 槽位
+- `AdminFilterBar`: 列表筛选区容器
+- `AdminDataCard`: 列表/表格数据容器（支持 `flush`）
+- `AdminFormCard`: 表单容器（支持 `title`）
+- `AdminActionBar`: 表单底部按钮区
+- `AdminStatusTag`: 统一状态标签（`success/warning/danger/info`）
+
+落地文件：
+
+- `frontend/admin/app/components/AdminPageHeader.vue`
+- `frontend/admin/app/components/AdminFilterBar.vue`
+- `frontend/admin/app/components/AdminDataCard.vue`
+- `frontend/admin/app/components/AdminFormCard.vue`
+- `frontend/admin/app/components/AdminActionBar.vue`
+- `frontend/admin/app/components/AdminStatusTag.vue`
+
+建议：新增后台页面时优先先拼模板结构，再填业务字段与请求逻辑，减少后续 UI 对齐成本。
+
+### B. Unit Test Global Stub Strategy
+
+为降低重复 mount 配置和 unresolved component 警告噪音，admin 单测统一使用全局测试桩。
+
+关键文件：
+
+- `frontend/admin/tests/unit/setup.ts`
+- `frontend/admin/vitest.config.ts`
+
+策略要点：
+
+- 在 `setup.ts` 集中 stub `NuxtLink/AdminActionLink` 与上述模板组件。
+- `vitest.config.ts` 通过 `setupFiles` 注入全局 setup。
+- 不要全局 stub 依赖用户交互语义的确认弹窗组件（例如删除确认流），避免误伤交互断言。
+
+推荐命令：
+
+```powershell
+Set-Location d:\cruise_sale_system\frontend\admin
+npm run test -- tests/unit
+```
+
+### C. Full Frontend Smoke Port Convention
+
+为保证 smoke 与手工验证稳定，三个前端统一固定端口并使用 `127.0.0.1`：
+
+- admin: `3013`
+- web: `3014`
+- miniapp: `3015`
+
+推荐启动方式（Windows）：
+
+```powershell
+Start-Process -FilePath npm -ArgumentList 'run','dev','--','--host','127.0.0.1','--port','3014' -WorkingDirectory 'd:\cruise_sale_system\frontend\web'
+Start-Process -FilePath npm -ArgumentList 'run','dev','--','--host','127.0.0.1','--port','3015' -WorkingDirectory 'd:\cruise_sale_system\frontend\miniapp'
+```
+
+端口连通性检查：
+
+```powershell
+$ports = 3013,3014,3015
+foreach($p in $ports){
+	try { $r = Invoke-WebRequest -Uri "http://127.0.0.1:$p" -TimeoutSec 5; Write-Host "$p => $($r.StatusCode)" }
+	catch { Write-Host "$p => FAIL" }
+}
+```
+
+回归命令：
+
+```powershell
+Set-Location d:\cruise_sale_system
+node scripts/frontend-smoke.mjs
+```
+
+通过标准（当前基线）：
+
+```json
+{
+	"ok": true,
+	"checked": {
+		"admin": 32,
+		"web": 15,
+		"miniappTabs": 5
+	}
+}
+```

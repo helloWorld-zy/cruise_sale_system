@@ -25,9 +25,16 @@ beforeEach(() => {
 })
 
 describe('FacilityCategory list', () => {
+  const globalStubs = {
+    NuxtLink: { template: '<a><slot /></a>' },
+    AdminActionLink: { template: '<a class="admin-btn"><slot /></a>' },
+    AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+    AdminDataCard: { template: '<div><slot /></div>' },
+  }
+
   it('renders compact table with inline inputs', async () => {
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
     expect(wrapper.find('table').exists()).toBe(true)
@@ -36,7 +43,7 @@ describe('FacilityCategory list', () => {
 
   it('loads facility categories from api', async () => {
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
     expect(mockRequest).toHaveBeenCalledWith('/facility-categories')
@@ -46,7 +53,7 @@ describe('FacilityCategory list', () => {
 
   it('appends a new editable row', async () => {
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
 
@@ -60,7 +67,7 @@ describe('FacilityCategory list', () => {
 
   it('saves existing row with PUT', async () => {
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
 
@@ -73,26 +80,27 @@ describe('FacilityCategory list', () => {
 
   it('opens icon picker and selects icon', async () => {
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
 
-    const selectBtn = wrapper.findAll('button').find((b) => b.text().includes('选择'))
+    const selectBtn = wrapper.find('[data-test="facility-category-icon-trigger-1"]')
     await selectBtn!.trigger('click')
     await flushPromises()
 
-    const iconBtn = wrapper.findAll('button').find((b) => b.text() === 'music')
+    const iconBtn = wrapper.find('[data-test="facility-category-icon-option-1-music"]')
+    expect(iconBtn.find('svg').exists()).toBe(true)
     await iconBtn!.trigger('click')
     await flushPromises()
 
-    const iconInput = wrapper.findAll('tbody tr td input')[1]
-    expect((iconInput.element as HTMLInputElement).value).toBe('music')
+    expect(wrapper.find('[data-test="facility-category-icon-current-1"]').attributes('data-icon')).toBe('music')
+    expect(wrapper.find('[data-test="facility-category-icon-input-1"]').exists()).toBe(false)
   })
 
   it('does not delete when confirm is cancelled', async () => {
     confirmMock.mockReturnValueOnce(false)
     const wrapper = mount(Page, {
-      global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } },
+      global: { stubs: globalStubs },
     })
     await flushPromises()
 

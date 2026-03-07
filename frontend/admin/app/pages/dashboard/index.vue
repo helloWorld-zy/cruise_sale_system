@@ -32,16 +32,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
-    <h1>Dashboard</h1>
-    <p v-if="loading">Loading...</p>
-    <p v-else-if="error" class="text-red-500">{{ error }}</p>
-    <p v-else-if="empty" data-test="empty">暂无数据</p>
-    <template v-else>
-      <!-- 销售额统计卡片 -->
-      <StatCard title="Sales" :value="summary.today_sales" />
-      <!-- 订单数统计卡片 -->
-      <StatCard title="Orders" :value="summary.today_orders" />
-    </template>
+  <div class="admin-page">
+    <AdminPageHeader title="仪表盘" subtitle="查看销售与订单核心指标" />
+    <h1 class="sr-only">Dashboard</h1>
+
+    <AdminDataCard>
+      <p v-if="loading" class="p-3 text-sm text-slate-600">Loading...</p>
+      <p v-else-if="error" class="p-3 text-sm text-rose-500">{{ error }}</p>
+      <p v-else-if="empty" data-test="empty" class="p-3 text-sm text-slate-600">暂无数据</p>
+      <div v-else class="grid gap-4 md:grid-cols-2">
+        <!-- 销售额统计卡片 -->
+        <StatCard title="Sales" :value="summary.today_sales" />
+        <!-- 订单数统计卡片 -->
+        <StatCard title="Orders" :value="summary.today_orders" />
+      </div>
+    </AdminDataCard>
   </div>
 </template>

@@ -9,6 +9,9 @@ describe('Companies index page', () => {
   const globalStubs = {
     NuxtLink: { template: '<a><slot /></a>' },
     AdminActionLink: { template: '<a class="admin-btn"><slot /></a>' },
+    AdminPageHeader: { props: ['title'], template: '<div>{{ title }}<slot /><slot name="actions" /></div>' },
+    AdminFormCard: { template: '<div><slot /></div>' },
+    AdminDataCard: { template: '<div><slot /></div>' },
   }
 
   beforeEach(() => {
@@ -102,6 +105,7 @@ describe('Companies index page', () => {
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/companies/1', { method: 'DELETE' })
+    expect(document.body.textContent || '').not.toContain('确认删除公司')
     wrapper.unmount()
   })
 
@@ -138,5 +142,17 @@ describe('Companies index page', () => {
 
     expect(wrapper.text()).toContain('删除失败：该公司下存在邮轮，请先处理关联邮轮后再删除。')
     wrapper.unmount()
+  })
+
+  it('blocks create when company name is empty', async () => {
+    const wrapper = mount(Page, { global: { stubs: globalStubs } })
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('请先修正表单校验错误')
+    expect(wrapper.text()).toContain('请填写公司中文名')
+    expect(mockRequest).not.toHaveBeenCalledWith('/companies', expect.objectContaining({ method: 'POST' }))
   })
 })

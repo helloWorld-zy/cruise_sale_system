@@ -1,8 +1,9 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-6xl space-y-4">
+  <div class="admin-page">
+    <AdminPageHeader title="库存预警" subtitle="以下舱位可用库存低于阈值" />
+    <div class="space-y-4">
       <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
-        <h1 class="text-lg font-semibold text-rose-700">库存预警</h1>
+        <h2 class="text-lg font-semibold text-rose-700">库存预警</h2>
         <p class="text-sm text-rose-600">以下舱位可用库存已低于阈值，请及时补仓或调整销售策略。</p>
       </div>
 

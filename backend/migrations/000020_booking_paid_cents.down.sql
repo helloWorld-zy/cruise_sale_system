@@ -1,0 +1,2 @@
+ALTER TABLE bookings
+DROP COLUMN IF EXISTS paid_cents;

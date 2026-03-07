@@ -61,10 +61,10 @@ async function handleNext() {
 </script>
 
 <template>
-  <div class="page">
-    <h1>Booking Step 1</h1>
+  <div class="page max-w-xl mx-auto mt-10">
+    <h1 class="text-center text-[var(--color-primary)]">填写预订信息</h1>
 
-    <form data-testid="booking-step1-form" @submit.prevent="handleNext">
+    <form data-testid="booking-step1-form" @submit.prevent="handleNext" class="mt-6">
       <div class="field">
         <label for="voyage-id">航次 ID</label>
         <input
@@ -101,10 +101,12 @@ async function handleNext() {
         />
       </div>
 
-      <p v-if="errorMsg" class="error" role="alert">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="error mt-2 flex items-center justify-center p-3 bg-red-50 rounded-lg text-sm" role="alert">
+        {{ errorMsg }}
+      </p>
 
-      <button type="submit" :disabled="!canNext">
-        {{ loading ? '处理中…' : '下一步' }}
+      <button type="submit" class="btn-primary w-full mt-4" :disabled="!canNext">
+        {{ loading ? '处理中...' : '下一步' }}
       </button>
     </form>
   </div>

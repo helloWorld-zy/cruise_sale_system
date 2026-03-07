@@ -6,6 +6,15 @@ import Page from '../../app/pages/dashboard/index.vue'
 const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 
+const mountOptions = {
+  global: {
+    stubs: {
+      AdminPageHeader: { props: ['title', 'subtitle'], template: '<div>{{ title }} {{ subtitle }}<slot /><slot name="actions" /></div>' },
+      AdminDataCard: { props: ['flush'], template: '<div><slot /></div>' },
+    },
+  },
+}
+
 beforeEach(() => {
   mockRequest.mockReset()
   mockRequest.mockResolvedValue({
@@ -17,13 +26,13 @@ beforeEach(() => {
 
 describe('Dashboard', () => {
   it('调用 analytics summary API', async () => {
-    mount(Page)
+    mount(Page, mountOptions)
     await flushPromises()
     expect(mockRequest).toHaveBeenCalledWith('/admin/analytics/summary')
   })
 
   it('渲染真实统计数据', async () => {
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
     await flushPromises()
     expect(wrapper.text()).toContain('50000')
     expect(wrapper.text()).toContain('12')
@@ -31,14 +40,14 @@ describe('Dashboard', () => {
 
   it('API 失败时显示错误', async () => {
     mockRequest.mockRejectedValueOnce(new Error('api error'))
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
     await flushPromises()
     expect(wrapper.text()).toContain('api error')
   })
 
   it('加载时显示 Loading', () => {
     mockRequest.mockImplementationOnce(() => new Promise(() => {}))
-    const wrapper = mount(Page)
+    const wrapper = mount(Page, mountOptions)
     return nextTick().then(() => {
       expect(wrapper.text()).toContain('Loading')
     })

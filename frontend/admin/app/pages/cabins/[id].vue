@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 const route = useRoute()
 const { request } = useApi()
@@ -8,11 +9,16 @@ const id = Number(route.params.id)
 
 const loading = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
-const deleteDialogVisible = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
 const amenityOptions = ['浴缸', '迷你吧', '智能电视', '胶囊咖啡机', '沙发床', '独立衣帽间']
+const {
+  visible: deleteDialogVisible,
+  submitting: deleting,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog()
 
 const form = ref({
   voyage_id: 0,
@@ -108,26 +114,19 @@ function toggleAmenity(item: string, checked: boolean) {
 
 async function handleDelete() {
   if (deleting.value) return
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleting.value) return
-  deleteDialogVisible.value = false
+  openDeleteDialog()
 }
 
 async function confirmDelete() {
   if (deleting.value) return
-  deleting.value = true
   error.value = null
   try {
-    await request(`/cabins/${id}`, { method: 'DELETE' })
-    closeDeleteDialog()
-    await navigateTo('/cabins')
+    await runDelete(async () => {
+      await request(`/cabins/${id}`, { method: 'DELETE' })
+      await navigateTo('/cabins')
+    })
   } catch (e: any) {
     error.value = e?.message ?? '删除舱房失败，请稍后重试。'
-  } finally {
-    deleting.value = false
   }
 }
 
@@ -135,13 +134,13 @@ onMounted(loadDetail)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-5xl space-y-4">
-      <h1 class="text-xl font-semibold text-slate-900">编辑舱位 #{{ id }}</h1>
+  <div class="admin-page">
+    <AdminPageHeader :title="`编辑舱位 #${id}`" />
+    <AdminFormCard title="舱位配置">
       <p v-if="loading" class="text-sm text-slate-600">加载中...</p>
       <p v-else-if="empty" data-test="empty" class="text-sm text-slate-600">暂无舱位数据</p>
       <form v-else class="space-y-4" @submit.prevent="handleSave">
-        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="rounded-lg border border-slate-200 p-4">
           <h2 class="mb-3 text-sm font-semibold text-slate-700">基本信息</h2>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             <label class="space-y-1 text-sm text-slate-600"><span>航线 ID</span><input v-model.number="form.voyage_id" type="number" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
@@ -153,7 +152,7 @@ onMounted(loadDetail)
           </div>
         </section>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="rounded-lg border border-slate-200 p-4">
           <h2 class="mb-3 text-sm font-semibold text-slate-700">位置属性</h2>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -176,7 +175,7 @@ onMounted(loadDetail)
           </div>
         </section>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <section class="rounded-lg border border-slate-200 p-4">
           <h2 class="mb-3 text-sm font-semibold text-slate-700">设施配置</h2>
           <label class="mb-3 block space-y-1 text-sm text-slate-600"><span>床型</span><input v-model="form.bed_type" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2" /></label>
           <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
@@ -188,10 +187,11 @@ onMounted(loadDetail)
           <label class="mt-3 block space-y-1 text-sm text-slate-600"><span>状态</span><select v-model.number="form.status" class="h-10 w-full rounded-md border border-slate-200 px-3 outline-none ring-indigo-500 focus:ring-2"><option :value="1">上架</option><option :value="2">维护中</option><option :value="0">下架</option></select></label>
         </section>
 
-        <div class="flex gap-2">
-          <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="saving || deleting">{{ saving ? '保存中...' : '保存' }}</button>
-          <button type="button" class="rounded-md bg-rose-500 px-4 py-2 text-sm font-medium text-white hover:bg-rose-400" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
-        </div>
+        <AdminActionBar>
+          <AdminActionLink to="/cabins" class="admin-btn admin-btn--secondary">取消</AdminActionLink>
+          <button type="submit" class="admin-btn" :disabled="saving || deleting">{{ saving ? '保存中...' : '保存' }}</button>
+          <button type="button" class="admin-btn admin-btn--danger" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
+        </AdminActionBar>
         <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       </form>
 
@@ -204,6 +204,6 @@ onMounted(loadDetail)
         @close="closeDeleteDialog"
         @confirm="confirmDelete"
       />
-    </div>
+    </AdminFormCard>
   </div>
 </template>

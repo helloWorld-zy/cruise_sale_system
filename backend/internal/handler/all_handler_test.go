@@ -418,11 +418,15 @@ func TestCruiseHandler(t *testing.T) {
 func TestCabinTypeHandler(t *testing.T) {
 	r, _, _, _, ctH, _, _, _, _ := setupRouter()
 	r.GET("/cabin-types", ctH.List)
+	r.GET("/cabin-types/:id", ctH.Get)
 	r.POST("/cabin-types", ctH.Create)
 	r.PUT("/cabin-types/:id", ctH.Update)
 	r.DELETE("/cabin-types/:id", ctH.Delete)
 
 	doReq(r, "GET", "/cabin-types", nil)
+	doReq(r, "GET", "/cabin-types/1", nil)
+	doReq(r, "GET", "/cabin-types/99", nil)
+	doReq(r, "GET", "/cabin-types/x", nil)
 	doReq(r, "GET", "/cabin-types?err=1", nil)
 	doReq(r, "GET", "/cabin-types?cruise_id=99&page=err", nil)
 	doReq(r, "POST", "/cabin-types", map[string]interface{}{"cruise_id": 1, "name": "test"})

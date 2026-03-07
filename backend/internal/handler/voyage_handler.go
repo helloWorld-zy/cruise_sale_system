@@ -46,6 +46,7 @@ type voyageItineraryPayload struct {
 type voyageUpsertPayload struct {
 	CruiseID    int64                    `json:"cruise_id" binding:"required,min=1"`
 	Code        string                   `json:"code" binding:"required,max=50"`
+	ImageURL    string                   `json:"image_url" binding:"max=500"`
 	BriefInfo   string                   `json:"brief_info" binding:"required,max=300"`
 	DepartDate  time.Time                `json:"depart_date" binding:"required"`
 	ReturnDate  time.Time                `json:"return_date" binding:"required"`
@@ -143,6 +144,7 @@ func buildVoyageFromPayload(req voyageUpsertPayload) (*domain.Voyage, error) {
 	v := &domain.Voyage{
 		CruiseID:   req.CruiseID,
 		Code:       strings.TrimSpace(req.Code),
+		ImageURL:   strings.TrimSpace(req.ImageURL),
 		BriefInfo:  strings.TrimSpace(req.BriefInfo),
 		DepartDate: req.DepartDate,
 		ReturnDate: req.ReturnDate,

@@ -38,17 +38,21 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="page">
-    <h1>新建舱房</h1>
-    <form @submit.prevent="handleSubmit">
+  <div class="admin-page">
+    <AdminPageHeader title="新建舱房" />
+    <AdminFormCard>
+      <form class="grid max-w-3xl gap-3" @submit.prevent="handleSubmit">
       <input v-model.number="form.voyage_id" type="number" min="1" placeholder="Voyage ID" :disabled="loading" />
       <input v-model.number="form.cabin_type_id" type="number" min="1" placeholder="Cabin Type ID" :disabled="loading" />
       <input v-model="form.code" placeholder="Code" :disabled="loading" />
       <input v-model.number="form.max_guests" type="number" min="1" placeholder="Max Guests" :disabled="loading" />
       <input v-model="form.deck" placeholder="Deck" :disabled="loading" />
-      <p v-if="error" class="error">{{ error }}</p>
-      <button type="button" :disabled="loading" @click="handleSubmit">{{ loading ? '提交中...' : '创建' }}</button>
-    </form>
+      <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
+      <AdminActionBar>
+        <button type="button" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500" :disabled="loading" @click="handleSubmit">{{ loading ? '提交中...' : '创建' }}</button>
+      </AdminActionBar>
+      </form>
+    </AdminFormCard>
   </div>
 </template>
 

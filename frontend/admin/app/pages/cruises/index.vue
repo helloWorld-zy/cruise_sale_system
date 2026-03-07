@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-slate-50 p-4 md:p-6">
-    <div class="mx-auto max-w-7xl">
-      <div class="mb-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-slate-900">邮轮管理</h1>
+  <div class="admin-page">
+    <AdminPageHeader title="邮轮管理">
+      <template #actions>
         <AdminActionLink to="/cruises/create" variant="primary" size="md">新建邮轮</AdminActionLink>
-      </div>
+      </template>
+    </AdminPageHeader>
 
-      <div class="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-        <div class="flex flex-wrap items-center gap-3">
+    <AdminFilterBar>
+      <div class="flex flex-wrap items-center gap-3">
           <input
             v-model="filters.keyword"
             data-test="filter-keyword"
@@ -36,11 +36,11 @@
             <option value="name_desc">名称 Z-A</option>
           </select>
           <button type="button" class="h-10 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50" @click="loadItems">筛选</button>
-        </div>
       </div>
+    </AdminFilterBar>
 
-      <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div class="cruise-table-wrap overflow-x-auto">
+    <AdminDataCard flush>
+      <div class="cruise-table-wrap overflow-x-auto">
           <table class="w-full min-w-[960px] text-sm">
           <thead class="bg-slate-50 text-left text-slate-600">
             <tr>
@@ -81,12 +81,12 @@
               <td class="p-3 text-slate-600">{{ item.tonnage || '-' }}</td>
               <td class="p-3 text-slate-600">{{ item.passenger_capacity || '-' }}</td>
               <td class="p-3">
-                <span :class="statusClass(item.status)">{{ statusText(item.status) }}</span>
+                <AdminStatusTag :type="statusType(item.status)" :text="statusText(item.status)" />
               </td>
               <td class="p-3 whitespace-nowrap">
                 <div class="cruise-actions flex items-center gap-2">
-                  <AdminActionLink :to="`/cruises/${item.id}`">编辑</AdminActionLink>
-                  <button type="button" class="text-rose-500 hover:text-rose-400" @click="handleDelete(item.id)">删除</button>
+                  <AdminActionLink :to="`/cruises/${item.id}`" class="admin-table-action-btn">编辑</AdminActionLink>
+                  <button type="button" class="admin-table-action-btn admin-table-action-btn--danger" @click="handleDelete(item.id)">删除</button>
                 </div>
               </td>
             </tr>
@@ -94,47 +94,52 @@
           </table>
         </div>
 
-        <div class="flex items-center justify-end gap-3 border-t border-slate-200 p-3 text-sm text-slate-600">
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 p-3 text-sm text-slate-600">
           <button type="button" class="rounded border border-slate-200 px-3 py-1.5 hover:bg-slate-50" :disabled="filters.page <= 1" @click="changePage(filters.page - 1)">上一页</button>
           <span>第 {{ filters.page }} 页</span>
           <button type="button" class="rounded border border-slate-200 px-3 py-1.5 hover:bg-slate-50" :disabled="items.length < filters.pageSize" @click="changePage(filters.page + 1)">下一页</button>
-        </div>
       </div>
+    </AdminDataCard>
 
-      <div
-        v-if="selectedIds.size > 0"
-        data-test="batch-action"
-        class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white"
-      >
-        <span>已选 {{ selectedIds.size }} 项</span>
-        <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(1)">批量上架</button>
-        <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(-1)">批量下架</button>
-      </div>
-
-      <AdminConfirmDialog
-        :visible="deleteDialogVisible"
-        title="确认删除邮轮"
-        :message="`确认删除邮轮「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
-        :loading="deleteSubmitting"
-        loading-text="删除中..."
-        @close="closeDeleteDialog"
-        @confirm="confirmDelete"
-      />
+    <div
+      v-if="selectedIds.size > 0"
+      data-test="batch-action"
+      class="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-3 bg-indigo-600 px-4 py-3 text-sm text-white"
+    >
+      <span>已选 {{ selectedIds.size }} 项</span>
+      <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(1)">批量上架</button>
+      <button type="button" class="rounded bg-white/20 px-3 py-1.5 hover:bg-white/30" @click="batchUpdateStatus(-1)">批量下架</button>
     </div>
+
+    <AdminConfirmDialog
+      :visible="deleteDialogVisible"
+      title="确认删除邮轮"
+      :message="`确认删除邮轮「${deleteTarget?.name || `#${deleteTarget?.id ?? ''}`}」吗？删除后不可恢复。`"
+      :loading="deleteSubmitting"
+      loading-text="删除中..."
+      @close="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
+import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
 const { request } = useApi()
 const items = ref<Record<string, any>[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const deleteDialogVisible = ref(false)
-const deleteSubmitting = ref(false)
-const deleteTarget = ref<{ id: number; name: string } | null>(null)
+const {
+  visible: deleteDialogVisible,
+  submitting: deleteSubmitting,
+  target: deleteTarget,
+  open: openDeleteDialog,
+  close: closeDeleteDialog,
+  run: runDelete,
+} = useAdminDeleteDialog<{ id: number; name: string }>()
 const selectedIds = ref<Set<number>>(new Set())
 const total = ref(0)
 const companyMap = ref<Record<number, string>>({})
@@ -220,6 +225,13 @@ function statusClass(statusRaw: unknown) {
   return 'rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700'
 }
 
+function statusType(statusRaw: unknown): 'success' | 'warning' | 'danger' {
+  const status = Number(statusRaw)
+  if (status === 1) return 'success'
+  if (status === 2) return 'warning'
+  return 'danger'
+}
+
 function companyName(item: Record<string, any>) {
   return item.company?.name || companyMap.value[Number(item.company_id)] || (item.company_id ? `#${item.company_id}` : '-')
 }
@@ -258,14 +270,7 @@ async function handleDelete(rawId: unknown) {
     return
   }
   const item = items.value.find((it) => resolveId(it?.id) === id)
-  deleteTarget.value = { id, name: String(item?.name ?? '') }
-  deleteDialogVisible.value = true
-}
-
-function closeDeleteDialog() {
-  if (deleteSubmitting.value) return
-  deleteDialogVisible.value = false
-  deleteTarget.value = null
+  openDeleteDialog({ id, name: String(item?.name ?? '') })
 }
 
 async function confirmDelete() {
@@ -276,11 +281,11 @@ async function confirmDelete() {
     return
   }
   error.value = null
-  deleteSubmitting.value = true
   try {
-    await request(`/cruises/${id}`, { method: 'DELETE' })
-    closeDeleteDialog()
-    await loadItems()
+    await runDelete(async () => {
+      await request(`/cruises/${id}`, { method: 'DELETE' })
+      await loadItems()
+    })
   } catch (e: any) {
     const code = Number(e?.code ?? 0)
     const status = Number(e?.status ?? 0)
@@ -292,8 +297,6 @@ async function confirmDelete() {
     } else {
       error.value = e?.message ?? '删除邮轮失败，请稍后重试。'
     }
-  } finally {
-    deleteSubmitting.value = false
   }
 }
 
