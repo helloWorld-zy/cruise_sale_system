@@ -222,6 +222,9 @@ func (m *captureCruiseRepo) GetByID(ctx context.Context, id int64) (*domain.Crui
 func (m *captureCruiseRepo) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
 	return nil, 0, nil
 }
+func (m *captureCruiseRepo) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return nil, 0, nil
+}
 func (m *captureCruiseRepo) Delete(ctx context.Context, id int64) error { return nil }
 
 type passCabinTypeRepo struct{}
@@ -248,6 +251,9 @@ func (m *passCompanyRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise
 	return &domain.CruiseCompany{ID: id}, nil
 }
 func (m *passCompanyRepo) List(ctx context.Context, keyword string, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	return nil, 0, nil
+}
+func (m *passCompanyRepo) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
 	return nil, 0, nil
 }
 func (m *passCompanyRepo) Delete(ctx context.Context, id int64) error { return nil }

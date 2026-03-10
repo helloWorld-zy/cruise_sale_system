@@ -55,6 +55,27 @@ func (h *CompanyHandler) List(c *gin.Context) {
 	response.Success(c, gin.H{"list": items, "total": total})
 }
 
+// ListPublic godoc
+// @Summary List public cruise companies
+// @Tags Company
+// @Produce json
+// @Param page query int false "Page" default(1)
+// @Param page_size query int false "Page size" default(50)
+// @Success 200 {object} response.Response
+// @Router /api/v1/companies [get]
+// ListPublic 返回前台可见公司列表，仅供 Web/小程序浏览使用。
+func (h *CompanyHandler) ListPublic(c *gin.Context) {
+	page := queryInt(c, "page", 1)
+	pageSize := queryInt(c, "page_size", 50)
+
+	items, total, err := h.svc.ListPublic(c.Request.Context(), page, pageSize)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, errcode.ErrInternal, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": items, "total": total})
+}
+
 // Create godoc
 // @Summary Create a cruise company
 // @Tags Company

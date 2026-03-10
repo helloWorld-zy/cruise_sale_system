@@ -1,71 +1,63 @@
-:root {
-	color: #13293b;
-	font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
-	background: #edf3f7;
-}
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Varela+Round&display=swap');
 
-* {
-	box-sizing: border-box;
+@import "tailwindcss";
+@source "../pages/**/*.vue";
+@source "../components/**/*.vue";
+@source "./App.vue";
+
+:root {
+	color: #164E63;
+	font-family: "Nunito Sans", sans-serif;
+	background-color: #f7f9fa;
 }
 
 body {
 	margin: 0;
-	background:
-		radial-gradient(circle at 6% 5%, #dbeaf6 0, transparent 36%),
-		radial-gradient(circle at 88% 0, #d7e4f1 0, transparent 32%),
-		linear-gradient(180deg, #f4f8fb 0%, #ecf2f6 100%);
+	-webkit-font-smoothing: antialiased;
+	background-color: #f5f7fa;
 }
 
-.preview-shell {
-	max-width: 1080px;
-	margin: 0 auto;
-	padding: 24px;
-}
+/* User Experience & Accessibility Rules from UI/UX Pro Max */
 
-.preview-header h1 {
-	margin: 0;
-	font-size: 30px;
-	font-family: "Bodoni MT", "Times New Roman", serif;
-	letter-spacing: 0.02em;
-}
-
-.preview-header p {
-	margin: 8px 0 0;
-	color: #4f6681;
-}
-
-.preview-tabs {
-	margin-top: 16px;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-}
-
-.tab-btn {
-	border: 0;
-	border-radius: 999px;
-	padding: 9px 15px;
-	background: #dfebf4;
-	color: #2a4a69;
+/* Interactive pointer */
+button,
+a,
+.clickable {
 	cursor: pointer;
-	transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.tab-btn:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 8px 18px rgba(23, 61, 89, 0.16);
+/* Visible focus outline */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+	outline: 2px solid #0891B2;
+	outline-offset: 2px;
 }
 
-.tab-btn.active {
-	background: linear-gradient(135deg, #0f3d5c, #1e5a7f);
-	color: #fff;
+/* Mobile responsive constraints */
+.mobile-app-container {
+	max-width: 480px;
+	margin: 0 auto;
+	min-height: 100vh;
+	background-color: #ffffff;
+	position: relative;
+	box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+	overflow-x: hidden;
 }
 
-.preview-stage {
-	margin-top: 16px;
-	border-radius: 22px;
-	overflow: hidden;
-	border: 1px solid #d4e0ea;
-	background: #fff;
-	box-shadow: 0 24px 55px rgba(16, 47, 72, 0.18);
+/* Smooth transitions */
+.transition-smooth {
+	transition: all 200ms ease;
+}
+
+/* Hide scrollbar for horizontal scroll elements */
+.hide-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+.hide-scrollbar {
+	-ms-overflow-style: none;
+	/* IE and Edge */
+	scrollbar-width: none;
+	/* Firefox */
 }

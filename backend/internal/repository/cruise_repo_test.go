@@ -78,3 +78,44 @@ func TestCruiseRepository_BatchUpdateStatusRollbackOnPartialMatch(t *testing.T) 
 		t.Fatalf("expected rollback keep status=1, got one=%d two=%d", one.Status, two.Status)
 	}
 }
+
+func TestCruiseRepository_ListPublicEnabledOnlyAndCompanyFilter(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite failed: %v", err)
+	}
+	if err := db.AutoMigrate(&domain.Cruise{}); err != nil {
+		t.Fatalf("auto migrate failed: %v", err)
+	}
+
+	repo := NewCruiseRepository(db)
+	ctx := context.Background()
+	requireCreate := func(companyID int64, name string, status int16, sortOrder int) {
+		item := &domain.Cruise{CompanyID: companyID, Name: name, Code: name, Status: status, SortOrder: sortOrder}
+		if err := repo.Create(ctx, item); err != nil {
+			t.Fatalf("create cruise failed: %v", err)
+		}
+	}
+	requireCreate(1, "A-启用", 1, 10)
+	requireCreate(1, "A-停用", 2, 20)
+	requireCreate(2, "B-启用", 1, 30)
+
+	items, total, err := repo.ListPublic(ctx, 0, "", "", 1, 10)
+	if err != nil {
+		t.Fatalf("list public error: %v", err)
+	}
+	if total != 2 || len(items) != 2 {
+		t.Fatalf("expected 2 enabled cruises, got total=%d len=%d", total, len(items))
+	}
+
+	filtered, filteredTotal, err := repo.ListPublic(ctx, 1, "", "", 1, 10)
+	if err != nil {
+		t.Fatalf("list public by company error: %v", err)
+	}
+	if filteredTotal != 1 || len(filtered) != 1 {
+		t.Fatalf("expected 1 enabled cruise for company 1, got total=%d len=%d", filteredTotal, len(filtered))
+	}
+	if filtered[0].Name != "A-启用" {
+		t.Fatalf("expected company 1 enabled cruise, got %s", filtered[0].Name)
+	}
+}

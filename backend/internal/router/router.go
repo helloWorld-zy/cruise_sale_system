@@ -248,7 +248,8 @@ func Setup(deps Dependencies) *gin.Engine {
 	api.POST("/pay/callback", deps.Payment.Callback)
 
 	// --- C 端公开查询路由（无需认证，供 Web/小程序使用） ---
-	api.GET("/cruises", deps.Cruise.List)                       // 邮轮列表
+	api.GET("/companies", deps.Company.ListPublic)             // 邮轮公司列表
+	api.GET("/cruises", deps.Cruise.ListPublic)                // 邮轮列表
 	api.GET("/cruises/:id", deps.Cruise.Get)                    // 邮轮详情
 	api.GET("/cabin-types", deps.CabinType.List)                // 舱房类型列表
 	api.GET("/facility-categories", deps.FacilityCategory.List) // 设施分类列表

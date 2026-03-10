@@ -35,6 +35,9 @@ func (m *mockCruiseRepoFull) GetByID(ctx context.Context, id int64) (*domain.Cru
 func (m *mockCruiseRepoFull) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockCruiseRepoFull) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return nil, 0, nil
+}
 func (m *mockCruiseRepoFull) Delete(ctx context.Context, id int64) error { return nil }
 
 // mockImageRepo 用于验证画廊覆盖写入。

@@ -53,11 +53,10 @@ async function loadAll() {
   loading.value = true
   error.value = ''
   try {
-    const [detailRes, typeRes, facilityRes, routeRes] = await Promise.all([
+    const [detailRes, typeRes, facilityRes] = await Promise.all([
       request(`/cruises/${id}`),
       request(`/cabin-types?cruise_id=${id}&page=1&page_size=20`),
       request(`/facilities?cruise_id=${id}`),
-      request('/routes'),
     ])
 
     detail.value = (detailRes as any)?.data ?? detailRes ?? null
@@ -65,14 +64,7 @@ async function loadAll() {
     cabinTypes.value = Array.isArray(typePayload) ? typePayload : typePayload?.list ?? []
     const facilityPayload = (facilityRes as any)?.data ?? facilityRes ?? []
     facilities.value = Array.isArray(facilityPayload) ? facilityPayload : facilityPayload?.list ?? []
-    const routePayload = (routeRes as any)?.data ?? routeRes ?? []
-    const source = Array.isArray(routePayload) ? routePayload : routePayload?.list ?? []
-    routes.value = source.slice(0, 6).map((item: Record<string, any>) => ({
-      id: item.id || Math.random().toString(36).substr(2, 9),
-      date: item.departure_date || item.date || '-',
-      name: item.name || item.route_name || '-',
-      price: Math.round(Number(item.min_price_cents || item.price_cents || 0) / 100) || '-',
-    }))
+    routes.value = []
   } catch (e: any) {
     error.value = e?.message ?? '加载邮轮详情失败'
   } finally {
@@ -163,11 +155,11 @@ onMounted(loadAll)
   background: #f6f7fb;
 }
 .hero {
-  height: 480rpx;
+  height: 360rpx;
 }
 .hero-img {
   width: 100%;
-  height: 480rpx;
+  height: 360rpx;
 }
 .content {
   padding: 20rpx;

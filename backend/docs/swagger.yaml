@@ -8,6 +8,9 @@ definitions:
       cabin_sku_id:
         description: 关联的舱房 SKU ID
         type: integer
+      child_price_cents:
+        description: 儿童价格（分）
+        type: integer
       created_at:
         description: 创建时间
         type: string
@@ -21,11 +24,14 @@ definitions:
         description: 入住人数
         type: integer
       price_cents:
-        description: 价格（单位：分）
+        description: 基础价格（分）
         type: integer
       price_type:
         description: 价格类型：base/child/single_supplement/holiday/early_bird
         type: string
+      single_supplement_cents:
+        description: 单人补差价（分）
+        type: integer
       updated_at:
         description: 更新时间
         type: string
@@ -52,6 +58,9 @@ definitions:
         type: string
       deck:
         description: 所在甲板层
+        type: string
+      grade:
+        description: 舱位等级：standard/premium/deluxe
         type: string
       has_balcony:
         description: 是否有阳台
@@ -123,6 +132,74 @@ definitions:
     required:
     - ids
     type: object
+  internal_handler.CabinTypeBatchCreateRequest:
+    properties:
+      amenities:
+        description: 设施清单
+        type: string
+      area:
+        description: 面积（平方米）
+        type: number
+      area_max:
+        description: 最大面积
+        type: number
+      area_min:
+        description: 最小面积
+        type: number
+      bed_type:
+        description: 床型说明
+        type: string
+      capacity:
+        description: 容纳人数
+        type: integer
+      category_id:
+        description: 舱型大类 ID
+        type: integer
+      code:
+        description: 舱房类型代码
+        type: string
+      cruise_id:
+        description: 所属邮轮 ID
+        type: integer
+      cruise_ids:
+        items:
+          type: integer
+        type: array
+      deck:
+        description: 所在甲板
+        type: string
+      description:
+        description: 描述
+        type: string
+      english_name:
+        description: 英文名称
+        type: string
+      floor_plan_url:
+        description: 平面图 URL
+        type: string
+      intro:
+        description: 简介
+        type: string
+      max_capacity:
+        description: 最大容纳人数
+        type: integer
+      name:
+        description: 舱房类型名称
+        type: string
+      occupancy:
+        description: 默认入住人数
+        type: integer
+      sort_order:
+        description: 排序权重
+        type: integer
+      tags:
+        description: 特色标签
+        type: string
+    required:
+    - cruise_id
+    - cruise_ids
+    - name
+    type: object
   internal_handler.CabinTypeRequest:
     properties:
       amenities:
@@ -143,6 +220,9 @@ definitions:
       capacity:
         description: 容纳人数
         type: integer
+      category_id:
+        description: 舱型大类 ID
+        type: integer
       code:
         description: 舱房类型代码
         type: string
@@ -161,12 +241,18 @@ definitions:
       floor_plan_url:
         description: 平面图 URL
         type: string
+      intro:
+        description: 简介
+        type: string
       max_capacity:
         description: 最大容纳人数
         type: integer
       name:
         description: 舱房类型名称
         type: string
+      occupancy:
+        description: 默认入住人数
+        type: integer
       sort_order:
         description: 排序权重
         type: integer
@@ -498,6 +584,25 @@ paths:
       summary: Delete a cabin type
       tags:
       - CabinType
+    get:
+      parameters:
+      - description: CabinType ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get a cabin type
+      tags:
+      - CabinType
     put:
       consumes:
       - application/json
@@ -523,6 +628,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a cabin type
+      tags:
+      - CabinType
+  /api/v1/admin/cabin-types/batch-create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Batch create cabin type payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.CabinTypeBatchCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Batch create cabin types by cruises
       tags:
       - CabinType
   /api/v1/admin/cabins:
@@ -902,6 +1030,24 @@ paths:
       security:
       - BearerAuth: []
       summary: Batch update cabin sku status
+      tags:
+      - Cabin
+  /api/v1/admin/cabins/category-tree:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get cabin category tree (cruise -> route -> cabin type)
       tags:
       - Cabin
   /api/v1/admin/companies:
@@ -1387,4 +1533,62 @@ paths:
       summary: Upload an image
       tags:
       - Upload
+  /api/v1/companies:
+    get:
+      parameters:
+      - default: 1
+        description: Page
+        in: query
+        name: page
+        type: integer
+      - default: 50
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      summary: List public cruise companies
+      tags:
+      - Company
+  /api/v1/cruises:
+    get:
+      parameters:
+      - description: Filter by company
+        in: query
+        name: company_id
+        type: integer
+      - description: Keyword on cruise name
+        in: query
+        name: keyword
+        type: string
+      - description: Sort by tonnage/name
+        in: query
+        name: sort_by
+        type: string
+      - default: 1
+        description: Page
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response'
+      summary: List public cruises
+      tags:
+      - Cruise
 swagger: "2.0"

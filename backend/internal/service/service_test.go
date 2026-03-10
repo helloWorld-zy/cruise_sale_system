@@ -27,6 +27,9 @@ func (m *mockCompanyRepo) GetByID(ctx context.Context, id int64) (*domain.Cruise
 func (m *mockCompanyRepo) List(ctx context.Context, keyword string, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
 	return nil, 0, nil
 }
+func (m *mockCompanyRepo) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	return []domain.CruiseCompany{{ID: 1, Status: 1}}, 1, nil
+}
 func (m *mockCompanyRepo) Delete(ctx context.Context, id int64) error { return nil }
 
 type mockCruiseRepo struct{ created bool }
@@ -49,6 +52,12 @@ func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, keyword stri
 	}
 	return nil, 0, nil
 }
+func (m *mockCruiseRepo) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	if companyID > 0 {
+		return []domain.Cruise{{ID: 2, CompanyID: companyID, Status: 1}}, 1, nil
+	}
+	return []domain.Cruise{{ID: 1, CompanyID: 1, Status: 1}}, 1, nil
+}
 func (m *mockCruiseRepo) Delete(ctx context.Context, id int64) error { return nil }
 
 type mockCruiseRepoFKDelete struct{}
@@ -59,6 +68,9 @@ func (m *mockCruiseRepoFKDelete) GetByID(ctx context.Context, id int64) (*domain
 	return &domain.Cruise{ID: id}, nil
 }
 func (m *mockCruiseRepoFKDelete) List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockCruiseRepoFKDelete) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
 	return nil, 0, nil
 }
 func (m *mockCruiseRepoFKDelete) Delete(ctx context.Context, id int64) error {
@@ -160,5 +172,27 @@ func TestCompanyService_DeleteSucceedsWhenNoCruises(t *testing.T) {
 	err := svc.Delete(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
+	}
+}
+
+func TestCompanyService_ListPublic(t *testing.T) {
+	svc := NewCompanyService(&mockCompanyRepo{}, &mockCruiseRepo{})
+	items, total, err := svc.ListPublic(context.Background(), 1, 50)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if total != 1 || len(items) != 1 || items[0].Status != 1 {
+		t.Fatalf("expected one enabled public company, got total=%d len=%d", total, len(items))
+	}
+}
+
+func TestCruiseService_ListPublic(t *testing.T) {
+	svc := NewCruiseService(&mockCruiseRepo{}, &mockCabinRepo{}, &mockCompanyRepo{})
+	items, total, err := svc.ListPublic(context.Background(), 2, "", "", 1, 20)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if total != 1 || len(items) != 1 || items[0].CompanyID != 2 {
+		t.Fatalf("expected one public cruise for company 2, got total=%d len=%d", total, len(items))
 	}
 }

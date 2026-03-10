@@ -61,6 +61,11 @@ func (s *CruiseService) List(ctx context.Context, companyID int64, keyword strin
 	return s.cruiseRepo.List(ctx, companyID, keyword, status, sortBy, page, pageSize)
 }
 
+// ListPublic 返回前台可见邮轮列表，仅包含启用中的邮轮。
+func (s *CruiseService) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	return s.cruiseRepo.ListPublic(ctx, companyID, keyword, sortBy, page, pageSize)
+}
+
 // ListWithFilters 为调用方提供显式的筛选列表入口，内部转发到仓储层。
 func (s *CruiseService) ListWithFilters(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
 	return s.List(ctx, companyID, keyword, status, sortBy, page, pageSize)

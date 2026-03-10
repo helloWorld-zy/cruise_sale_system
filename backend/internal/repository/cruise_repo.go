@@ -72,6 +72,12 @@ func (r *CruiseRepository) List(ctx context.Context, companyID int64, keyword st
 	return items, total, nil
 }
 
+// ListPublic 查询前台可见邮轮列表，仅返回启用中的邮轮。
+func (r *CruiseRepository) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	status := int16(1)
+	return r.List(ctx, companyID, keyword, &status, sortBy, page, pageSize)
+}
+
 // Delete 软删除指定的邮轮记录。
 func (r *CruiseRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.Cruise{}, id).Error

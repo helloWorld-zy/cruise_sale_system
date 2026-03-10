@@ -1,52 +1,71 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Home, BookOpen, Search, ShoppingCart, User } from 'lucide-vue-next'
+import HomePage from '../pages/home/index.vue'
+import WikiHomePage from '../pages/wiki/index.vue'
 import LoginPage from '../pages/login/login.vue'
 import BookingPage from '../pages/booking/create.vue'
 import CabinListPage from '../pages/cabin/list.vue'
 import CabinDetailPage from '../pages/cabin/detail.vue'
+import CruiseDetailPage from '../pages/cruise/detail.vue'
 import PayPage from '../pages/pay/pay.vue'
 import OrdersPage from '../pages/orders/list.vue'
 
-type TabKey = 'login' | 'booking' | 'cabin-list' | 'cabin-detail' | 'pay' | 'orders'
+type TabKey = 'home' | 'wiki' | 'cabin-list' | 'cart' | 'my' | 'cabin-detail' | 'cruise-detail' | 'pay' | 'orders' | 'login' | 'booking'
 
-const activeTab = ref<TabKey>('login')
+const activeTab = ref<TabKey>('home')
+const selectedCruiseId = ref<number | null>(null)
 
-const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: 'login', label: '登录' },
-  { key: 'booking', label: '下单' },
-  { key: 'cabin-list', label: '舱房列表' },
-  { key: 'cabin-detail', label: '舱房详情' },
-  { key: 'pay', label: '支付' },
-  { key: 'orders', label: '订单' },
+function openCruiseDetail(cruiseId: number) {
+  selectedCruiseId.value = cruiseId
+  activeTab.value = 'cruise-detail'
+}
+
+const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
+  { key: 'home', label: '首页', icon: Home },
+  { key: 'wiki', label: '邮轮百科', icon: BookOpen },
+  { key: 'cabin-list', label: '全部商品', icon: Search },
+  { key: 'cart', label: '购物车', icon: ShoppingCart },
+  { key: 'my', label: '我的', icon: User },
 ]
 </script>
 
 <template>
-  <div class="preview-shell">
-    <header class="preview-header">
-      <h1>Azure Deck Mini Program</h1>
-      <p>邮轮小程序高保真风格预览：强调重点、流程明确、反馈清晰。</p>
-    </header>
+  <div class="mobile-app-container relative">
+    <main class="min-h-screen bg-background pb-[80px]">
+      <HomePage v-if="activeTab === 'home'" />
+      <WikiHomePage v-else-if="activeTab === 'wiki'" @open-cruise="openCruiseDetail" />
+      <OrdersPage v-else-if="activeTab === 'my'" />
+      <BookingPage v-else-if="activeTab === 'cart'" />
 
-    <nav class="preview-tabs">
+      <CabinListPage v-else-if="activeTab === 'cabin-list'" :preview="true" />
+      <CabinDetailPage v-else-if="activeTab === 'cabin-detail'" :cabin-sku-id="1" :preview="true" />
+      <CruiseDetailPage v-else-if="activeTab === 'cruise-detail'" :cruise-id="selectedCruiseId || 1" />
+      <PayPage v-else-if="activeTab === 'pay'" :booking-id="1" :preview="true" />
+      <LoginPage v-else-if="activeTab === 'login'" />
+      <OrdersPage v-else-if="activeTab === 'orders'" />
+    </main>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="fixed bottom-0 w-full max-w-[480px] bg-white/95 backdrop-blur-md border-t border-gray-100 flex justify-around items-center px-2 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-40" style="left: 50%; transform: translateX(-50%);">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        class="tab-btn"
-        :class="{ active: activeTab === tab.key }"
+        class="flex flex-col items-center justify-center gap-1.5 min-w-[64px] h-[50px] transition-smooth group bg-transparent border-0"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }}
+        <component 
+          :is="tab.icon" 
+          class="w-6 h-6 transition-smooth"
+          :class="activeTab === tab.key ? 'text-cta scale-110 drop-shadow-sm' : 'text-gray-400 group-hover:text-primary group-hover:-translate-y-0.5'"
+        />
+        <span 
+          class="text-[10px] font-medium transition-smooth"
+          :class="activeTab === tab.key ? 'text-cta' : 'text-gray-500 group-hover:text-primary'"
+        >
+          {{ tab.label }}
+        </span>
       </button>
     </nav>
-
-    <main class="preview-stage">
-      <LoginPage v-if="activeTab === 'login'" />
-      <BookingPage v-else-if="activeTab === 'booking'" />
-      <CabinListPage v-else-if="activeTab === 'cabin-list'" :preview="true" />
-      <CabinDetailPage v-else-if="activeTab === 'cabin-detail'" :cabin-sku-id="1" :preview="true" />
-      <PayPage v-else-if="activeTab === 'pay'" :booking-id="1" :preview="true" />
-      <OrdersPage v-else-if="activeTab === 'orders'" />
-    </main>
   </div>
 </template>

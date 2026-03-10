@@ -41,6 +41,9 @@ func (m *allMockCompanyRepo) List(ctx context.Context, keyword string, page, pag
 	}
 	return []domain.CruiseCompany{{ID: 1}}, 1, nil
 }
+func (m *allMockCompanyRepo) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	return []domain.CruiseCompany{{ID: 1, Status: 1}}, 1, nil
+}
 func (m *allMockCompanyRepo) Delete(ctx context.Context, id int64) error {
 	if id == 99 {
 		return errors.New("error")
@@ -92,6 +95,15 @@ func (m *allMockCruiseRepo) Delete(ctx context.Context, id int64) error {
 
 type allMockCabinTypeRepo struct{}
 
+func (m *allMockCruiseRepo) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	if companyID == 99 {
+		return nil, 0, errors.New("error")
+	}
+	if companyID > 0 {
+		return []domain.Cruise{{ID: 1, CompanyID: companyID, Status: 1}}, 1, nil
+	}
+	return []domain.Cruise{{ID: 1, CompanyID: 1, Status: 1}}, 1, nil
+}
 func (m *allMockCabinTypeRepo) Create(ctx context.Context, c *domain.CabinType) error {
 	if c.Name == "error" {
 		return errors.New("error")

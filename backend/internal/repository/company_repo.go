@@ -55,6 +55,20 @@ func (r *CompanyRepository) List(ctx context.Context, keyword string, page, page
 	return items, total, nil
 }
 
+// ListPublic 查询前台可见公司列表，仅返回启用中的公司。
+func (r *CompanyRepository) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	var items []domain.CruiseCompany
+	var total int64
+	q := r.db.WithContext(ctx).Model(&domain.CruiseCompany{}).Where("status = ?", 1)
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := q.Offset((page - 1) * pageSize).Limit(pageSize).Order("sort_order desc, id desc").Find(&items).Error; err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
 // Delete 软删除指定的公司记录。
 func (r *CompanyRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&domain.CruiseCompany{}, id).Error

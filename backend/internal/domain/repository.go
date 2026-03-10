@@ -17,6 +17,7 @@ type CompanyRepository interface {
 	Update(ctx context.Context, company *CruiseCompany) error                                     // 更新邮轮公司信息
 	GetByID(ctx context.Context, id int64) (*CruiseCompany, error)                                // 根据 ID 查询邮轮公司
 	List(ctx context.Context, keyword string, page, pageSize int) ([]CruiseCompany, int64, error) // 分页查询公司列表，支持关键词搜索
+	ListPublic(ctx context.Context, page, pageSize int) ([]CruiseCompany, int64, error)           // 查询前台可见公司列表（仅启用）
 	Delete(ctx context.Context, id int64) error                                                   // 删除邮轮公司（软删除）
 }
 
@@ -26,6 +27,7 @@ type CruiseRepository interface {
 	Update(ctx context.Context, cruise *Cruise) error                                                                                     // 更新邮轮信息
 	GetByID(ctx context.Context, id int64) (*Cruise, error)                                                                               // 根据 ID 查询邮轮
 	List(ctx context.Context, companyID int64, keyword string, status *int16, sortBy string, page, pageSize int) ([]Cruise, int64, error) // 分页查询邮轮列表，可按公司/关键词/状态筛选
+	ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]Cruise, int64, error)          // 查询前台可见邮轮列表（仅启用）
 	Delete(ctx context.Context, id int64) error                                                                                           // 删除邮轮（软删除）
 }
 

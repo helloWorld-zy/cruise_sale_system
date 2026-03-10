@@ -57,6 +57,12 @@ func (m *mockCompanyRepo) List(ctx context.Context, keyword string, page, pageSi
 	}
 	return []domain.CruiseCompany{{ID: 1}}, 1, nil
 }
+func (m *mockCompanyRepo) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	if isErr(ctx) {
+		return nil, 0, errors.New("error")
+	}
+	return []domain.CruiseCompany{{ID: 1, Name: "皇家加勒比", Status: 1}}, 1, nil
+}
 func (m *mockCompanyRepo) Delete(ctx context.Context, id int64) error {
 	if isErr(ctx) {
 		return errors.New("error")
@@ -113,6 +119,15 @@ func (m *mockCruiseRepo) List(ctx context.Context, companyID int64, keyword stri
 		return nil, 0, errors.New("error")
 	}
 	return []domain.Cruise{{ID: 1}}, 1, nil
+}
+func (m *mockCruiseRepo) ListPublic(ctx context.Context, companyID int64, keyword string, sortBy string, page, pageSize int) ([]domain.Cruise, int64, error) {
+	if isErr(ctx) {
+		return nil, 0, errors.New("error")
+	}
+	if companyID == 2 {
+		return []domain.Cruise{{ID: 2, CompanyID: 2, Name: "海洋奇迹号", Status: 1}}, 1, nil
+	}
+	return []domain.Cruise{{ID: 1, CompanyID: 1, Name: "海洋光谱号", Status: 1}}, 1, nil
 }
 func (m *mockCruiseRepo) Delete(ctx context.Context, id int64) error {
 	if isErr(ctx) {
@@ -412,6 +427,32 @@ func TestCruiseHandler(t *testing.T) {
 	doReq(r, "DELETE", "/cruises/1?err=1", nil)
 	doReq(r, "DELETE", "/cruises/99", nil)
 	doReq(r, "DELETE", "/cruises/x", nil)
+}
+
+func TestCompanyHandler_ListPublic(t *testing.T) {
+	r, _, compH, _, _, _, _, _, _ := setupRouter()
+	r.GET("/public/companies", compH.ListPublic)
+
+	w := doReq(r, "GET", "/public/companies", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "皇家加勒比") {
+		t.Fatalf("expected public company payload, got %s", w.Body.String())
+	}
+}
+
+func TestCruiseHandler_ListPublic(t *testing.T) {
+	r, _, _, cruiseH, _, _, _, _, _ := setupRouter()
+	r.GET("/public/cruises", cruiseH.ListPublic)
+
+	w := doReq(r, "GET", "/public/cruises?company_id=2", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "海洋奇迹号") {
+		t.Fatalf("expected filtered public cruise payload, got %s", w.Body.String())
+	}
 }
 
 // TestCabinTypeHandler 测试舱房类型处理器

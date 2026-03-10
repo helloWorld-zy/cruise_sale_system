@@ -179,7 +179,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/cabin-types/batch-create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "Batch create cabin types by cruises",
+                "parameters": [
+                    {
+                        "description": "Batch create cabin type payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CabinTypeBatchCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/cabin-types/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CabinType"
+                ],
+                "summary": "Get a cabin type",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "CabinType ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -437,6 +506,36 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/cabins/category-tree": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cabin"
+                ],
+                "summary": "Get cabin category tree (cruise -\u003e route -\u003e cabin type)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
                         }
@@ -1638,6 +1737,94 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/companies": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Company"
+                ],
+                "summary": "List public cruise companies",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cruises": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cruise"
+                ],
+                "summary": "List public cruises",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter by company",
+                        "name": "company_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Keyword on cruise name",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort by tonnage/name",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_cruisebooking_backend_internal_pkg_response.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1650,6 +1837,10 @@ const docTemplate = `{
             "properties": {
                 "cabin_sku_id": {
                     "description": "关联的舱房 SKU ID",
+                    "type": "integer"
+                },
+                "child_price_cents": {
+                    "description": "儿童价格（分）",
                     "type": "integer"
                 },
                 "created_at": {
@@ -1669,12 +1860,16 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "price_cents": {
-                    "description": "价格（单位：分）",
+                    "description": "基础价格（分）",
                     "type": "integer"
                 },
                 "price_type": {
                     "description": "价格类型：base/child/single_supplement/holiday/early_bird",
                     "type": "string"
+                },
+                "single_supplement_cents": {
+                    "description": "单人补差价（分）",
+                    "type": "integer"
                 },
                 "updated_at": {
                     "description": "更新时间",
@@ -1711,6 +1906,10 @@ const docTemplate = `{
                 },
                 "deck": {
                     "description": "所在甲板层",
+                    "type": "string"
+                },
+                "grade": {
+                    "description": "舱位等级：standard/premium/deluxe",
                     "type": "string"
                 },
                 "has_balcony": {
@@ -1812,6 +2011,98 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handler.CabinTypeBatchCreateRequest": {
+            "type": "object",
+            "required": [
+                "cruise_id",
+                "cruise_ids",
+                "name"
+            ],
+            "properties": {
+                "amenities": {
+                    "description": "设施清单",
+                    "type": "string"
+                },
+                "area": {
+                    "description": "面积（平方米）",
+                    "type": "number"
+                },
+                "area_max": {
+                    "description": "最大面积",
+                    "type": "number"
+                },
+                "area_min": {
+                    "description": "最小面积",
+                    "type": "number"
+                },
+                "bed_type": {
+                    "description": "床型说明",
+                    "type": "string"
+                },
+                "capacity": {
+                    "description": "容纳人数",
+                    "type": "integer"
+                },
+                "category_id": {
+                    "description": "舱型大类 ID",
+                    "type": "integer"
+                },
+                "code": {
+                    "description": "舱房类型代码",
+                    "type": "string"
+                },
+                "cruise_id": {
+                    "description": "所属邮轮 ID",
+                    "type": "integer"
+                },
+                "cruise_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "deck": {
+                    "description": "所在甲板",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "english_name": {
+                    "description": "英文名称",
+                    "type": "string"
+                },
+                "floor_plan_url": {
+                    "description": "平面图 URL",
+                    "type": "string"
+                },
+                "intro": {
+                    "description": "简介",
+                    "type": "string"
+                },
+                "max_capacity": {
+                    "description": "最大容纳人数",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "舱房类型名称",
+                    "type": "string"
+                },
+                "occupancy": {
+                    "description": "默认入住人数",
+                    "type": "integer"
+                },
+                "sort_order": {
+                    "description": "排序权重",
+                    "type": "integer"
+                },
+                "tags": {
+                    "description": "特色标签",
+                    "type": "string"
+                }
+            }
+        },
         "internal_handler.CabinTypeRequest": {
             "type": "object",
             "required": [
@@ -1843,6 +2134,10 @@ const docTemplate = `{
                     "description": "容纳人数",
                     "type": "integer"
                 },
+                "category_id": {
+                    "description": "舱型大类 ID",
+                    "type": "integer"
+                },
                 "code": {
                     "description": "舱房类型代码",
                     "type": "string"
@@ -1867,6 +2162,10 @@ const docTemplate = `{
                     "description": "平面图 URL",
                     "type": "string"
                 },
+                "intro": {
+                    "description": "简介",
+                    "type": "string"
+                },
                 "max_capacity": {
                     "description": "最大容纳人数",
                     "type": "integer"
@@ -1874,6 +2173,10 @@ const docTemplate = `{
                 "name": {
                     "description": "舱房类型名称",
                     "type": "string"
+                },
+                "occupancy": {
+                    "description": "默认入住人数",
+                    "type": "integer"
                 },
                 "sort_order": {
                     "description": "排序权重",

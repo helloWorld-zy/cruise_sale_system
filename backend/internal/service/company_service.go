@@ -42,6 +42,11 @@ func (s *CompanyService) List(ctx context.Context, keyword string, page, pageSiz
 	return s.repo.List(ctx, keyword, page, pageSize)
 }
 
+// ListPublic 返回前台可见公司列表，仅包含启用中的公司。
+func (s *CompanyService) ListPublic(ctx context.Context, page, pageSize int) ([]domain.CruiseCompany, int64, error) {
+	return s.repo.ListPublic(ctx, page, pageSize)
+}
+
 // Delete 删除公司前检查是否仍有关联的邮轮，防止级联数据不一致。
 // HI-02 FIX：此前缺少级联检查逻辑，已修复。
 func (s *CompanyService) Delete(ctx context.Context, id int64) error {
