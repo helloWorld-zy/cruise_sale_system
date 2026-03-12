@@ -13,35 +13,42 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
+// SeaRouteClientConfig 定义海上航线客户端的配置参数。
 type SeaRouteClientConfig struct {
-	Endpoint     string
-	Timeout      time.Duration
-	ResolutionKM int
+	Endpoint     string        // 外部航线服务 API 端点地址
+	Timeout      time.Duration // HTTP 请求超时时间
+	ResolutionKM int           // 航线分辨率（公里），用于路线简化
 }
 
+// SeaRouteClient 提供与外部海上航线服务的交互能力。
+// 用于获取航次的航线地理坐标和距离信息。
 type SeaRouteClient struct {
 	endpoint     string
 	resolutionKM int
 	httpClient   *http.Client
 }
 
+// seaRouteResponse 定义外部航线服务返回的 JSON 响应结构。
 type seaRouteResponse struct {
-	Status  string          `json:"status"`
-	Message string          `json:"message"`
-	Dist    float64         `json:"dist"`
-	Geom    json.RawMessage `json:"geom"`
+	Status  string          `json:"status"`  // 响应状态，"ok" 表示成功
+	Message string          `json:"message"` // 错误信息
+	Dist    float64         `json:"dist"`    // 航线距离（公里）
+	Geom    json.RawMessage `json:"geom"`    // 航线几何数据（GeoJSON）
 }
 
+// seaRouteGeometryEnvelope 定义几何数据的外层包装结构。
 type seaRouteGeometryEnvelope struct {
-	Type string `json:"type"`
+	Type string `json:"type"` // 几何类型，如 "LineString" 或 "MultiLineString"
 }
 
+// routeStop 表示航次行程中的单个停靠港信息。
 type routeStop struct {
-	city      string
-	latitude  float64
-	longitude float64
+	city      string  // 城市名称
+	latitude  float64 // 纬度
+	longitude float64 // 经度
 }
 
+// knownPortCoordinates 是已知港口的经纬度坐标映射，用于在无法获取外部数据时作为备选。
 var knownPortCoordinates = map[string][2]float64{
 	"上海":  {31.2304, 121.4737},
 	"天津":  {39.0842, 117.2009},
@@ -61,8 +68,11 @@ var knownPortCoordinates = map[string][2]float64{
 	"大阪":  {34.6937, 135.5023},
 }
 
+// seaCruisePlaceholders 是海上巡游日的占位符列表，用于识别航程中的海上巡游日。
 var seaCruisePlaceholders = []string{"海上巡游", "海上巡航", "海上观光", "巡游日", "海上"}
 
+// NewSeaRouteClient 创建海上航线客户端实例。
+// 如果未设置超时，则默认为 8 秒；如果未设置分辨率，则默认为 20 公里。
 func NewSeaRouteClient(cfg SeaRouteClientConfig) *SeaRouteClient {
 	if cfg.Timeout <= 0 {
 		cfg.Timeout = 8 * time.Second
@@ -77,6 +87,9 @@ func NewSeaRouteClient(cfg SeaRouteClientConfig) *SeaRouteClient {
 	}
 }
 
+// BuildVoyageRouteMap 根据航次的行程列表构建航线地图模型。
+// 返回包含所有航段坐标、总距离和分辨率的航线地图数据。
+// 如果未配置外部服务端点或行程不足以构成航线，则返回 nil。
 func (c *SeaRouteClient) BuildVoyageRouteMap(ctx context.Context, itineraries []domain.VoyageItinerary) (*domain.VoyageRouteMap, error) {
 	if c == nil || c.endpoint == "" {
 		return nil, nil
@@ -115,6 +128,8 @@ func (c *SeaRouteClient) BuildVoyageRouteMap(ctx context.Context, itineraries []
 	}, nil
 }
 
+// normalizeVoyageRouteStops 将航次行程规范化为停靠港列表。
+// 过滤掉海上巡游日，并去除重复的连续停靠港。
 func normalizeVoyageRouteStops(itineraries []domain.VoyageItinerary) []routeStop {
 	stops := make([]routeStop, 0, len(itineraries))
 	for _, item := range itineraries {
@@ -136,6 +151,8 @@ func normalizeVoyageRouteStops(itineraries []domain.VoyageItinerary) []routeStop
 	return stops
 }
 
+// resolveItineraryCoordinate 解析航次行程的经纬度坐标。
+// 优先使用行程中已存储的坐标，其次使用已知港口坐标映射。
 func resolveItineraryCoordinate(item domain.VoyageItinerary) (float64, float64, bool) {
 	if item.Latitude != nil && item.Longitude != nil {
 		return *item.Latitude, *item.Longitude, true
@@ -147,6 +164,7 @@ func resolveItineraryCoordinate(item domain.VoyageItinerary) (float64, float64, 
 	return 0, 0, false
 }
 
+// normalizePortName 规范化港口名称，去除括号内容以及常见的后缀（如"港口"、"港"、"市"）。
 func normalizePortName(city string) string {
 	trimmed := strings.TrimSpace(city)
 	if index := strings.Index(trimmed, "（"); index >= 0 {
@@ -158,6 +176,8 @@ func normalizePortName(city string) string {
 	return strings.TrimSpace(strings.NewReplacer("港口", "", "港", "", "市", "").Replace(trimmed))
 }
 
+// isSeaCruiseStop 判断是否为海上巡游停靠点。
+// 根据城市名称或行程摘要中是否包含海上巡游占位符来判断。
 func isSeaCruiseStop(city string, summary string) bool {
 	normalized := normalizePortName(city)
 	for _, candidate := range seaCruisePlaceholders {
@@ -168,6 +188,7 @@ func isSeaCruiseStop(city string, summary string) bool {
 	return false
 }
 
+// buildURL 构建查询外部航线服务的 URL，包含起点和终点的坐标参数。
 func (c *SeaRouteClient) buildURL(from routeStop, to routeStop) (string, error) {
 	base, err := url.Parse(c.endpoint)
 	if err != nil {
@@ -184,6 +205,7 @@ func (c *SeaRouteClient) buildURL(from routeStop, to routeStop) (string, error) 
 	return base.String(), nil
 }
 
+// fetchSeaRoutePayload 向外部航线服务请求两个港口之间的航线数据。
 func (c *SeaRouteClient) fetchSeaRoutePayload(ctx context.Context, from routeStop, to routeStop) (*seaRouteResponse, error) {
 	requestURL, err := c.buildURL(from, to)
 	if err != nil {
@@ -211,6 +233,8 @@ func (c *SeaRouteClient) fetchSeaRoutePayload(ctx context.Context, from routeSto
 	return &payload, nil
 }
 
+// normalizeSeaRouteGeometry 将外部服务返回的几何数据规范化为统一的坐标数组格式。
+// 支持 LineString 和 MultiLineString 两种类型。
 func normalizeSeaRouteGeometry(raw json.RawMessage) ([][][]float64, error) {
 	if len(raw) == 0 {
 		return nil, nil

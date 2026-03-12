@@ -104,7 +104,10 @@ function collectVisibleLandPolygons(proj: MapProjection): RouteMapLandPolygon[] 
   return result
 }
 
-/** Ray-casting point-in-polygon test (geo coordinates: [lon, lat]) */
+/**
+ * Ray-casting 射线法点-in-polygon 测试（地理坐标：[lon, lat]）
+ * 用于判断一个经纬度点是否位于陆地多边形内部
+ */
 function pointInGeoPolygon(lon: number, lat: number, polygon: number[][]): boolean {
   let inside = false
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -119,7 +122,7 @@ function pointInGeoPolygon(lon: number, lat: number, polygon: number[][]): boole
 
 type LandPolygonWithBBox = { coords: number[][]; minLon: number; maxLon: number; minLat: number; maxLat: number }
 
-/** Pre-filter and cache visible land polygons with their bounding boxes */
+/** 预过滤并缓存可见陆地多边形及其边界框 */
 function getVisibleLandWithBBox(proj: MapProjection): LandPolygonWithBBox[] {
   const result: LandPolygonWithBBox[] = []
   for (const coords of getLandPolygons()) {
@@ -137,7 +140,7 @@ function getVisibleLandWithBBox(proj: MapProjection): LandPolygonWithBBox[] {
   return result
 }
 
-/** Fast point-in-land test using pre-filtered polygons with bbox check */
+/** 使用预过滤多边形和边界框检查进行快速的点-in-陆地测试 */
 function isInsideLandFast(lon: number, lat: number, polys: LandPolygonWithBBox[]): boolean {
   for (const p of polys) {
     if (lon < p.minLon || lon > p.maxLon || lat < p.minLat || lat > p.maxLat) continue
@@ -146,7 +149,7 @@ function isInsideLandFast(lon: number, lat: number, polys: LandPolygonWithBBox[]
   return false
 }
 
-/** Check if a geo point is inside any visible land polygon */
+/** 检查地理点是否位于任何可见陆地多边形内部 */
 function isInsideLand(lon: number, lat: number, proj: MapProjection): boolean {
   for (const polygon of getLandPolygons()) {
     if (!polygonBBoxIntersectsViewport(polygon, proj)) continue
@@ -155,7 +158,7 @@ function isInsideLand(lon: number, lat: number, proj: MapProjection): boolean {
   return false
 }
 
-/** Check if a screen-space point is inside land (fast path with pre-filtered polys) */
+/** 检查屏幕空间点是否位于陆地内部（使用预过滤多边形的快速路径） */
 function isInsideLandScreenFast(x: number, y: number, proj: MapProjection, polys: LandPolygonWithBBox[]): boolean {
   const { lon, lat } = unprojectPoint(x, y, proj)
   return isInsideLandFast(lon, lat, polys)
@@ -347,7 +350,7 @@ function computeProjection(points: GeoPoint[]): MapProjection {
   let minLat = Math.min(...latitudes)
   let maxLat = Math.max(...latitudes)
 
-  // Add padding to bounds — generous padding to show geographic context
+  // 添加内边距到边界 — 充足的内边距用于显示地理背景
   const lonPad = Math.max((maxLon - minLon) * 0.25, 3)
   const latPad = Math.max((maxLat - minLat) * 0.25, 3)
   minLon -= lonPad
@@ -361,21 +364,21 @@ function computeProjection(points: GeoPoint[]): MapProjection {
   const midLat = (minLat + maxLat) / 2
   const cosLat = Math.cos((midLat * Math.PI) / 180)
 
-  // Available size
+  // 可用尺寸
   const availW = VIEWPORT.width - VIEWPORT.paddingX * 2
   const availH = VIEWPORT.height - VIEWPORT.paddingY * 2
 
-  // The actual aspect ratio of the bounding box on the map
+  // 边界框在地图上的实际长宽比
   const boxW = lonSpan * cosLat
   const boxH = latSpan
 
-  // Fit boxW x boxH into availW x availH
+  // 将 boxW x boxH 适配到 availW x availH
   let scale = 1
   if (boxW / boxH > availW / availH) {
-    // Limited by width
+    // 受宽度限制
     scale = availW / boxW
   } else {
-    // Limited by height
+    // 受高度限制
     scale = availH / boxH
   }
 
@@ -394,11 +397,11 @@ function computeProjection(points: GeoPoint[]): MapProjection {
 function projectPoint(lon: number, lat: number, proj: MapProjection) {
   return {
     x: proj.offsetX + (lon - proj.minLon) * proj.lonScale,
-    y: proj.offsetY + proj.height - (lat - proj.minLat) * proj.latScale, // Y is flipped
+    y: proj.offsetY + proj.height - (lat - proj.minLat) * proj.latScale, // Y 轴翻转
   }
 }
 
-/** Inverse projection: screen (x,y) → geo (lon,lat) */
+/** 逆投影：屏幕坐标 (x,y) → 地理坐标 (lon,lat) */
 function unprojectPoint(x: number, y: number, proj: MapProjection) {
   return {
     lon: proj.minLon + (x - proj.offsetX) / proj.lonScale,
@@ -412,21 +415,21 @@ function projectGeoPoints(points: GeoPoint[], proj?: MapProjection) {
 }
 
 /**
- * Shift waypoints perpendicular to the GLOBAL segment direction (start→end),
- * with smooth fade at endpoints so lines converge at ports. This avoids the
- * zigzag artifacts caused by per-local-tangent offsets.
+ * 沿全局航段方向（起点→终点）垂直偏移航点，
+ * 并在端点处使用平滑衰减，使航线在港口处汇聚。
+ * 这样可以避免因局部切线偏移导致的锯齿状走线。
  */
 function applyGlobalOffset<T extends { x: number; y: number }>(points: T[], offset: number): T[] {
   if (points.length < 2) return points
   const first = points[0]!, last = points[points.length - 1]!
   const gdx = last.x - first.x, gdy = last.y - first.y
   const glen = Math.sqrt(gdx * gdx + gdy * gdy) || 1
-  // Perpendicular to global direction
+  // 垂直于全局方向
   const nx = -gdy / glen, ny = gdx / glen
 
   return points.map((p, i) => {
     const total = points.length - 1
-    // Smooth sine-based fade: 0 at endpoints, 1 in the middle
+    // 基于正弦的平滑衰减：端点为0，中间为1
     const ratio = total > 0 ? i / total : 0
     const fade = Math.sin(ratio * Math.PI)
     return { ...p, x: p.x + nx * offset * fade, y: p.y + ny * offset * fade }
@@ -434,8 +437,8 @@ function applyGlobalOffset<T extends { x: number; y: number }>(points: T[], offs
 }
 
 /**
- * Build an SVG cubic Bezier path from waypoints using Catmull-Rom to Bezier
- * conversion. Produces native SVG `C` curves that are infinitely smooth.
+ * 使用 Catmull-Rom 到 Bezier 转换从航点构建 SVG 三次贝塞尔路径。
+ * 生成原生 SVG C 曲线，实现无限平滑效果。
  */
 function buildSmoothPathD(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return ''
@@ -444,8 +447,8 @@ function buildSmoothPathD(points: Array<{ x: number; y: number }>): string {
     return `M ${points[0]!.x.toFixed(1)} ${points[0]!.y.toFixed(1)} L ${points[1]!.x.toFixed(1)} ${points[1]!.y.toFixed(1)}`
   }
 
-  // Catmull-Rom → cubic Bezier control points
-  // For segment P_i → P_{i+1}, control points are:
+  // Catmull-Rom → 三次 Bezier 控制点
+  // 对于线段 P_i → P_{i+1}，控制点为：
   //   cp1 = P_i + (P_{i+1} - P_{i-1}) / 6
   //   cp2 = P_{i+1} - (P_{i+2} - P_i) / 6
   const f = (v: number) => v.toFixed(1)
@@ -468,8 +471,8 @@ function buildSmoothPathD(points: Array<{ x: number; y: number }>): string {
 }
 
 /**
- * Sample N evenly-spaced points along an SVG cubic Bezier path described by
- * the same waypoints. Used for arrow placement and land-conflict counting.
+ * 在 SVG 三次贝塞尔路径上均匀采样 N 个点。
+ * 用于航向箭头放置和陆地冲突计数。
  */
 function sampleBezierPoints(points: Array<{ x: number; y: number }>, samplesPerSegment = 8): Array<{ x: number; y: number }> {
   if (points.length < 2) return [...points]
@@ -499,9 +502,9 @@ function sampleBezierPoints(points: Array<{ x: number; y: number }>, samplesPerS
 }
 
 /**
- * Generate the offset waypoints for a segment, choosing the side (+/-) with
- * fewer land conflicts. Returns the offset waypoints (NOT densely sampled —
- * use buildSmoothPathD for the SVG path).
+ * 为航段生成偏移航点，选择陆地冲突较少的一侧（+/-）。
+ * 返回偏移后的航点（不是密集采样后的点 —
+ * SVG 路径请使用 buildSmoothPathD）。
  */
 function generateOffsetWaypoints<T extends { x: number; y: number }>(
   points: T[], proj: MapProjection, preferredSign: 1 | -1 = 1, absOffset = 8,
@@ -518,7 +521,7 @@ function generateOffsetWaypoints<T extends { x: number; y: number }>(
     return count
   }
 
-  // Try the preferred side first, then the other, at increasing offsets
+  // 首先尝试优选侧，然后尝试另一侧，偏移量递增
   const offsets = [absOffset, absOffset * 1.5, absOffset * 2]
   let bestPoints = points
   let bestLand = countLand(points)

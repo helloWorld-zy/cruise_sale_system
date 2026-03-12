@@ -13,54 +13,61 @@ import (
 	"unicode/utf8"
 )
 
+// PortCityOption 表示港口城市下拉选项的展示结构。
 type PortCityOption struct {
-	Label       string `json:"label"`
-	CityName    string `json:"city_name,omitempty"`
-	CountryName string `json:"country_name,omitempty"`
-	IsSpecial   bool   `json:"is_special,omitempty"`
+	Label       string `json:"label"`                  // 显示标签，格式如 "上海（中国）"
+	CityName    string `json:"city_name,omitempty"`    // 城市名称
+	CountryName string `json:"country_name,omitempty"` // 国家名称
+	IsSpecial   bool   `json:"is_special,omitempty"`   // 是否为特殊目的地（如自定义目的地）
 }
 
+// ResolvedPortCity 表示解析后的港口城市详细信息，包含地理坐标。
 type ResolvedPortCity struct {
-	Label       string
-	CityName    string
-	CountryName string
-	Latitude    *float64
-	Longitude   *float64
-	IsSpecial   bool
+	Label       string   // 显示标签
+	CityName    string   // 城市名称
+	CountryName string   // 国家名称
+	Latitude    *float64 // 纬度坐标
+	Longitude   *float64 // 经度坐标
+	IsSpecial   bool     // 是否为特殊目的地
 }
 
+// PortCityLookupService 定义港口城市查询服务的接口。
 type PortCityLookupService interface {
 	Search(ctx context.Context, keyword string) ([]PortCityOption, error)
 	ResolveLabel(ctx context.Context, label string) (*ResolvedPortCity, error)
 }
 
+// PortCityServiceConfig 定义港口城市服务的配置参数。
 type PortCityServiceConfig struct {
-	Endpoint string
-	Timeout  time.Duration
+	Endpoint string        // 外部城市搜索服务 API 端点地址
+	Timeout  time.Duration // HTTP 请求超时时间
 }
 
+// PortCityService 提供港口城市搜索和解析的业务逻辑。
 type PortCityService struct {
 	endpoint   string
 	httpClient *http.Client
-	customRepo CustomDestinationRepo
+	customRepo CustomDestinationRepo // 自定义目的地仓储
 }
 
+// localPortCityEntry 定义本地港口城市词典的条目结构。
 type localPortCityEntry struct {
-	Label       string
-	CityName    string
-	CountryName string
-	Latitude    float64
-	Longitude   float64
-	Keywords    []string
+	Label       string   // 显示标签
+	CityName    string   // 城市名称
+	CountryName string   // 国家名称
+	Latitude    float64  // 纬度
+	Longitude   float64  // 经度
+	Keywords    []string // 搜索关键词列表
 }
 
 var localPortCityCatalog = []localPortCityEntry{}
 
+// nominatimResult 定义 Nominatim 地理编码服务返回的结果结构。
 type nominatimResult struct {
-	Lat         string            `json:"lat"`
-	Lon         string            `json:"lon"`
-	Name        string            `json:"name"`
-	NameDetails map[string]string `json:"namedetails"`
+	Lat         string            `json:"lat"`         // 纬度
+	Lon         string            `json:"lon"`         // 经度
+	Name        string            `json:"name"`        // 地点名称
+	NameDetails map[string]string `json:"namedetails"` // 名称详情（多语言）
 	Address     struct {
 		City         string `json:"city"`
 		Town         string `json:"town"`
