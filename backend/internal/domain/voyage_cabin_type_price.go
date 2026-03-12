@@ -26,3 +26,7 @@ type VoyageCabinTypeCurrent struct {
 	VersionID            int64     `json:"version_id"`
 	UpdatedAt            time.Time `json:"updated_at"`
 }
+
+func (VoyageCabinTypeCurrent) TableName() string {
+	return "voyage_cabin_type_current"
+}

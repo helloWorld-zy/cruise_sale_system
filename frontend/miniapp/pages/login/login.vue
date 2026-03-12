@@ -1,12 +1,16 @@
 <!-- miniapp/pages/login/login.vue — 小程序端登录页面 -->
-<!-- 当前为轻量入口，复用 PrimaryButton 组件承载后续登录交互 -->
+<!-- 支持微信一键登录（uni.login）和短信验证码登录双通道 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import PrimaryButton from '../../components/PrimaryButton.vue'
+import NavBar from '../../components/NavBar.vue'
 import { request } from '../../src/utils/request'
 import { useAuthStore } from '../../src/stores/auth'
 
-// 小程序登录：短信验证码发送、倒计时与登录提交。
+declare const uni: any
+
+const emit = defineEmits<{ (e: 'back'): void }>()
+
 const authStore = useAuthStore()
 const phone = ref('')
 const code = ref('')
@@ -15,6 +19,15 @@ const sending = ref(false)
 const countdown = ref(0)
 const error = ref('')
 const success = ref('')
+
+/** 是否处于微信小程序环境（有 uni.login 可用） */
+const isWxMiniApp = computed(() => {
+  try {
+    return typeof uni !== 'undefined' && typeof uni.login === 'function'
+  } catch {
+    return false
+  }
+})
 
 function isValidPhone(value: string) {
   return /^1\d{10}$/.test(value)
@@ -53,6 +66,7 @@ async function sendCode() {
   }
 }
 
+/** 短信验证码登录 */
 async function handleLogin() {
   if (loading.value) return
   error.value = ''
@@ -83,17 +97,81 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+/**
+ * 微信一键登录：
+ * 1. uni.login() 获取微信临时 code
+ * 2. 将 code 发送到后端 /users/wx-login 换取业务 token
+ * 3. 存入 auth store（自动持久化）
+ */
+async function handleWxLogin() {
+  if (loading.value) return
+  error.value = ''
+  success.value = ''
+  loading.value = true
+  try {
+    // 第一步：调用 uni.login 获取微信 code
+    const loginRes = await new Promise<{ code: string }>((resolve, reject) => {
+      uni.login({
+        provider: 'weixin',
+        success: (res: any) => {
+          if (res.code) {
+            resolve({ code: res.code })
+          } else {
+            reject(new Error(res.errMsg || '微信登录失败'))
+          }
+        },
+        fail: (err: any) => reject(new Error(err?.errMsg || '微信登录失败')),
+      })
+    })
+
+    // 第二步：将 code 发送后端换取 token
+    const res = await request('/users/wx-login', {
+      method: 'POST',
+      data: { code: loginRes.code },
+    })
+    const token = res?.token ?? res?.data?.token
+    if (!token) {
+      throw new Error('微信登录响应缺少 token')
+    }
+    authStore.setToken(token)
+
+    // 可选：设置用户 profile
+    const profile = res?.profile ?? res?.data?.profile
+    if (profile) {
+      authStore.setProfile(profile)
+    }
+
+    success.value = '微信登录成功'
+  } catch (e: any) {
+    error.value = e?.message ?? '微信登录失败'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
   <view class="page">
+    <NavBar title="用户登录" show-back @back="emit('back')" />
     <view class="hero">
       <text class="eyebrow">Azure Deck Member</text>
-      <text class="title">用户登录</text>
       <text class="subtitle">输入手机号与验证码，继续你的海上假期计划。</text>
     </view>
 
     <view class="panel">
+      <!-- 微信一键登录（仅在小程序环境可用） -->
+      <button v-if="isWxMiniApp" class="wx-btn" :disabled="loading" @click="handleWxLogin">
+        {{ loading ? '登录中...' : '微信一键登录' }}
+      </button>
+
+      <view v-if="isWxMiniApp" class="divider">
+        <text class="divider-line"></text>
+        <text class="divider-text">或使用手机号登录</text>
+        <text class="divider-line"></text>
+      </view>
+
+      <!-- 短信验证码登录 -->
       <input v-model="phone" type="number" placeholder="手机号" :disabled="loading || sending" />
       <view class="code-row">
         <input v-model="code" type="number" placeholder="验证码" :disabled="loading" />
@@ -183,5 +261,38 @@ input {
 
 .success {
   color: #0f8a60;
+}
+
+.wx-btn {
+  border: 0;
+  border-radius: 16rpx;
+  padding: 22rpx;
+  background: #07c160;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.wx-btn[disabled] {
+  opacity: 0.6;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 8rpx 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1rpx;
+  background: #d0dee8;
+}
+
+.divider-text {
+  font-size: 22rpx;
+  color: #9ab;
+  white-space: nowrap;
 }
 </style>

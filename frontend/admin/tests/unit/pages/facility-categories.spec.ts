@@ -88,12 +88,21 @@ describe('FacilityCategory list', () => {
     await selectBtn!.trigger('click')
     await flushPromises()
 
-    const iconBtn = wrapper.find('[data-test="facility-category-icon-option-1-music"]')
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-included-dining"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-specialty-dining"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-bar-lounge"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-leisure-entertainment"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-kids-family"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-suite-privilege"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-sports-fitness"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-icon-option-1-other"]').exists()).toBe(true)
+
+    const iconBtn = wrapper.find('[data-test="facility-category-icon-option-1-bar-lounge"]')
     expect(iconBtn.find('svg').exists()).toBe(true)
     await iconBtn!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="facility-category-icon-current-1"]').attributes('data-icon')).toBe('music')
+    expect(wrapper.find('[data-test="facility-category-icon-current-1"]').attributes('data-icon')).toBe('bar-lounge')
     expect(wrapper.find('[data-test="facility-category-icon-input-1"]').exists()).toBe(false)
   })
 

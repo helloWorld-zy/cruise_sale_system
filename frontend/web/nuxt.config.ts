@@ -21,5 +21,5 @@ export default defineNuxtConfig({
             },
         },
     },
-    modules: ['@pinia/nuxt'], // 仅保留状态管理模块，避免 Nuxt UI 运行时导入冲突
+    modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'], // 使用独立 Tailwind CSS 模块（不引入 @nuxt/ui 的组件库，避免冲突）
 })

@@ -12,15 +12,30 @@ import (
 
 // Config 是应用的顶层配置结构体，包含所有子模块的配置。
 type Config struct {
-	Server   ServerConfig   // 服务器配置
-	Database DatabaseConfig // 数据库配置
-	Redis    RedisConfig    // Redis 缓存配置
-	MinIO    MinIOConfig    // MinIO 对象存储配置
-	Meilis   MeiliConfig    // MeiliSearch 搜索引擎配置
-	NATS     NATSConfig     // NATS 消息队列配置
-	JWT      JWTConfig      // JWT 认证配置
-	Log      LogConfig      // 日志配置
-	Upload   UploadConfig   // 本地上传配置
+	Server        ServerConfig        // 服务器配置
+	Database      DatabaseConfig      // 数据库配置
+	Redis         RedisConfig         // Redis 缓存配置
+	MinIO         MinIOConfig         // MinIO 对象存储配置
+	CitySearch    CitySearchConfig    // 城市搜索配置
+	Meilis        MeiliConfig         // MeiliSearch 搜索引擎配置
+	NATS          NATSConfig          // NATS 消息队列配置
+	JWT           JWTConfig           // JWT 认证配置
+	Log           LogConfig           // 日志配置
+	Upload        UploadConfig        // 本地上传配置
+	MaritimeRoute MaritimeRouteConfig // 海上路由服务配置
+}
+
+// CitySearchConfig 定义外部城市搜索服务配置。
+type CitySearchConfig struct {
+	Endpoint       string // 城市搜索 API 地址
+	TimeoutSeconds int    // 请求超时秒数
+}
+
+// MaritimeRouteConfig 定义外部海上路由服务配置。
+type MaritimeRouteConfig struct {
+	Endpoint       string // SeaRoute WebService 地址
+	TimeoutSeconds int    // 请求超时秒数
+	ResolutionKM   int    // 路由网络分辨率（km）
 }
 
 // UploadConfig 定义本地文件上传配置。
@@ -120,6 +135,8 @@ func Load(root string) Config {
 
 	applyDatabaseEnvFallbacks(&cfg)
 	applyUploadDefaults(&cfg)
+	applyCitySearchDefaults(&cfg)
+	applyMaritimeRouteDefaults(&cfg)
 
 	return cfg
 }
@@ -173,5 +190,29 @@ func applyUploadDefaults(cfg *Config) {
 	}
 	if cfg.Upload.MaxFileSize <= 0 {
 		cfg.Upload.MaxFileSize = 10 * 1024 * 1024
+	}
+}
+
+func applyCitySearchDefaults(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	if strings.TrimSpace(cfg.CitySearch.Endpoint) == "" {
+		cfg.CitySearch.Endpoint = "https://nominatim.openstreetmap.org/search"
+	}
+	if cfg.CitySearch.TimeoutSeconds <= 0 {
+		cfg.CitySearch.TimeoutSeconds = 8
+	}
+}
+
+func applyMaritimeRouteDefaults(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	if cfg.MaritimeRoute.TimeoutSeconds <= 0 {
+		cfg.MaritimeRoute.TimeoutSeconds = 8
+	}
+	if cfg.MaritimeRoute.ResolutionKM <= 0 {
+		cfg.MaritimeRoute.ResolutionKM = 20
 	}
 }

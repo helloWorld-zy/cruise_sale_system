@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,7 +17,8 @@ import (
 
 // VoyageService 定义航次处理器所需的服务接口。
 type VoyageService interface {
-	List(ctx context.Context) ([]domain.Voyage, error)             // 查询航次列表
+	List(ctx context.Context) ([]domain.Voyage, error) // 查询航次列表
+	ListPublic(ctx context.Context, cruiseID int64, keyword string, page, pageSize int) ([]domain.Voyage, int64, error)
 	Create(ctx context.Context, v *domain.Voyage) error            // 创建航次
 	Update(ctx context.Context, v *domain.Voyage) error            // 更新航次
 	GetByID(ctx context.Context, id int64) (*domain.Voyage, error) // 根据 ID 查询航次
@@ -30,28 +33,36 @@ type VoyageHandler struct{ svc VoyageService }
 func NewVoyageHandler(svc VoyageService) *VoyageHandler { return &VoyageHandler{svc: svc} }
 
 type voyageItineraryPayload struct {
-	DayNo             int    `json:"day_no" binding:"required,min=1"`
-	StopIndex         int    `json:"stop_index" binding:"required,min=1"`
-	City              string `json:"city" binding:"required,max=120"`
-	Summary           string `json:"summary"`
-	ETATime           string `json:"eta_time"`
-	ETDTime           string `json:"etd_time"`
-	HasBreakfast      bool   `json:"has_breakfast"`
-	HasLunch          bool   `json:"has_lunch"`
-	HasDinner         bool   `json:"has_dinner"`
-	HasAccommodation  bool   `json:"has_accommodation"`
-	AccommodationText string `json:"accommodation_text"`
+	DayNo             int      `json:"day_no" binding:"required,min=1"`
+	StopIndex         int      `json:"stop_index" binding:"required,min=1"`
+	City              string   `json:"city" binding:"required,max=120"`
+	Summary           string   `json:"summary"`
+	Latitude          *float64 `json:"latitude"`
+	Longitude         *float64 `json:"longitude"`
+	ETATime           string   `json:"eta_time"`
+	ETDTime           string   `json:"etd_time"`
+	HasBreakfast      bool     `json:"has_breakfast"`
+	HasLunch          bool     `json:"has_lunch"`
+	HasDinner         bool     `json:"has_dinner"`
+	HasAccommodation  bool     `json:"has_accommodation"`
+	AccommodationText string   `json:"accommodation_text"`
 }
 
 type voyageUpsertPayload struct {
-	CruiseID    int64                    `json:"cruise_id" binding:"required,min=1"`
-	Code        string                   `json:"code" binding:"required,max=50"`
-	ImageURL    string                   `json:"image_url" binding:"max=500"`
-	BriefInfo   string                   `json:"brief_info" binding:"required,max=300"`
-	DepartDate  time.Time                `json:"depart_date" binding:"required"`
-	ReturnDate  time.Time                `json:"return_date" binding:"required"`
-	Status      int16                    `json:"status"`
-	Itineraries []voyageItineraryPayload `json:"itineraries" binding:"required,min=1,dive"`
+	CruiseID                int64                    `json:"cruise_id" binding:"required,min=1"`
+	Code                    string                   `json:"code" binding:"required,max=50"`
+	ImageURL                string                   `json:"image_url" binding:"max=500"`
+	BriefInfo               string                   `json:"brief_info" binding:"required,max=300"`
+	DepartDate              time.Time                `json:"depart_date" binding:"required"`
+	ReturnDate              time.Time                `json:"return_date" binding:"required"`
+	Status                  int16                    `json:"status"`
+	FeeNoteTemplateID       int64                    `json:"fee_note_template_id"`
+	FeeNoteMode             domain.VoyageContentMode `json:"fee_note_mode"`
+	FeeNoteContent          json.RawMessage          `json:"fee_note_content"`
+	BookingNoticeTemplateID int64                    `json:"booking_notice_template_id"`
+	BookingNoticeMode       domain.VoyageContentMode `json:"booking_notice_mode"`
+	BookingNoticeContent    json.RawMessage          `json:"booking_notice_content"`
+	Itineraries             []voyageItineraryPayload `json:"itineraries" binding:"required,min=1,dive"`
 }
 
 // List 查询航次列表。
@@ -62,6 +73,21 @@ func (h *VoyageHandler) List(c *gin.Context) {
 		return
 	}
 	response.Success(c, list)
+}
+
+// ListPublic 查询公开航次列表。
+func (h *VoyageHandler) ListPublic(c *gin.Context) {
+	cruiseID := queryInt64(c, "cruise_id", 0)
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	page := queryInt(c, "page", 1)
+	pageSize := queryInt(c, "page_size", 20)
+
+	list, total, err := h.svc.ListPublic(c.Request.Context(), cruiseID, keyword, page, pageSize)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, gin.H{"list": list, "total": total})
 }
 
 // Get 查询单条航次详情。
@@ -142,14 +168,22 @@ func buildVoyageFromPayload(req voyageUpsertPayload) (*domain.Voyage, error) {
 		return nil, fmt.Errorf("depart_date must be before or equal to return_date")
 	}
 	v := &domain.Voyage{
-		CruiseID:   req.CruiseID,
-		Code:       strings.TrimSpace(req.Code),
-		ImageURL:   strings.TrimSpace(req.ImageURL),
-		BriefInfo:  strings.TrimSpace(req.BriefInfo),
-		DepartDate: req.DepartDate,
-		ReturnDate: req.ReturnDate,
-		Status:     req.Status,
+		CruiseID:                 req.CruiseID,
+		Code:                     strings.TrimSpace(req.Code),
+		ImageURL:                 strings.TrimSpace(req.ImageURL),
+		BriefInfo:                strings.TrimSpace(req.BriefInfo),
+		DepartDate:               req.DepartDate,
+		ReturnDate:               req.ReturnDate,
+		Status:                   req.Status,
+		FeeNoteTemplateID:        req.FeeNoteTemplateID,
+		FeeNoteMode:              normalizeContentMode(req.FeeNoteMode),
+		FeeNoteContentJSON:       normalizeJSONBytes(req.FeeNoteContent),
+		BookingNoticeTemplateID:  req.BookingNoticeTemplateID,
+		BookingNoticeMode:        normalizeContentMode(req.BookingNoticeMode),
+		BookingNoticeContentJSON: normalizeJSONBytes(req.BookingNoticeContent),
 	}
+	v.FeeNoteContent = decodeFeeNoteContent(v.FeeNoteContentJSON)
+	v.BookingNoticeContent = decodeBookingNoticeContent(v.BookingNoticeContentJSON)
 	itineraries := make([]domain.VoyageItinerary, 0, len(req.Itineraries))
 	seen := map[string]struct{}{}
 	maxDay := 0
@@ -167,6 +201,8 @@ func buildVoyageFromPayload(req voyageUpsertPayload) (*domain.Voyage, error) {
 			StopIndex:         item.StopIndex,
 			City:              strings.TrimSpace(item.City),
 			Summary:           strings.TrimSpace(item.Summary),
+			Latitude:          item.Latitude,
+			Longitude:         item.Longitude,
 			ETATime:           normalizeTimeString(item.ETATime),
 			ETDTime:           normalizeTimeString(item.ETDTime),
 			HasBreakfast:      item.HasBreakfast,
@@ -183,6 +219,57 @@ func buildVoyageFromPayload(req voyageUpsertPayload) (*domain.Voyage, error) {
 	}
 	v.Itineraries = itineraries
 	return v, nil
+}
+
+func normalizeContentMode(mode domain.VoyageContentMode) domain.VoyageContentMode {
+	if mode == domain.VoyageContentModeTemplate || mode == domain.VoyageContentModeSnapshot {
+		return mode
+	}
+	return ""
+}
+
+func normalizeJSONBytes(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var compact bytes.Buffer
+	if err := json.Compact(&compact, raw); err != nil {
+		return strings.TrimSpace(string(raw))
+	}
+	return compact.String()
+}
+
+func decodeAnyJSON(raw string) any {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out any
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return out
+}
+
+func decodeFeeNoteContent(raw string) *domain.FeeNoteContent {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out domain.FeeNoteContent
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return &out
+}
+
+func decodeBookingNoticeContent(raw string) *domain.BookingNoticeContent {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out domain.BookingNoticeContent
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return &out
 }
 
 func hasItineraryDay(itineraries []domain.VoyageItinerary, day int) bool {

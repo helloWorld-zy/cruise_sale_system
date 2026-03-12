@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Headset } from 'lucide-vue-next'
+import NavBar from '../../components/NavBar.vue'
 
 const popularRoutes = [
   { id: 1, name: '日韩', image: 'https://picsum.photos/id/1015/100/100' },
@@ -41,24 +42,7 @@ const recentDeals = [
 
 <template>
   <div class="pb-[20px] bg-background min-h-screen">
-    <!-- Header / Nav -->
-    <header class="pt-10 pb-3 px-3 bg-white sticky top-0 z-30 flex items-center justify-between shadow-sm">
-      <div class="flex-1"></div>
-      <h1 class="text-lg font-heading font-bold text-text flex-1 text-center">首页</h1>
-      <div class="flex-1 flex justify-end">
-        <div class="flex gap-2 bg-gray-50 rounded-full px-3 py-1.5 items-center shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-100 transition-smooth">
-          <div class="flex gap-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-text"></div>
-            <div class="w-1.5 h-1.5 rounded-full bg-text"></div>
-            <div class="w-1.5 h-1.5 rounded-full bg-text"></div>
-          </div>
-          <div class="w-px h-3 bg-gray-300 mx-1"></div>
-          <div class="w-4 h-4 rounded-full border-2 border-text relative">
-             <div class="w-1.5 h-1.5 bg-text rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <NavBar title="首页" />
 
     <!-- Banner -->
     <section class="px-3 mt-3 relative">

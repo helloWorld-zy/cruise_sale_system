@@ -8,51 +8,43 @@ import (
 	"github.com/cruisebooking/backend/internal/domain"
 )
 
-// StaffRepository 定义员工数据访问接口。
 type StaffRepository interface {
-	Create(ctx context.Context, s *domain.Staff) error            // 创建员工记录
-	GetByID(ctx context.Context, id int64) (*domain.Staff, error) // 根据 ID 查询员工
-	Update(ctx context.Context, s *domain.Staff) error            // 更新员工信息
-	Delete(ctx context.Context, id int64) error                   // 删除员工记录
-	List(ctx context.Context) ([]domain.Staff, error)             // 查询所有员工列表
+	Create(ctx context.Context, s *domain.Staff) error
+	GetByID(ctx context.Context, id int64) (*domain.Staff, error)
+	Update(ctx context.Context, s *domain.Staff) error
+	Delete(ctx context.Context, id int64) error
+	List(ctx context.Context) ([]domain.Staff, error)
 }
 
-// StaffService 提供员工管理业务逻辑，包括员工创建、角色分配、权限同步等。
 type StaffService struct {
-	repo        StaffRepository      // 员工数据仓储
-	roleSyncer  StaffRoleSyncer      // 角色同步器（用于同步到 Casbin）
-	auditLogger StaffRoleAuditLogger // 角色变更审计日志记录器
+	repo        StaffRepository
+	roleSyncer  StaffRoleSyncer
+	auditLogger StaffRoleAuditLogger
 }
 
-// StaffRoleSyncer 定义角色同步接口，用于将员工角色同步到权限系统（如 Casbin）。
 type StaffRoleSyncer interface {
-	SyncRoleForStaff(ctx context.Context, staffID int64, role string) error // 同步员工角色
+	SyncRoleForStaff(ctx context.Context, staffID int64, role string) error
 }
 
-// StaffRoleAuditEntry 记录角色变更审计条目。
 type StaffRoleAuditEntry struct {
-	OperatorID    int64  // 操作人 ID
-	TargetStaffID int64  // 被操作员工 ID
-	OldRole       string // 变更前角色
-	NewRole       string // 变更后角色
+	OperatorID    int64
+	TargetStaffID int64
+	OldRole       string
+	NewRole       string
 }
 
-// StaffRoleAuditLogger 定义角色变更审计日志记录接口。
 type StaffRoleAuditLogger interface {
-	LogRoleChange(ctx context.Context, entry StaffRoleAuditEntry) error // 记录角色变更日志
+	LogRoleChange(ctx context.Context, entry StaffRoleAuditEntry) error
 }
 
-// NewStaffService 创建员工服务实例（无依赖注入版本）。
 func NewStaffService(repo StaffRepository) *StaffService {
 	return &StaffService{repo: repo}
 }
 
-// NewStaffServiceWithDeps 创建员工服务实例（带完整依赖注入）。
 func NewStaffServiceWithDeps(repo StaffRepository, roleSyncer StaffRoleSyncer, auditLogger StaffRoleAuditLogger) *StaffService {
 	return &StaffService{repo: repo, roleSyncer: roleSyncer, auditLogger: auditLogger}
 }
 
-// Create 创建新员工。验证角色有效性后创建员工记录。
 func (s *StaffService) Create(ctx context.Context, name, email, role string) (*domain.Staff, error) {
 	if !domain.IsValidStaffRole(role) {
 		return nil, errors.New("invalid role")
@@ -69,8 +61,6 @@ func (s *StaffService) Create(ctx context.Context, name, email, role string) (*d
 	return staff, nil
 }
 
-// AssignRole 为员工分配新角色。支持权限同步和审计日志记录。
-// 如果角色同步或日志记录失败，会自动回滚数据库中的角色变更。
 func (s *StaffService) AssignRole(ctx context.Context, id int64, role string, operatorID int64) error {
 	if !domain.IsValidStaffRole(role) {
 		return errors.New("invalid role")
@@ -117,22 +107,18 @@ func (s *StaffService) AssignRole(ctx context.Context, id int64, role string, op
 	return nil
 }
 
-// List 查询所有员工列表。
 func (s *StaffService) List(ctx context.Context) ([]domain.Staff, error) {
 	return s.repo.List(ctx)
 }
 
-// GetByID 根据 ID 查询员工详情。
 func (s *StaffService) GetByID(ctx context.Context, id int64) (*domain.Staff, error) {
 	return s.repo.GetByID(ctx, id)
 }
 
-// Update 更新员工信息。
 func (s *StaffService) Update(ctx context.Context, staff *domain.Staff) error {
 	return s.repo.Update(ctx, staff)
 }
 
-// Delete 删除员工（软删除）。
 func (s *StaffService) Delete(ctx context.Context, id int64) error {
 	return s.repo.Delete(ctx, id)
 }

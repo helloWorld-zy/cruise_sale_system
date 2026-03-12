@@ -30,6 +30,9 @@ type voyageDeleteErrSvc struct{ err error }
 func (s *voyageDeleteErrSvc) List(context.Context) ([]domain.Voyage, error) {
 	return nil, nil
 }
+func (s *voyageDeleteErrSvc) ListPublic(context.Context, int64, string, int, int) ([]domain.Voyage, int64, error) {
+	return nil, 0, nil
+}
 func (s *voyageDeleteErrSvc) Create(context.Context, *domain.Voyage) error { return nil }
 func (s *voyageDeleteErrSvc) Update(context.Context, *domain.Voyage) error { return nil }
 func (s *voyageDeleteErrSvc) GetByID(context.Context, int64) (*domain.Voyage, error) {

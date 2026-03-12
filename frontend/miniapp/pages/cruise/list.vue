@@ -110,7 +110,7 @@ onMounted(loadItems)
 }
 .cover {
   width: 100%;
-  height: 380rpx;
+  height: 260rpx;
 }
 .body {
   padding: 32rpx;

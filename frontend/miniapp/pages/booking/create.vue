@@ -3,6 +3,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { request } from '../../src/utils/request'
+import NavBar from '../../components/NavBar.vue'
 
 // 表单状态：航次、舱位与出行人数
 const voyageId = ref('')
@@ -45,7 +46,7 @@ async function handleSubmit() {
 
 <template>
   <view class="page">
-    <text class="title">创建预订</text>
+    <NavBar title="创建预订" show-back />
     <text class="subtitle">三步完成舱房锁定：航次、舱位、人数。</text>
 
     <view class="form">
@@ -72,6 +73,7 @@ async function handleSubmit() {
 .page {
   min-height: 100vh;
   padding: 40rpx;
+  padding-top: 0;
   background: #f5f7fa;
   position: relative;
 }
@@ -86,15 +88,6 @@ async function handleSubmit() {
   border-bottom-left-radius: 40rpx;
   border-bottom-right-radius: 40rpx;
   z-index: 0;
-}
-.title {
-  position: relative;
-  z-index: 1;
-  display: block;
-  margin-bottom: 12rpx;
-  font-size: 48rpx;
-  font-weight: 800;
-  color: #fff;
 }
 .subtitle {
   position: relative;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import AdminPortCitySelect from '../../components/AdminPortCitySelect.vue'
 import AdminConfirmDialog from '../../components/AdminConfirmDialog.vue'
 import { useAdminDeleteDialog } from '../../composables/useAdminDeleteDialog'
 
@@ -25,7 +26,51 @@ type VoyageForm = {
   depart_date: string
   return_date: string
   status: number
+  fee_note_template_id: number
+  fee_note_mode: 'template' | 'snapshot' | ''
+  fee_note_content: { included: Array<{ text: string }>; excluded: Array<{ text: string }> }
+  booking_notice_template_id: number
+  booking_notice_mode: 'template' | 'snapshot' | ''
+  booking_notice_content: { sections: Array<{ key: string; title: string; items: Array<{ text: string }> }> }
   itineraries: ItineraryFormItem[]
+}
+
+type TemplateItem = {
+  id: number
+  name: string
+  kind: 'fee_note' | 'booking_notice'
+  status?: number
+  content?: any
+}
+
+function blankFeeNoteContent() {
+  return { included: [{ text: '' }], excluded: [{ text: '' }] }
+}
+
+function blankBookingNoticeContent() {
+  return { sections: [{ key: 'booking_limit', title: '预订限制', items: [{ text: '' }] }] }
+}
+
+function normalizeTextItems(items?: Array<{ text?: string }>) {
+  const normalized = (items || []).map((item) => ({ text: String(item?.text || '').trim() })).filter((item) => item.text)
+  return normalized.length > 0 ? normalized : [{ text: '' }]
+}
+
+function normalizeFeeNoteContent(content?: { included?: Array<{ text?: string }>; excluded?: Array<{ text?: string }> }) {
+  return {
+    included: normalizeTextItems(content?.included),
+    excluded: normalizeTextItems(content?.excluded),
+  }
+}
+
+function normalizeBookingNoticeContent(content?: { sections?: Array<{ key?: string; title?: string; items?: Array<{ text?: string }> }> }) {
+  const sections = (content?.sections || []).map((section, index) => ({
+    key: String(section?.key || `section_${index + 1}`).trim(),
+    title: String(section?.title || '').trim(),
+    items: normalizeTextItems(section?.items),
+  })).filter((section) => section.title || section.items.some((item) => item.text))
+
+  return { sections: sections.length > 0 ? sections : blankBookingNoticeContent().sections }
 }
 
 const route = useRoute()
@@ -38,7 +83,10 @@ const uploadingImage = ref(false)
 const error = ref<string | null>(null)
 const empty = ref(false)
 const cruises = ref<Array<{ id: number; name: string }>>([])
+const templates = ref<TemplateItem[]>([])
 const hasCruiseOptions = computed(() => cruises.value.length > 0)
+const feeNoteTemplates = computed(() => templates.value.filter((item) => item.kind === 'fee_note'))
+const bookingNoticeTemplates = computed(() => templates.value.filter((item) => item.kind === 'booking_notice'))
 const {
   visible: deleteDialogVisible,
   submitting: deleting,
@@ -54,6 +102,12 @@ const form = ref<VoyageForm>({
   depart_date: '',
   return_date: '',
   status: 1,
+  fee_note_template_id: 0,
+  fee_note_mode: '',
+  fee_note_content: blankFeeNoteContent(),
+  booking_notice_template_id: 0,
+  booking_notice_mode: '',
+  booking_notice_content: blankBookingNoticeContent(),
   itineraries: [],
 })
 
@@ -103,6 +157,73 @@ function dateOnly(input: string) {
 function toRFC3339Date(v: string) {
   if (!v) return v
   return `${v}T00:00:00Z`
+}
+
+function cloneTemplateContent<T>(value: T, fallback: T): T {
+  return JSON.parse(JSON.stringify(value ?? fallback))
+}
+
+function findTemplate(id: number) {
+  return templates.value.find((item) => item.id === id)
+}
+
+function copyBookingNoticeToSnapshot() {
+  const template = findTemplate(form.value.booking_notice_template_id)
+  form.value.booking_notice_mode = 'snapshot'
+  form.value.booking_notice_content = normalizeBookingNoticeContent(cloneTemplateContent(template?.content, blankBookingNoticeContent()))
+}
+
+function copyFeeNoteToSnapshot() {
+  const template = findTemplate(form.value.fee_note_template_id)
+  form.value.fee_note_mode = 'snapshot'
+  form.value.fee_note_content = normalizeFeeNoteContent(cloneTemplateContent(template?.content, blankFeeNoteContent()))
+}
+
+function onFeeNoteTemplateChange() {
+  form.value.fee_note_mode = form.value.fee_note_template_id ? 'template' : ''
+}
+
+function onBookingNoticeTemplateChange() {
+  form.value.booking_notice_mode = form.value.booking_notice_template_id ? 'template' : ''
+}
+
+function addFeeNoteLine(kind: 'included' | 'excluded') {
+  form.value.fee_note_content[kind].push({ text: '' })
+}
+
+function removeFeeNoteLine(kind: 'included' | 'excluded', index: number) {
+  const list = form.value.fee_note_content[kind]
+  if (list.length === 1) {
+    list[0] = { text: '' }
+    return
+  }
+  list.splice(index, 1)
+}
+
+function addBookingNoticeSection() {
+  form.value.booking_notice_content.sections.push({ key: `section_${form.value.booking_notice_content.sections.length + 1}`, title: '', items: [{ text: '' }] })
+}
+
+function removeBookingNoticeSection(index: number) {
+  if (form.value.booking_notice_content.sections.length === 1) {
+    form.value.booking_notice_content.sections = blankBookingNoticeContent().sections
+    return
+  }
+  form.value.booking_notice_content.sections.splice(index, 1)
+}
+
+function addBookingNoticeItem(sectionIndex: number) {
+  form.value.booking_notice_content.sections[sectionIndex]?.items.push({ text: '' })
+}
+
+function removeBookingNoticeItem(sectionIndex: number, itemIndex: number) {
+  const section = form.value.booking_notice_content.sections[sectionIndex]
+  if (!section) return
+  if (section.items.length === 1) {
+    section.items[0] = { text: '' }
+    return
+  }
+  section.items.splice(itemIndex, 1)
 }
 
 function addDay() {
@@ -209,6 +330,12 @@ async function loadDetail() {
       depart_date: dateOnly(data.depart_date),
       return_date: dateOnly(data.return_date),
       status: Number(data.status ?? 1),
+      fee_note_template_id: Number(data.fee_note_template_id || 0),
+      fee_note_mode: data.fee_note_mode || '',
+      fee_note_content: normalizeFeeNoteContent(cloneTemplateContent(data.fee_note_content, blankFeeNoteContent())),
+      booking_notice_template_id: Number(data.booking_notice_template_id || 0),
+      booking_notice_mode: data.booking_notice_mode || '',
+      booking_notice_content: normalizeBookingNoticeContent(cloneTemplateContent(data.booking_notice_content, blankBookingNoticeContent())),
       itineraries: normalizeItineraries(itineraries),
     }
     ensureAtLeastOneItinerary()
@@ -255,6 +382,16 @@ async function loadCruises() {
   }
 }
 
+async function loadContentTemplates() {
+  try {
+    const res = await request('/content-templates')
+    const payload = res?.data ?? res ?? []
+    templates.value = Array.isArray(payload) ? payload : payload?.list ?? []
+  } catch {
+    templates.value = []
+  }
+}
+
 async function handleSave() {
   if (saving.value) return
   if (!hasCruiseOptions.value || !form.value.cruise_id) {
@@ -274,6 +411,12 @@ async function handleSave() {
         depart_date: toRFC3339Date(form.value.depart_date),
         return_date: toRFC3339Date(form.value.return_date),
         status: Number(form.value.status) || 1,
+        fee_note_template_id: Number(form.value.fee_note_template_id || 0),
+        fee_note_mode: form.value.fee_note_mode || (form.value.fee_note_template_id ? 'template' : ''),
+        fee_note_content: form.value.fee_note_mode === 'snapshot' ? form.value.fee_note_content : undefined,
+        booking_notice_template_id: Number(form.value.booking_notice_template_id || 0),
+        booking_notice_mode: form.value.booking_notice_mode || (form.value.booking_notice_template_id ? 'template' : ''),
+        booking_notice_content: form.value.booking_notice_mode === 'snapshot' ? form.value.booking_notice_content : undefined,
         itineraries: normalizeItineraries(form.value.itineraries),
       },
     })
@@ -304,7 +447,7 @@ async function confirmDelete() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadCruises(), loadDetail()])
+  await Promise.all([loadCruises(), loadContentTemplates(), loadDetail()])
 })
 </script>
 
@@ -351,6 +494,72 @@ onMounted(async () => {
         </label>
       </div>
 
+      <section style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:grid;gap:10px;">
+        <strong>费用说明</strong>
+        <select v-model.number="form.fee_note_template_id" data-test="fee-note-template-select" :disabled="saving || deleting" @change="onFeeNoteTemplateChange">
+          <option :value="0">请选择费用说明模板</option>
+          <option v-for="item in feeNoteTemplates" :key="item.id" :value="item.id">{{ item.name }}</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:#64748b;">当前模式：{{ form.fee_note_mode || '未选择模板' }}</span>
+          <button type="button" data-test="copy-fee-note-to-snapshot" :disabled="saving || deleting || !form.fee_note_template_id" @click="copyFeeNoteToSnapshot">复制为航次专属内容</button>
+        </div>
+        <div v-if="form.fee_note_mode === 'snapshot'" style="display:grid;gap:12px;">
+          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>费用包含</strong>
+              <button type="button" :disabled="saving || deleting" @click="addFeeNoteLine('included')">新增条目</button>
+            </div>
+            <div v-for="(item, index) in form.fee_note_content.included" :key="`fee-included-${index}`" style="display:flex;gap:8px;align-items:flex-start;">
+              <input v-model="item.text" :data-test="`fee-note-included-${index}`" placeholder="费用包含条目" :disabled="saving || deleting" style="flex:1;" />
+              <button type="button" :disabled="saving || deleting" @click="removeFeeNoteLine('included', index)">删除</button>
+            </div>
+          </div>
+          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <strong>费用不包含</strong>
+              <button type="button" :disabled="saving || deleting" @click="addFeeNoteLine('excluded')">新增条目</button>
+            </div>
+            <div v-for="(item, index) in form.fee_note_content.excluded" :key="`fee-excluded-${index}`" style="display:flex;gap:8px;align-items:flex-start;">
+              <input v-model="item.text" :data-test="`fee-note-excluded-${index}`" placeholder="费用不包含条目" :disabled="saving || deleting" style="flex:1;" />
+              <button type="button" :disabled="saving || deleting" @click="removeFeeNoteLine('excluded', index)">删除</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:grid;gap:10px;">
+        <strong>预订须知</strong>
+        <select v-model.number="form.booking_notice_template_id" data-test="booking-notice-template-select" :disabled="saving || deleting" @change="onBookingNoticeTemplateChange">
+          <option :value="0">请选择预订须知模板</option>
+          <option v-for="item in bookingNoticeTemplates" :key="item.id" :value="item.id">{{ item.name }}</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:#64748b;">当前模式：{{ form.booking_notice_mode || '未选择模板' }}</span>
+          <button type="button" data-test="copy-booking-notice-to-snapshot" :disabled="saving || deleting || !form.booking_notice_template_id" @click="copyBookingNoticeToSnapshot">复制为航次专属内容</button>
+        </div>
+        <div v-if="form.booking_notice_mode === 'snapshot'" style="display:grid;gap:10px;">
+          <section v-for="(section, sectionIndex) in form.booking_notice_content.sections" :key="`booking-section-${sectionIndex}`" style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <strong>须知分组 {{ sectionIndex + 1 }}</strong>
+              <div style="display:flex;gap:8px;">
+                <button type="button" :disabled="saving || deleting" @click="addBookingNoticeItem(sectionIndex)">新增条目</button>
+                <button type="button" :disabled="saving || deleting" @click="removeBookingNoticeSection(sectionIndex)">删除分组</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input v-model="section.title" :data-test="`booking-notice-section-title-${sectionIndex}`" placeholder="分组标题" :disabled="saving || deleting" style="flex:1;min-width:180px;" />
+              <input v-model="section.key" :data-test="`booking-notice-section-key-${sectionIndex}`" placeholder="分组 key" :disabled="saving || deleting" style="flex:1;min-width:180px;" />
+            </div>
+            <div v-for="(item, itemIndex) in section.items" :key="`booking-item-${sectionIndex}-${itemIndex}`" style="display:flex;gap:8px;align-items:flex-start;">
+              <textarea v-model="item.text" :data-test="sectionIndex === 0 && itemIndex === 0 ? 'booking-notice-text-0' : `booking-notice-text-${sectionIndex}-${itemIndex}`" rows="4" placeholder="预订须知正文" :disabled="saving || deleting" style="flex:1;" />
+              <button type="button" :disabled="saving || deleting" @click="removeBookingNoticeItem(sectionIndex, itemIndex)">删除</button>
+            </div>
+          </section>
+          <button type="button" :disabled="saving || deleting" @click="addBookingNoticeSection">新增须知分组</button>
+        </div>
+      </section>
+
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <h2 style="margin:0;">按天行程</h2>
         <button type="button" :disabled="saving || deleting" @click="addDay">新增一天</button>
@@ -384,7 +593,11 @@ onMounted(async () => {
               删除站点
             </button>
           </div>
-          <input v-model="item.city" placeholder="城市（必填）" :disabled="saving || deleting" />
+          <AdminPortCitySelect
+            v-model="item.city"
+            :disabled="saving || deleting"
+            :test-id-base="`itinerary-city-${dayNo}-${item.stop_index}`"
+          />
           <textarea v-model="item.summary" placeholder="行程简介" :disabled="saving || deleting" />
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input v-model="item.eta_time" placeholder="靠港时间（可选，如 08:30）" :disabled="saving || deleting" />
@@ -403,7 +616,7 @@ onMounted(async () => {
       <p v-if="error" class="text-sm text-rose-500">{{ error }}</p>
       <div>
         <button type="submit" :disabled="saving || deleting || !hasCruiseOptions || !form.cruise_id">{{ saving ? '保存中...' : '保存' }}</button>
-        <button type="button" style="margin-left:8px" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
+        <button type="button" data-test="delete-voyage" style="margin-left:8px" :disabled="saving || deleting" @click="handleDelete">{{ deleting ? '删除中...' : '删除' }}</button>
       </div>
       </form>
     </AdminFormCard>

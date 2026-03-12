@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { request } from '../../src/utils/request'
+import NavBar from '../../components/NavBar.vue'
 
-// 通过 props 接收页面参数，便于运行时与测试场景复用。
 const props = defineProps<{ cabinSkuId?: number | string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'back'): void }>()
 const loading = ref(false)
 const error = ref('')
 const detail = ref<any>(null)
@@ -114,6 +115,7 @@ onMounted(() => {
 
 <template>
   <view class="page">
+    <NavBar title="舱房详情" show-back @back="emit('back')" />
     <text v-if="loading" class="hint">Loading...</text>
     <text v-else-if="error" class="error">{{ error }}</text>
     <view v-else-if="detail" class="panel">
@@ -183,13 +185,13 @@ onMounted(() => {
   box-shadow: 0 16rpx 36rpx rgba(16, 47, 72, 0.12);
 }
 .hero {
-  height: 420rpx;
+  height: 320rpx;
   border-radius: 18rpx;
   overflow: hidden;
 }
 .hero-img {
   width: 100%;
-  height: 420rpx;
+  height: 320rpx;
 }
 .pager {
   align-self: flex-end;

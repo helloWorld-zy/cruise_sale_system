@@ -1,12 +1,14 @@
 <template>
-  <view class="card">
-    <image :src="cover" class="cover" mode="aspectFill" />
-    <view class="body">
-      <text class="name">{{ title }}</text>
-      <text class="desc">{{ description }}</text>
-      <view class="meta-row">
-        <text class="price">{{ priceLabel }}</text>
-        <text class="stock" :class="stockClass">{{ stockLabel }}</text>
+  <view class="bg-white rounded-2xl overflow-hidden shadow-md transition-smooth hover:shadow-lg hover:-translate-y-1 cursor-pointer border border-transparent group">
+    <div class="w-full h-36 overflow-hidden relative">
+      <img :src="cover" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="Cabin Cover" />
+    </div>
+    <view class="p-4 flex flex-col gap-1.5">
+      <h3 class="text-base font-bold text-text mb-0.5">{{ title }}</h3>
+      <p class="text-[13px] text-gray-500 mb-1 leading-relaxed">{{ description }}</p>
+      <view class="flex items-center justify-between mt-1">
+        <text class="text-[18px] font-bold text-cta">{{ priceLabel }}</text>
+        <text class="text-[11px] font-medium px-2.5 py-1 rounded-full border" :class="stockClass">{{ stockLabel }}</text>
       </view>
     </view>
   </view>
@@ -80,83 +82,9 @@ const stockLabel = computed(() => {
 })
 
 const stockClass = computed(() => {
-  if (stockCount.value <= 0) return 'stock-soldout'
-  if (stockPercent.value < 20) return 'stock-danger'
-  if (stockPercent.value < 50) return 'stock-warning'
-  return 'stock-ok'
+  if (stockCount.value <= 0) return 'bg-gray-50 text-gray-500 border-gray-200'
+  if (stockPercent.value < 20) return 'bg-red-50 text-red-600 border-red-100'
+  if (stockPercent.value < 50) return 'bg-orange-50 text-orange-600 border-orange-100'
+  return 'bg-green-50 text-green-700 border-green-100'
 })
 </script>
-
-<style scoped>
-.card {
-  border-radius: 32rpx;
-  overflow: hidden;
-  background: #fff;
-  border: none;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
-}
-
-.cover {
-  width: 100%;
-  height: 280rpx;
-}
-
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-  padding: 30rpx;
-}
-
-.name {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #222;
-}
-
-.desc {
-  font-size: 26rpx;
-  color: #888;
-}
-
-.price {
-  font-size: 38rpx;
-  font-weight: 800;
-  color: #ff6b6b;
-}
-
-.meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
-  margin-top: 12rpx;
-}
-
-.stock {
-  font-size: 22rpx;
-  font-weight: 600;
-  padding: 6rpx 16rpx;
-  border-radius: 999rpx;
-}
-
-.stock-ok {
-  background: #ecfdf3;
-  color: #027a48;
-}
-
-.stock-warning {
-  background: #fff7ed;
-  color: #c4320a;
-}
-
-.stock-danger {
-  background: #fef3f2;
-  color: #b42318;
-}
-
-.stock-soldout {
-  background: #f1f5f9;
-  color: #64748b;
-}
-</style>

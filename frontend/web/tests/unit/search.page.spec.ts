@@ -6,6 +6,12 @@ const mockRequest = vi.fn()
 vi.stubGlobal('useApi', () => ({ request: mockRequest }))
 vi.stubGlobal('useRoute', () => ({ query: {} }))
 
+// Mock vue-router for useRouter
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ query: {} })
+}))
+
 beforeEach(() => {
   mockRequest.mockReset()
   mockRequest.mockResolvedValue({ data: [] })
@@ -15,20 +21,21 @@ describe('Search Page', () => {
   it('renders search form with filters', async () => {
     const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
-    expect(wrapper.text()).toContain('搜索舱位')
-    expect(wrapper.text()).toContain('选择航线')
-    expect(wrapper.text()).toContain('选择舱型')
+    expect(wrapper.text()).toContain('探寻下一个航海传奇')
+    expect(wrapper.text()).toContain('目的地 Where')
+    expect(wrapper.text()).toContain('出发地 Departure')
+    expect(wrapper.text()).toContain('日期 Dates')
   })
 
   it('renders search button', async () => {
     const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
-    expect(wrapper.text()).toContain('搜索')
+    expect(wrapper.text()).toContain('查找航线')
   })
 
   it('renders empty state when no results', async () => {
     const wrapper = mount(Page, { global: { stubs: { NuxtLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
-    expect(wrapper.text()).toContain('暂无搜索结果')
+    expect(wrapper.text()).toContain('未找到匹配航线')
   })
 })

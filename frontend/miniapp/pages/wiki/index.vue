@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Headset } from 'lucide-vue-next'
 import { request } from '../../src/utils/request'
+import NavBar from '../../components/NavBar.vue'
 import WikiCompanySidebar from '../../components/wiki/WikiCompanySidebar.vue'
 import WikiCruiseCard from '../../components/wiki/WikiCruiseCard.vue'
 
@@ -92,16 +93,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-[#f1f1f1] pb-[92px]">
-    <header class="bg-white pt-7 shadow-sm">
-      <div class="flex items-center justify-between px-3 pb-3">
-        <div class="w-16 text-[12px] text-slate-500">WeChat</div>
-        <div class="text-[13px] font-semibold tracking-[0.5px] text-slate-700">邮轮百科</div>
-        <div class="flex w-16 justify-end">
-          <div class="rounded-full border border-slate-300 px-2 py-1 text-[11px] text-slate-700">•••</div>
-        </div>
-      </div>
-      <div class="bg-[#0f5ba9] px-4 py-3 text-center text-[21px] font-bold tracking-[1px] text-white">邮轮百科</div>
-    </header>
+    <NavBar title="邮轮百科" />
 
     <section class="flex min-h-[calc(100vh-152px)] bg-[#f1f1f1]">
       <WikiCompanySidebar

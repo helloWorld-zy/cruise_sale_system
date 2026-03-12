@@ -98,6 +98,8 @@ func RunApp(configDir string) error {
 	userRepo := repository.NewUserRepository(db)
 	shopInfoRepo := repository.NewShopInfoRepository(db)
 	notifyTplRepo := repository.NewNotificationTemplateRepository(db)
+	contentTemplateRepo := repository.NewContentTemplateRepository(db)
+	customDestRepo := repository.NewCustomDestinationRepository(db)
 
 	// 5. 初始化业务服务层
 	authSvc := service.NewAuthService(staffRepo, cfg.JWT.Secret, cfg.JWT.ExpireHours)
@@ -143,7 +145,6 @@ func RunApp(configDir string) error {
 		cfg.Upload.PublicPath,
 		cfg.Upload.MaxFileSize,
 	)
-	voyageHandler := handler.NewVoyageHandler(voyageRepo) // L-02: 直接用 repo 满足 VoyageService 接口
 	cabinHandler := handler.NewCabinHandlerWithIndexing(cabinAdminSvc, meiliIndexer, searchRetryQueue)
 
 	bookingRepo := repository.NewBookingRepository(db)
@@ -157,9 +158,26 @@ func RunApp(configDir string) error {
 	staffSvc := service.NewStaffServiceWithDeps(staffRepo, staffRoleSync, staffAuditLogger)
 	shopInfoSvc := service.NewShopInfoService(shopInfoRepo)
 	notifyTplSvc := service.NewNotificationTemplateService(notifyTplRepo)
+	contentTemplateSvc := service.NewContentTemplateService(contentTemplateRepo)
+	customDestSvc := service.NewCustomDestinationService(customDestRepo)
+	portCitySvc := service.NewPortCityService(service.PortCityServiceConfig{
+		Endpoint: cfg.CitySearch.Endpoint,
+		Timeout:  time.Duration(cfg.CitySearch.TimeoutSeconds) * time.Second,
+	})
+	portCitySvc.SetCustomDestinationRepo(customDestRepo)
+	seaRouteClient := service.NewSeaRouteClient(service.SeaRouteClientConfig{
+		Endpoint:     cfg.MaritimeRoute.Endpoint,
+		Timeout:      time.Duration(cfg.MaritimeRoute.TimeoutSeconds) * time.Second,
+		ResolutionKM: cfg.MaritimeRoute.ResolutionKM,
+	})
+	voyageSvc := service.NewVoyageService(voyageRepo, seaRouteClient).SetCityResolver(portCitySvc)
+	voyageHandler := handler.NewVoyageHandler(voyageSvc)
+	portCityHandler := handler.NewPortCityHandler(portCitySvc)
 	staffHandler := handler.NewStaffHandler(staffSvc)
 	shopInfoHandler := handler.NewShopInfoHandler(shopInfoSvc)
 	notifyTplHandler := handler.NewNotificationTemplateHandler(notifyTplSvc)
+	contentTemplateHandler := handler.NewContentTemplateHandler(contentTemplateSvc)
+	customDestHandler := handler.NewCustomDestinationHandler(customDestSvc)
 
 	// Sprint 04: 支付 / 退款 / 通知 / 统计分析 依赖注入
 	paymentRepo := repository.NewPaymentRepository(db)
@@ -201,9 +219,12 @@ func RunApp(configDir string) error {
 		Payment:           paymentHandler,
 		Refund:            refundHandler,
 		Analytics:         analyticsHandler,
+		PortCity:          portCityHandler,
 		Staff:             staffHandler,
 		ShopInfo:          shopInfoHandler,
 		NotificationTpl:   notifyTplHandler,
+		ContentTemplate:   contentTemplateHandler,
+		CustomDestination: customDestHandler,
 		JWTSecret:         cfg.JWT.Secret,
 		Enforcer:          enforcer,
 	})

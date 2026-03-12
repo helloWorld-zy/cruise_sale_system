@@ -62,7 +62,7 @@ describe('Miniapp PayButton', () => {
     const paymentCall = globalThis.uni.requestPayment.mock.calls[0][0]
     paymentCall.fail({ errMsg: 'user cancel' })
 
-    expect(emitted().error).toEqual([['user cancel']])
+    expect(emitted().error).toEqual([['支付已取消']])
   })
 
   it('emits error on request exception', async () => {

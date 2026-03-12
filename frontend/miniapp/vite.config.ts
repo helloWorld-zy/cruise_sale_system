@@ -21,4 +21,7 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    include: ['lucide-vue-next', 'vue', 'pinia'],
+  },
 })

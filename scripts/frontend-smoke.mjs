@@ -76,18 +76,28 @@ async function checkMiniapp(context) {
       failures.push({ scope: 'miniapp', route: '/', issues: [`http status ${status}`] })
     }
 
-    const expectedTabs = ['登录', '下单', '舱房列表', '舱房详情', '支付']
-    for (const tab of expectedTabs) {
-      const btn = page.locator('.preview-tabs').getByRole('button', { name: tab })
+    const expectedTabs = [
+      { tab: '首页', marker: '首页' },
+      { tab: '邮轮百科', marker: '邮轮百科' },
+      { tab: '全部商品', marker: '全部商品' },
+      { tab: '购物车', marker: '创建预订' },
+      { tab: '我的', marker: '我的订单' },
+    ]
+    for (const { tab, marker } of expectedTabs) {
+      const btn = page.locator('nav').getByRole('button', { name: tab, exact: true })
       if ((await btn.count()) === 0) {
         failures.push({ scope: 'miniapp', route: '/', issues: [`tab missing: ${tab}`] })
         continue
       }
       await btn.click()
-      await page.waitForTimeout(400)
-      const text = (await page.locator('.preview-stage').innerText()).trim()
+      await page.waitForTimeout(700)
+      const text = (await page.locator('main').innerText()).trim()
       if (!text || text.length < 2) {
         failures.push({ scope: 'miniapp', route: '/', issues: [`tab blank content: ${tab}`] })
+        continue
+      }
+      if (!text.includes(marker)) {
+        failures.push({ scope: 'miniapp', route: '/', issues: [`tab content missing marker: ${tab} -> ${marker}`] })
       }
     }
   } catch (err) {

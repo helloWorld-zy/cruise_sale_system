@@ -25,6 +25,9 @@ minio:
   secretkey: ""
   bucket: "cruise-static"
   usessl: false
+city_search:
+  endpoint: "https://nominatim.openstreetmap.org/search"
+  timeoutseconds: 8
 meilis:
   host: "http://localhost:7700"
   # apikey must be set via CRUISE_MEILIS_APIKEY env variable
@@ -46,3 +49,7 @@ upload:
   storagedir: "uploads"
   publicpath: "/uploads"
   maxfilesize: 10485760
+maritime_route:
+  endpoint: ""
+  timeoutseconds: 8
+  resolutionkm: 20

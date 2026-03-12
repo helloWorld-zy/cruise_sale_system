@@ -2,14 +2,23 @@ package domain
 
 import "time"
 
+type VoyageRouteMap struct {
+	Provider     string        `json:"provider,omitempty"`
+	GeometryType string        `json:"geometry_type,omitempty"`
+	Coordinates  [][][]float64 `json:"coordinates,omitempty"`
+	DistanceKM   float64       `json:"distance_km,omitempty"`
+	ResolutionKM int           `json:"resolution_km,omitempty"`
+}
+
 // Voyage 表示一个具体的航次（某艘邮轮的一次出发）。
 // 航次是舱房 SKU 和价格日历的核心关联维度。
 type Voyage struct {
-	ID         int64     `gorm:"primaryKey" json:"id"`            // 主键 ID
-	RouteID    int64     `gorm:"-" json:"route_id,omitempty"`     // 已下线字段，仅用于兼容旧测试/旧请求
-	CruiseID   int64     `gorm:"index" json:"cruise_id"`          // 执行邮轮 ID
+	ID         int64     `gorm:"primaryKey" json:"id"`        // 主键 ID
+	RouteID    int64     `gorm:"-" json:"route_id,omitempty"` // 已下线字段，仅用于兼容旧测试/旧请求
+	CruiseID   int64     `gorm:"index" json:"cruise_id"`      // 执行邮轮 ID
+	Cruise     *Cruise   `gorm:"foreignKey:CruiseID" json:"cruise,omitempty"`
 	Code       string    `gorm:"size:50;uniqueIndex" json:"code"` // 航次编码（全局唯一）
-	ImageURL   string    `gorm:"size:500" json:"image_url"`        // 航次封面图 URL
+	ImageURL   string    `gorm:"size:500" json:"image_url"`       // 航次封面图 URL
 	BriefInfo  string    `gorm:"size:300" json:"brief_info"`      // 航次简短信息（手动输入）
 	DepartDate time.Time `json:"depart_date"`                     // 出发日期
 	ReturnDate time.Time `json:"return_date"`                     // 返航日期
@@ -20,6 +29,20 @@ type Voyage struct {
 	Itineraries   []VoyageItinerary `gorm:"foreignKey:VoyageID" json:"itineraries,omitempty"` // 航次行程明细
 	ItineraryDays int               `gorm:"-" json:"itinerary_days,omitempty"`                // 行程天数（列表辅助字段）
 	FirstStopCity string            `gorm:"-" json:"first_stop_city,omitempty"`               // 首日首站城市（列表辅助字段）
+	MinPriceCents int64             `gorm:"-" json:"min_price_cents,omitempty"`
+	SoldCount     int64             `gorm:"-" json:"sold_count,omitempty"`
+	RouteMap      *VoyageRouteMap   `gorm:"-" json:"route_map,omitempty"`
+
+	FeeNoteTemplateID        int64                 `json:"fee_note_template_id,omitempty"`
+	FeeNoteMode              VoyageContentMode     `gorm:"size:20" json:"fee_note_mode,omitempty"`
+	FeeNoteContentJSON       string                `gorm:"column:fee_note_content_json;type:text" json:"-"`
+	FeeNoteContent           *FeeNoteContent       `gorm:"-" json:"fee_note_content,omitempty"`
+	FeeNote                  *FeeNoteContent       `gorm:"-" json:"fee_note,omitempty"`
+	BookingNoticeTemplateID  int64                 `json:"booking_notice_template_id,omitempty"`
+	BookingNoticeMode        VoyageContentMode     `gorm:"size:20" json:"booking_notice_mode,omitempty"`
+	BookingNoticeContentJSON string                `gorm:"column:booking_notice_content_json;type:text" json:"-"`
+	BookingNoticeContent     *BookingNoticeContent `gorm:"-" json:"booking_notice_content,omitempty"`
+	BookingNotice            *BookingNoticeContent `gorm:"-" json:"booking_notice,omitempty"`
 }
 
 // VoyageItinerary 表示航次中某天某站的计划信息。
@@ -30,6 +53,8 @@ type VoyageItinerary struct {
 	StopIndex         int       `json:"stop_index"`
 	City              string    `gorm:"size:120" json:"city"`
 	Summary           string    `gorm:"type:text" json:"summary"`
+	Latitude          *float64  `gorm:"column:latitude" json:"latitude,omitempty"`
+	Longitude         *float64  `gorm:"column:longitude" json:"longitude,omitempty"`
 	ETATime           *string   `gorm:"column:eta_time" json:"eta_time,omitempty"`
 	ETDTime           *string   `gorm:"column:etd_time" json:"etd_time,omitempty"`
 	HasBreakfast      bool      `json:"has_breakfast"`

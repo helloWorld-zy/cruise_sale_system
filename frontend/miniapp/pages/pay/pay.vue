@@ -3,11 +3,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 // 引入支付按钮组件
+import NavBar from '../../components/NavBar.vue'
 import PayButton from '../../components/PayButton.vue'
 import { request } from '../../src/utils/request'
 
-// 通过 props 接收 bookingId，便于运行时和测试复用。
 const props = defineProps<{ bookingId?: number | string; preview?: boolean }>()
+const emit = defineEmits<{ (e: 'back'): void }>()
 const loading = ref(false)
 const error = ref('')
 const payUrl = ref('')
@@ -55,7 +56,7 @@ onMounted(loadBooking)
 
 <template>
   <view class="page">
-    <text class="title">支付订单</text>
+    <NavBar title="支付订单" show-back @back="emit('back')" />
     <text class="subtitle">确认订单后完成支付，舱位将优先为你保留。</text>
     <text v-if="loading" class="hint">Loading...</text>
     <text v-else-if="error" class="error">{{ error }}</text>
@@ -72,17 +73,10 @@ onMounted(loadBooking)
 .page {
   min-height: 100vh;
   padding: 30rpx;
+  padding-top: 0;
   background:
     radial-gradient(circle at 8% 0, #dbeaf6 0, transparent 30%),
     linear-gradient(180deg, #f3f8fb 0%, #edf3f7 100%);
-}
-
-.title {
-  display: block;
-  margin-bottom: 8rpx;
-  font-size: 46rpx;
-  font-weight: 700;
-  color: #122b42;
 }
 
 .subtitle {

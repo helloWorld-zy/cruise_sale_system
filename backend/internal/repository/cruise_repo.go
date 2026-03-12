@@ -28,10 +28,10 @@ func (r *CruiseRepository) Update(ctx context.Context, cruise *domain.Cruise) er
 	return r.db.WithContext(ctx).Save(cruise).Error
 }
 
-// GetByID 根据主键查询邮轮记录。
+// GetByID 根据主键查询邮轮记录，同时预加载所属公司信息。
 func (r *CruiseRepository) GetByID(ctx context.Context, id int64) (*domain.Cruise, error) {
 	var cruise domain.Cruise
-	if err := r.db.WithContext(ctx).First(&cruise, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Company").First(&cruise, id).Error; err != nil {
 		return nil, err
 	}
 	return &cruise, nil

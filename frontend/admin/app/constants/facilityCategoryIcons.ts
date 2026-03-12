@@ -4,12 +4,14 @@ export type FacilityCategoryIconOption = {
 }
 
 export const facilityCategoryIconOptions: FacilityCategoryIconOption[] = [
-  { value: 'utensils', label: '餐饮' },
-  { value: 'music', label: '演出' },
-  { value: 'spa', label: '水疗' },
-  { value: 'dumbbell', label: '健身' },
-  { value: 'swimmer', label: '泳池' },
-  { value: 'gamepad', label: '娱乐' },
+  { value: 'included-dining', label: '免费餐厅' },
+  { value: 'specialty-dining', label: '特色餐厅' },
+  { value: 'bar-lounge', label: '酒吧' },
+  { value: 'leisure-entertainment', label: '休闲娱乐' },
+  { value: 'kids-family', label: '亲子童趣' },
+  { value: 'suite-privilege', label: '舒享舱房' },
+  { value: 'sports-fitness', label: '运动健身' },
+  { value: 'other', label: '其它' },
 ]
 
 export function ensureFacilityCategoryIconOptions(currentIcon: string) {

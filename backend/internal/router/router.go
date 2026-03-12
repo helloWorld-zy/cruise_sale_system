@@ -32,9 +32,12 @@ type Dependencies struct {
 	Payment           *handler.PaymentHandler              // 支付回调处理器
 	Refund            *handler.RefundHandler               // 退款处理器
 	Analytics         *handler.AnalyticsHandler            // 统计分析处理器
+	PortCity          *handler.PortCityHandler             // 城市搜索处理器
 	Staff             *handler.StaffHandler                // 员工管理处理器
 	ShopInfo          *handler.ShopInfoHandler             // 店铺信息处理器
 	NotificationTpl   *handler.NotificationTemplateHandler // 通知模板处理器
+	ContentTemplate   *handler.ContentTemplateHandler      // 文案模板处理器
+	CustomDestination *handler.CustomDestinationHandler    // 自定义目的地处理器
 	JWTSecret         string                               // JWT 签名密钥
 	Enforcer          *casbin.Enforcer                     // Casbin RBAC 执行器
 }
@@ -187,6 +190,34 @@ func Setup(deps Dependencies) *gin.Engine {
 		upload.POST("/image", deps.Upload.UploadImage) // 上传图片
 	}
 
+	if deps.PortCity != nil {
+		admin.GET("/port-cities", deps.PortCity.Search)
+	}
+
+	if deps.ContentTemplate != nil {
+		contentTemplates := admin.Group("/content-templates")
+		{
+			contentTemplates.GET("", deps.ContentTemplate.List)
+			contentTemplates.GET("/:id", deps.ContentTemplate.Get)
+			contentTemplates.POST("", deps.ContentTemplate.Create)
+			contentTemplates.PUT("/:id", deps.ContentTemplate.Update)
+			contentTemplates.DELETE("/:id", deps.ContentTemplate.Delete)
+		}
+	}
+
+	if deps.CustomDestination != nil {
+		customDest := admin.Group("/custom-destinations")
+		{
+			customDest.GET("", deps.CustomDestination.List)
+			customDest.GET("/export", deps.CustomDestination.ExportCSV)
+			customDest.POST("/import", deps.CustomDestination.ImportCSV)
+			customDest.GET("/:id", deps.CustomDestination.Get)
+			customDest.POST("", deps.CustomDestination.Create)
+			customDest.PUT("/:id", deps.CustomDestination.Update)
+			customDest.DELETE("/:id", deps.CustomDestination.Delete)
+		}
+	}
+
 	// 航次、舱房管理（Sprint 2）—— 完整 CRUD
 	voyages := admin.Group("/voyages")
 	{
@@ -248,9 +279,11 @@ func Setup(deps Dependencies) *gin.Engine {
 	api.POST("/pay/callback", deps.Payment.Callback)
 
 	// --- C 端公开查询路由（无需认证，供 Web/小程序使用） ---
-	api.GET("/companies", deps.Company.ListPublic)             // 邮轮公司列表
-	api.GET("/cruises", deps.Cruise.ListPublic)                // 邮轮列表
+	api.GET("/companies", deps.Company.ListPublic)              // 邮轮公司列表
+	api.GET("/cruises", deps.Cruise.ListPublic)                 // 邮轮列表
 	api.GET("/cruises/:id", deps.Cruise.Get)                    // 邮轮详情
+	api.GET("/voyages", deps.Voyage.ListPublic)                 // 航次列表
+	api.GET("/voyages/:id", deps.Voyage.Get)                    // 航次详情
 	api.GET("/cabin-types", deps.CabinType.List)                // 舱房类型列表
 	api.GET("/facility-categories", deps.FacilityCategory.List) // 设施分类列表
 	api.GET("/facilities", deps.Facility.ListByCruise)          // 设施列表（按邮轮）

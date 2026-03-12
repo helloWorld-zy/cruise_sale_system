@@ -9,6 +9,10 @@ export default defineNuxtRouteMiddleware((to) => {
 
   const auth = useAuthStore()
 
+  if (to.path === '/login') {
+    return
+  }
+
   // Ensure token is restored before route guard checks after page reload.
   if (!auth.token && typeof window !== 'undefined') {
     const cachedToken = typeof window.localStorage?.getItem === 'function'
@@ -17,13 +21,6 @@ export default defineNuxtRouteMiddleware((to) => {
     if (cachedToken) {
       auth.setToken(cachedToken)
     }
-  }
-
-  if (to.path === '/login') {
-    if (auth.isAuthenticated) {
-      return navigateTo('/dashboard', { replace: true })
-    }
-    return
   }
 
   if (!auth.isAuthenticated) {

@@ -67,6 +67,15 @@ type CabinTypeMediaRepository interface {
 	SetPrimary(ctx context.Context, cabinTypeID int64, mediaType string, mediaID int64) error // 设置主媒体并清除同类型其他主媒体
 }
 
+// ContentTemplateRepository 定义全局内容模板的数据持久化接口。
+type ContentTemplateRepository interface {
+	Create(ctx context.Context, tpl *ContentTemplate) error
+	Update(ctx context.Context, tpl *ContentTemplate) error
+	GetByID(ctx context.Context, id int64) (*ContentTemplate, error)
+	List(ctx context.Context, kind ContentTemplateKind) ([]ContentTemplate, error)
+	Delete(ctx context.Context, id int64) error
+}
+
 // VoyageCabinTypePriceRepository 定义航次舱型价格版本与当前态的数据持久化接口。
 type VoyageCabinTypePriceRepository interface {
 	CreateVersion(ctx context.Context, version *VoyageCabinTypePriceVersion) error                                                   // 创建价格版本
@@ -116,6 +125,18 @@ type StaffRepository interface {
 	Delete(ctx context.Context, id int64) error                         // 删除员工账号
 }
 
+// CustomDestinationRepository 定义自定义目的地的数据持久化接口。
+type CustomDestinationRepository interface {
+	Create(ctx context.Context, dest *CustomDestination) error                              // 创建自定义目的地
+	Update(ctx context.Context, dest *CustomDestination) error                              // 更新自定义目的地
+	GetByID(ctx context.Context, id int64) (*CustomDestination, error)                      // 根据 ID 查询
+	List(ctx context.Context) ([]CustomDestination, error)                                  // 查询所有自定义目的地
+	SearchByKeyword(ctx context.Context, keyword string) ([]CustomDestination, error)       // 按关键词搜索（启用状态）
+	GetByLabel(ctx context.Context, name, country string) (*CustomDestination, error)       // 按名称+国家查询
+	UpsertByNameCountry(ctx context.Context, dest *CustomDestination) error                 // 按名称+国家更新或新增
+	Delete(ctx context.Context, id int64) error                                             // 删除自定义目的地（软删除）
+}
+
 // Sprint 2 仓储端口 —— 按照 DDD 规范定义在领域层。
 
 // RouteRepository 定义航线的数据持久化接口。
@@ -129,11 +150,12 @@ type RouteRepository interface {
 
 // VoyageRepository 定义航次的数据持久化接口。
 type VoyageRepository interface {
-	Create(ctx context.Context, v *Voyage) error            // 创建航次
-	Update(ctx context.Context, v *Voyage) error            // 更新航次信息
-	GetByID(ctx context.Context, id int64) (*Voyage, error) // 根据 ID 查询航次
-	List(ctx context.Context) ([]Voyage, error)             // 查询航次列表
-	Delete(ctx context.Context, id int64) error             // 删除航次
+	Create(ctx context.Context, v *Voyage) error                                                                 // 创建航次
+	Update(ctx context.Context, v *Voyage) error                                                                 // 更新航次信息
+	GetByID(ctx context.Context, id int64) (*Voyage, error)                                                      // 根据 ID 查询航次
+	List(ctx context.Context) ([]Voyage, error)                                                                  // 查询航次列表
+	ListPublic(ctx context.Context, cruiseID int64, keyword string, page, pageSize int) ([]Voyage, int64, error) // 查询前台可见航次列表
+	Delete(ctx context.Context, id int64) error                                                                  // 删除航次
 }
 
 // CabinSKUFilter 描述舱位商品的后台筛选条件。

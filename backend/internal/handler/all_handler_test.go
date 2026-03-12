@@ -702,6 +702,12 @@ func (m *mockVoyageSvc) List(ctx context.Context) ([]domain.Voyage, error) {
 	}
 	return nil, nil
 }
+func (m *mockVoyageSvc) ListPublic(ctx context.Context, cruiseID int64, keyword string, page, pageSize int) ([]domain.Voyage, int64, error) {
+	if isErr(ctx) {
+		return nil, 0, errors.New("error")
+	}
+	return nil, 0, nil
+}
 func (m *mockVoyageSvc) Delete(ctx context.Context, id int64) error {
 	if isErr(ctx) {
 		return errors.New("error")

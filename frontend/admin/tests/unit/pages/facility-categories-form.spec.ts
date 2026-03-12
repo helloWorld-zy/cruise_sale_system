@@ -44,15 +44,22 @@ describe('Facility category edit page', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('编辑设施分类')
-    expect(wrapper.find('[data-test="facility-category-edit-icon-option-music"] svg').exists()).toBe(true)
-    await wrapper.find('[data-test="facility-category-edit-icon-option-music"]').trigger('click')
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-included-dining"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-specialty-dining"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-bar-lounge"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-leisure-entertainment"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-kids-family"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-suite-privilege"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-sports-fitness"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="facility-category-edit-icon-option-other"]').exists()).toBe(true)
+    await wrapper.find('[data-test="facility-category-edit-icon-option-bar-lounge"]').trigger('click')
     await flushPromises()
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(mockRequest).toHaveBeenCalledWith('/facility-categories/3', expect.objectContaining({ method: 'PUT' }))
     expect(mockRequest).toHaveBeenCalledWith('/facility-categories/3', expect.objectContaining({
-      body: expect.objectContaining({ icon: 'music' }),
+      body: expect.objectContaining({ icon: 'bar-lounge' }),
     }))
     expect(mockNavigateTo).toHaveBeenCalledWith('/facility-categories')
   })

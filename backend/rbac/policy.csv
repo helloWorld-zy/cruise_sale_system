@@ -25,6 +25,10 @@ p, editor, /api/v1/admin/facilities*, GET
 p, editor, /api/v1/admin/facilities*, POST
 p, editor, /api/v1/admin/facilities*, PUT
 p, editor, /api/v1/admin/facilities*, PATCH
+p, editor, /api/v1/admin/custom-destinations*, GET
+p, editor, /api/v1/admin/custom-destinations*, POST
+p, editor, /api/v1/admin/custom-destinations*, PUT
+p, editor, /api/v1/admin/custom-destinations*, PATCH
 
 # viewer 角色仅有只读权限
 p, viewer, /api/v1/admin/cruises*, GET

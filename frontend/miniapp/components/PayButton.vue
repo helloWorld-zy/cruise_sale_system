@@ -1,5 +1,5 @@
 <!-- miniapp/components/PayButton.vue — 支付按钮组件 -->
-<!-- 小程序端的支付按钮，点击后触发支付流程 -->
+<!-- 小程序端的支付按钮，调用 uni.requestPayment 完成微信支付 -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { request } from '../src/utils/request'
@@ -19,6 +19,15 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 
+/** 检测是否有 uni.requestPayment（小程序环境） */
+function hasUniPayment(): boolean {
+  try {
+    return typeof uni !== 'undefined' && typeof uni.requestPayment === 'function'
+  } catch {
+    return false
+  }
+}
+
 async function handlePay() {
   if (loading.value) return
   loading.value = true
@@ -34,17 +43,30 @@ async function handlePay() {
     const res = raw as Record<string, any>
     const payUrl = res?.pay_url ?? res?.data?.pay_url ?? ''
     const payParams = res?.pay_params ?? res?.data?.pay_params
+
     if (payParams?.timeStamp) {
+      if (!hasUniPayment()) {
+        // 非小程序环境：直接返回支付链接
+        emit('paid', payUrl)
+        return
+      }
       uni.requestPayment({
         ...payParams,
         success: () => emit('paid', payUrl),
-        fail: (err: any) => emit('error', err?.errMsg ?? 'payment failed'),
+        fail: (err: any) => {
+          const msg = err?.errMsg ?? ''
+          if (msg.includes('cancel')) {
+            emit('error', '支付已取消')
+          } else {
+            emit('error', msg || '支付失败')
+          }
+        },
       })
     } else {
       emit('paid', payUrl)
     }
   } catch (e: any) {
-    emit('error', e?.message ?? 'payment failed')
+    emit('error', e?.message ?? '支付失败')
   } finally {
     loading.value = false
   }

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { request } from '../../src/utils/request'
+import NavBar from '../../components/NavBar.vue'
+
+declare const uni: any
 
 type OrderItem = {
   id: number
@@ -8,6 +11,11 @@ type OrderItem = {
   total_cents: number
   created_at?: string
 }
+
+const emit = defineEmits<{
+  (e: 'open-pay', bookingId: number): void
+  (e: 'open-order-detail', bookingId: number): void
+}>()
 
 const loading = ref(false)
 const error = ref('')
@@ -35,6 +43,29 @@ function statusLabel(status: string) {
   return status
 }
 
+/** 导航到支付页，优先 uni.navigateTo，降级 emit */
+function goToPay(id: number) {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.navigateTo === 'function') {
+      uni.navigateTo({ url: `/pages/pay/pay?id=${id}` })
+      return
+    }
+  } catch { /* ignored */ }
+  emit('open-pay', id)
+}
+
+/** 导航到订单详情，优先 uni.navigateTo，降级 emit */
+function goToDetail(id: number, action?: string) {
+  const query = action ? `?id=${id}&action=${action}` : `?id=${id}`
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.navigateTo === 'function') {
+      uni.navigateTo({ url: `/pages/orders/detail${query}` })
+      return
+    }
+  } catch { /* ignored */ }
+  emit('open-order-detail', id)
+}
+
 async function loadOrders() {
   loading.value = true
   error.value = ''
@@ -53,184 +84,43 @@ onMounted(loadOrders)
 </script>
 
 <template>
-  <view class="page">
-    <text class="title">我的订单</text>
-    <text class="subtitle">按状态筛选订单，快速完成支付或退改申请。</text>
+  <view class="min-h-screen bg-background pb-8 overflow-x-hidden">
+    <NavBar title="我的订单" />
 
-    <view class="tabs">
-      <text
-        v-for="tab in tabs"
-        :key="tab.key || 'all'"
-        class="tab"
-        :class="activeStatus === tab.key ? 'tab-active' : ''"
-        @click="activeStatus = tab.key"
-      >
-        {{ tab.label }}
-      </text>
-    </view>
+    <view class="px-4 mt-4 relative z-10 flex flex-col gap-4">
+      <!-- Tabs -->
+      <view class="flex gap-2 flex-wrap mb-2 pl-2">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key || 'all'"
+          class="px-4 py-1.5 border-0 rounded-full text-[13px] font-medium transition-smooth shadow-sm cursor-pointer"
+          :class="activeStatus === tab.key ? 'bg-white text-primary hover:-translate-y-0.5 mt-0' : 'bg-white/30 text-white hover:bg-white/40 backdrop-blur-sm'"
+          @click="activeStatus = tab.key"
+        >
+          {{ tab.label }}
+        </button>
+      </view>
 
-    <text v-if="loading" class="hint">Loading...</text>
-    <text v-else-if="error" class="error">{{ error }}</text>
-    <text v-else-if="filtered.length === 0" class="hint">暂无订单</text>
+      <text v-if="loading" class="text-center text-text mt-12 block font-medium">Loading...</text>
+      <text v-else-if="error" class="text-center text-red-500 mt-12 block">{{ error }}</text>
+      <text v-else-if="filtered.length === 0" class="text-center text-gray-400 mt-12 block">暂无订单</text>
 
-    <view v-else class="list">
-      <view v-for="item in filtered" :key="item.id" class="card">
-        <text class="order-no">订单 #{{ item.id }}</text>
-        <text class="status">状态：{{ statusLabel(item.status) }}</text>
-        <text class="amount">¥{{ (item.total_cents / 100).toFixed(2) }}</text>
-        <view class="actions">
-          <navigator v-if="item.status === 'pending_payment'" :url="`/pages/pay/index?id=${item.id}`" class="btn primary">去支付</navigator>
-          <navigator :url="`/pages/orders/detail?id=${item.id}`" class="btn">查看详情</navigator>
-          <navigator :url="`/pages/orders/detail?id=${item.id}&action=refund`" class="btn">申请退改</navigator>
+      <view v-else class="flex flex-col gap-4 pb-6">
+        <view v-for="item in filtered" :key="item.id" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-50 flex flex-col gap-3 group transition-smooth hover:shadow-md hover:-translate-y-1">
+          <div class="flex justify-between items-start">
+            <text class="text-base font-bold text-text">订单 #{{ item.id }}</text>
+            <text class="text-[13px] font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-100">{{ statusLabel(item.status) }}</text>
+          </div>
+          
+          <text class="text-2xl font-bold text-cta my-1">¥{{ (item.total_cents / 100).toFixed(2) }}</text>
+          
+          <view class="flex gap-2 justify-end mt-2 pt-3 border-t border-gray-50">
+            <button v-if="item.status === 'pending_payment'" class="px-5 py-2 rounded-full text-[13px] font-bold bg-cta text-white shadow-sm hover:opacity-90 transition-smooth border-0 cursor-pointer" @click="goToPay(item.id)">去支付</button>
+            <button class="px-4 py-2 rounded-full text-[13px] font-medium bg-gray-50 text-text hover:bg-gray-100 transition-smooth border border-gray-100 cursor-pointer" @click="goToDetail(item.id)">查看详情</button>
+            <button class="px-4 py-2 rounded-full text-[13px] font-medium bg-gray-50 text-text hover:bg-gray-100 transition-smooth border border-gray-100 cursor-pointer" @click="goToDetail(item.id, 'refund')">申请退改</button>
+          </view>
         </view>
       </view>
     </view>
   </view>
 </template>
-
-<style scoped>
-.page {
-  min-height: 100vh;
-  background: #f5f7fa;
-  padding: 40rpx;
-  position: relative;
-}
-
-.page::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 380rpx;
-  background: linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%);
-  border-bottom-left-radius: 40rpx;
-  border-bottom-right-radius: 40rpx;
-  z-index: 0;
-}
-
-.title {
-  position: relative;
-  z-index: 1;
-  font-size: 48rpx;
-  font-weight: 800;
-  color: #fff;
-  display: block;
-  margin-bottom: 8rpx;
-}
-
-.subtitle {
-  position: relative;
-  z-index: 1;
-  display: block;
-  margin-top: 8rpx;
-  font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.tabs {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 16rpx;
-  margin: 32rpx 0 24rpx;
-  flex-wrap: wrap;
-}
-
-.tab {
-  border-radius: 999rpx;
-  border: none;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 10rpx 28rpx;
-  color: #fff;
-  font-size: 26rpx;
-  font-weight: 600;
-}
-
-.tab-active {
-  background: #fff;
-  color: #0cebeb;
-}
-
-.list {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-  padding-bottom: 40rpx;
-}
-
-.card {
-  border-radius: 32rpx;
-  background: #fff;
-  border: none;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
-  padding: 32rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.order-no,
-.status,
-.amount {
-  color: #666;
-  font-size: 26rpx;
-  font-weight: 500;
-}
-
-.order-no {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #222;
-}
-
-.amount {
-  color: #ff6b6b;
-  font-weight: 800;
-  font-size: 36rpx;
-  margin: 8rpx 0;
-}
-
-.actions {
-  margin-top: 16rpx;
-  display: flex;
-  gap: 16rpx;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.btn {
-  border-radius: 999rpx;
-  border: none;
-  background: #f5f7fa;
-  padding: 12rpx 32rpx;
-  font-size: 24rpx;
-  color: #333;
-  font-weight: 600;
-}
-
-.primary {
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  color: #fff;
-}
-
-.hint {
-  position: relative;
-  z-index: 1;
-  color: #fff;
-  text-align: center;
-  display: block;
-  margin-top: 60rpx;
-}
-
-.error {
-  position: relative;
-  z-index: 1;
-  color: #ffcccc;
-  text-align: center;
-  display: block;
-  margin-top: 60rpx;
-}
-</style>

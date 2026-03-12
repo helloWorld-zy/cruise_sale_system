@@ -5,20 +5,45 @@ import HomePage from '../pages/home/index.vue'
 import WikiHomePage from '../pages/wiki/index.vue'
 import LoginPage from '../pages/login/login.vue'
 import BookingPage from '../pages/booking/create.vue'
-import CabinListPage from '../pages/cabin/list.vue'
+import ProductsPage from '../pages/products/index.vue'
 import CabinDetailPage from '../pages/cabin/detail.vue'
 import CruiseDetailPage from '../pages/cruise/detail.vue'
+import VoyageDetailPage from '../pages/voyage/detail.vue'
 import PayPage from '../pages/pay/pay.vue'
 import OrdersPage from '../pages/orders/list.vue'
 
-type TabKey = 'home' | 'wiki' | 'cabin-list' | 'cart' | 'my' | 'cabin-detail' | 'cruise-detail' | 'pay' | 'orders' | 'login' | 'booking'
+type TabKey = 'home' | 'wiki' | 'cabin-list' | 'cart' | 'my' | 'cabin-detail' | 'cruise-detail' | 'voyage-detail' | 'pay' | 'orders' | 'login' | 'booking'
 
 const activeTab = ref<TabKey>('home')
+const previousTab = ref<TabKey>('home')
 const selectedCruiseId = ref<number | null>(null)
+const selectedVoyageId = ref<number | null>(null)
+const selectedBookingId = ref<number | null>(null)
+
+/** 导航到子页面，记住来源以便返回 */
+function navigateTo(tab: TabKey) {
+  previousTab.value = activeTab.value
+  activeTab.value = tab
+}
+
+/** 返回上一个页面 */
+function goBack() {
+  activeTab.value = previousTab.value
+}
 
 function openCruiseDetail(cruiseId: number) {
   selectedCruiseId.value = cruiseId
-  activeTab.value = 'cruise-detail'
+  navigateTo('cruise-detail')
+}
+
+function openVoyageDetail(voyageId: number) {
+  selectedVoyageId.value = voyageId
+  navigateTo('voyage-detail')
+}
+
+function openPay(bookingId: number) {
+  selectedBookingId.value = bookingId
+  navigateTo('pay')
 }
 
 const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
@@ -35,15 +60,16 @@ const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
     <main class="min-h-screen bg-background pb-[80px]">
       <HomePage v-if="activeTab === 'home'" />
       <WikiHomePage v-else-if="activeTab === 'wiki'" @open-cruise="openCruiseDetail" />
-      <OrdersPage v-else-if="activeTab === 'my'" />
+      <OrdersPage v-else-if="activeTab === 'my'" @open-pay="openPay" />
       <BookingPage v-else-if="activeTab === 'cart'" />
 
-      <CabinListPage v-else-if="activeTab === 'cabin-list'" :preview="true" />
-      <CabinDetailPage v-else-if="activeTab === 'cabin-detail'" :cabin-sku-id="1" :preview="true" />
-      <CruiseDetailPage v-else-if="activeTab === 'cruise-detail'" :cruise-id="selectedCruiseId || 1" />
-      <PayPage v-else-if="activeTab === 'pay'" :booking-id="1" :preview="true" />
-      <LoginPage v-else-if="activeTab === 'login'" />
-      <OrdersPage v-else-if="activeTab === 'orders'" />
+      <ProductsPage v-else-if="activeTab === 'cabin-list'" @open-voyage="openVoyageDetail" />
+      <CabinDetailPage v-else-if="activeTab === 'cabin-detail'" :cabin-sku-id="1" :preview="true" @back="goBack" />
+      <CruiseDetailPage v-else-if="activeTab === 'cruise-detail'" :cruise-id="selectedCruiseId || 1" @back="goBack" @open-voyage="openVoyageDetail" />
+      <VoyageDetailPage v-else-if="activeTab === 'voyage-detail'" :voyage-id="selectedVoyageId || 101" @back="goBack" />
+      <PayPage v-else-if="activeTab === 'pay'" :booking-id="selectedBookingId || 1" :preview="!selectedBookingId" @back="goBack" />
+      <LoginPage v-else-if="activeTab === 'login'" @back="goBack" />
+      <OrdersPage v-else-if="activeTab === 'orders'" @open-pay="openPay" />
     </main>
 
     <!-- Bottom Tab Bar -->
